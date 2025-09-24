@@ -1,9 +1,9 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './components/layout/Layout';
 import DashboardPage from './pages/Dashboard';
-import UsersPage from './pages/Users';
-import AdsPage from './pages/Ads';
-import ReportsPage from './pages/Reports';
+import UsersPage from "./pages/Users";
+import AdsPage from "./pages/Ads";
+import ReportsPage from "./pages/Reports";
 
 function App() {
   return (

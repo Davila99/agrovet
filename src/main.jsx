@@ -4,10 +4,19 @@ import './index.css'
 import App from './App.jsx'
 // En src/main.jsx o App.jsx
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
+import WelcomePage from "./pages/HomePage/Welcome.jsx";
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
-createRoot(document.getElementById('root')).render(
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement
+);
+createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <App />
-  </StrictMode>,
-)
+    <WelcomePage />
+  </StrictMode>
+);
