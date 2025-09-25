@@ -43,9 +43,22 @@ const WelcomePage = () => {
         {/* Contenido encima */}
         <Box sx={{ position: "relative", zIndex: 2 }}>
           <Navbar />
-          <Container sx={{ display: "flex" }}>
-            <Container sx={{ marginTop: "7%", marginBottom: "10%" }}>
-              <Typography variant="h2" fontWeight="bold">
+          <Container
+            sx={{
+              display: "flex",
+              flexDirection: { xs: "column", md: "row" },
+              alignItems: "center",
+              justifyContent: "space-between",
+              mt: { xs: 5, md: 0 },
+              mb: { xs: 5, md: 0 },
+              px: { xs: 2, md: 5 },
+            }}>
+            <Container
+              sx={{
+                textAlign: { xs: "center", md: "left" },
+                mb: { xs: 5, md: 0 },
+              }}>
+              <Typography variant="h3" fontWeight="bold">
                 Bienvenido a AgroVets
               </Typography>
               <Typography variant="h6" sx={{ mt: 2 }}>
@@ -60,11 +73,16 @@ const WelcomePage = () => {
                   bgcolor: "#103E68",
                   color: "#fff",
                   fontWeight: "bold",
+                  "&:hover": {
+                    bgcolor: "#35722b",
+                    color: "#fff",
+                  },
                   px: 4,
                   py: 1.5,
                   borderRadius: 3,
-                  mr: 2,
-                  mt: 5,
+                  mr: { xs: 0, md: 1 },
+                  mt: 3,
+                  mb: { xs: 1, md: 0 },
                 }}>
                 Descargar App
               </Button>
@@ -76,7 +94,7 @@ const WelcomePage = () => {
                   px: 4,
                   py: 1.5,
                   borderRadius: 3,
-                  mt: 5,
+                  mt: 3,
                 }}>
                 Registrarme
               </Button>
@@ -86,6 +104,7 @@ const WelcomePage = () => {
               image={Movil}
               alt="imagen"
               sx={{
+                display: { xs: "none", md: "block" },
                 width: 500,
               }}
             />
@@ -146,10 +165,10 @@ const WelcomePage = () => {
       {/* CALL TO ACTION */}
       <Box
         sx={{
-          bgcolor: "#A3BB71",
+          bgcolor: "#35722b",
           py: 8,
           textAlign: "center",
-          color: "#103E68",
+          color: "#fff",
         }}>
         <Typography variant="h4" fontWeight="bold" gutterBottom>
           Únete hoy a la comunidad AgroVets

@@ -52,11 +52,11 @@ const Navbar = () => {
               display: { xs: "none", md: "inline-flex" },
               bgcolor: "#103E68",
               color: "#fff",
-              "&:hover": { bgcolor: "#8FA75D" },
+              "&:hover": { bgcolor: "#35722b", color: "#fff" },
               fontWeight: "bold",
               borderRadius: 3,
             }}>
-             Dashboard
+            Dashboard
           </Button>
 
           {/* Hamburguesa (solo en móvil) */}
@@ -90,7 +90,7 @@ const Navbar = () => {
                 sx={{
                   bgcolor: "#103E68",
                   color: "#fff",
-                  "&:hover": { bgcolor: "#8FA75D" },
+                  "&:hover": { bgcolor: "#35722b", color: "#fff" },
                   fontWeight: "bold",
                   width: "100%",
                   borderRadius: 2,
