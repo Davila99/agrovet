@@ -7,52 +7,91 @@ import {
   Box,
   Card,
   CardContent,
+  CardMedia,
 } from "@mui/material";
 
+import Navbar from "../../navigation/nav";
+import banner from "../../assets/banner.png";
+import Movil from "../../assets/movil.svg";
+
+import NotificationsSection from "./NotificationsSection";
 const WelcomePage = () => {
   return (
-    <Box sx={{ bgcolor: "#f8f9fa", minHeight: "100vh" }}>
-      {/* HERO */}
+    <Box sx={{ bgcolor: "#f8f9fa" }}>
       <Box
         sx={{
-          bgcolor: "#103E68",
+          position: "relative",
           color: "white",
-          py: 10,
-          textAlign: "center",
+          padding: "10px",
+          backgroundImage: `url(${banner})`, // ✅ usando import
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+          minHeight: "100vh",
         }}>
-        <Container maxWidth="md">
-          <Typography variant="h2" fontWeight="bold">
-            Bienvenido a AgroVets
-          </Typography>
-          <Typography variant="h6" sx={{ mt: 2, mb: 4 }}>
-            La primera comunidad de agrónomos y veterinarios para resolver
-            problemas reales de campo.
-          </Typography>
-          <Button
-            variant="contained"
-            sx={{
-              bgcolor: "#A3BB71",
-              color: "#103E68",
-              fontWeight: "bold",
-              px: 4,
-              py: 1.5,
-              borderRadius: 3,
-              mr: 2,
-            }}>
-            Descargar App
-          </Button>
-          <Button
-            variant="outlined"
-            sx={{
-              borderColor: "#A3BB71",
-              color: "white",
-              px: 4,
-              py: 1.5,
-              borderRadius: 3,
-            }}>
-            Registrarme
-          </Button>
-        </Container>
+        <Box
+          sx={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            zIndex: 1,
+          }}
+        />
+
+        {/* Contenido encima */}
+        <Box sx={{ position: "relative", zIndex: 2 }}>
+          <Navbar />
+          <Container sx={{ display: "flex" }}>
+            <Container sx={{ marginTop: "7%", marginBottom: "10%" }}>
+              <Typography variant="h2" fontWeight="bold">
+                Bienvenido a AgroVets
+              </Typography>
+              <Typography variant="h6" sx={{ mt: 2 }}>
+                La primera comunidad de agrónomos y veterinarios,
+              </Typography>
+              <Typography variant="h6">
+                para resolver problemas reales de campo.
+              </Typography>
+              <Button
+                variant="contained"
+                sx={{
+                  bgcolor: "#103E68",
+                  color: "#fff",
+                  fontWeight: "bold",
+                  px: 4,
+                  py: 1.5,
+                  borderRadius: 3,
+                  mr: 2,
+                  mt: 5,
+                }}>
+                Descargar App
+              </Button>
+              <Button
+                variant="outlined"
+                sx={{
+                  borderColor: "#fff",
+                  color: "white",
+                  px: 4,
+                  py: 1.5,
+                  borderRadius: 3,
+                  mt: 5,
+                }}>
+                Registrarme
+              </Button>
+            </Container>
+            <CardMedia
+              component="img"
+              image={Movil}
+              alt="imagen"
+              sx={{
+                width: 500,
+              }}
+            />
+          </Container>
+        </Box>
+        <NotificationsSection />
       </Box>
 
       {/* FEATURES */}
@@ -104,7 +143,6 @@ const WelcomePage = () => {
           ))}
         </Grid>
       </Container>
-
       {/* CALL TO ACTION */}
       <Box
         sx={{
@@ -133,7 +171,6 @@ const WelcomePage = () => {
           Crear Cuenta Gratis
         </Button>
       </Box>
-
       {/* FOOTER */}
       <Box
         sx={{ bgcolor: "#103E68", color: "white", py: 3, textAlign: "center" }}>
@@ -143,5 +180,5 @@ const WelcomePage = () => {
       </Box>
     </Box>
   );
-}
+};
  export default WelcomePage

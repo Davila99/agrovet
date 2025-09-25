@@ -17,6 +17,6 @@ ChartJS.register(
 );
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <WelcomePage />
+    <App />
   </StrictMode>
 );
