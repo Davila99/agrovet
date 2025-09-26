@@ -10,11 +10,10 @@ import {
   CardMedia,
 } from "@mui/material";
 
-import Navbar from "../../navigation/nav";
-import banner from "../../assets/banner.png";
-import Movil from "../../assets/movil.svg";
+import banner from "../assets/banner.png";
+import Movil from "../assets/movil.svg";
 
-import NotificationsSection from "./NotificationsSection";
+import NotificationsSection from "./HomePage/NotificationsSection";
 const WelcomePage = () => {
   return (
     <Box sx={{ bgcolor: "#f8f9fa" }}>
@@ -42,7 +41,6 @@ const WelcomePage = () => {
 
         {/* Contenido encima */}
         <Box sx={{ position: "relative", zIndex: 2 }}>
-          <Navbar />
           <Container
             sx={{
               display: "flex",
@@ -51,7 +49,7 @@ const WelcomePage = () => {
               justifyContent: "space-between",
               mt: { xs: 5, md: 0 },
               mb: { xs: 5, md: 0 },
-              px: { xs: 2, md: 5 },
+              px: { xs: 5, md: 5 },
             }}>
             <Container
               sx={{
@@ -67,37 +65,45 @@ const WelcomePage = () => {
               <Typography variant="h6">
                 para resolver problemas reales de campo.
               </Typography>
-              <Button
-                variant="contained"
+              <Container
                 sx={{
-                  bgcolor: "#103E68",
-                  color: "#fff",
-                  fontWeight: "bold",
-                  "&:hover": {
-                    bgcolor: "#35722b",
+                  display: "flex",
+                  flexDirection: { xs: "column", md: "row" }, // columna en móvil, fila en escritorio
+                  alignItems: { xs: "center", md: "flex-start" },
+                  gap: 2,
+                  mt: 4,
+                }}>
+                <Button
+                  variant="contained"
+                  sx={{
+                    bgcolor: "#103E68",
                     color: "#fff",
-                  },
-                  px: 4,
-                  py: 1.5,
-                  borderRadius: 3,
-                  mr: { xs: 0, md: 1 },
-                  mt: 3,
-                  mb: { xs: 1, md: 0 },
-                }}>
-                Descargar App
-              </Button>
-              <Button
-                variant="outlined"
-                sx={{
-                  borderColor: "#fff",
-                  color: "white",
-                  px: 4,
-                  py: 1.5,
-                  borderRadius: 3,
-                  mt: 3,
-                }}>
-                Registrarme
-              </Button>
+                    fontWeight: "bold",
+                    "&:hover": {
+                      bgcolor: "#35722b",
+                      color: "#fff",
+                    },
+                    px: 4,
+                    py: 1.5,
+                    borderRadius: 3,
+                    width: { xs: "100%", md: "auto" }, // full en móvil, auto en desktop
+                  }}>
+                  Descargar App
+                </Button>
+
+                <Button
+                  variant="outlined"
+                  sx={{
+                    borderColor: "#fff",
+                    color: "white",
+                    px: 4,
+                    py: 1.5,
+                    borderRadius: 3,
+                    width: { xs: "100%", md: "auto" }, // full en móvil, auto en desktop
+                  }}>
+                  Registrarme
+                </Button>
+              </Container>
             </Container>
             <CardMedia
               component="img"
@@ -112,7 +118,6 @@ const WelcomePage = () => {
         </Box>
         <NotificationsSection />
       </Box>
-
       {/* FEATURES */}
       <Container maxWidth="lg" sx={{ py: 10 }}>
         <Typography
@@ -190,13 +195,7 @@ const WelcomePage = () => {
           Crear Cuenta Gratis
         </Button>
       </Box>
-      {/* FOOTER */}
-      <Box
-        sx={{ bgcolor: "#103E68", color: "white", py: 3, textAlign: "center" }}>
-        <Typography variant="body2">
-          © {new Date().getFullYear()} AgroVets. Todos los derechos reservados.
-        </Typography>
-      </Box>
+
     </Box>
   );
 };

@@ -1,26 +1,28 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Layout from "./components/layout/Layout";
-import DashboardPage from "./pages/Dashboard";
-import UsersPage from "./pages/Users";
-import AdsPage from "./pages/Ads";
-import ReportsPage from "./pages/Reports";
-import WelcomePage from "./pages/HomePage/Welcome"; // tu landing
+import Navbar from "./navigation/nav";
+
+// Páginas
+import HomePage from "./pages/Inicio";
+import ComunidadPage from "./pages/Comunidad";
+import TendenciasPage from "./pages/Tendencias";
+import QuienesSomos from "./pages/AcercaDe";
+import LoginPage from "./pages/auth/Login";
+import RegisterPage from "./pages/auth/Register";
+import Footer from "./pages/Fotter";
 
 function App() {
   return (
     <Router>
+      <Navbar />
       <Routes>
-        {/* Landing como home */}
-        <Route path="/" element={<WelcomePage />} />
-
-        {/* Dashboard */}
-        <Route path="/dashboard" element={<Layout />}>
-          <Route index element={<DashboardPage />} />
-          <Route path="users" element={<UsersPage />} />
-          <Route path="ads" element={<AdsPage />} />
-          <Route path="reports" element={<ReportsPage />} />
-        </Route>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/comunidad" element={<ComunidadPage />} />
+        <Route path="/tendencias" element={<TendenciasPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/acerca-de" element={<QuienesSomos />} />
       </Routes>
+      <Footer />
     </Router>
   );
 }

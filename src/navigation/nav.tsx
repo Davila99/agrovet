@@ -11,53 +11,77 @@ import ListItem from "@mui/material/ListItem";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemText from "@mui/material/ListItemText";
 import logo from "../assets/logo.svg";
-
 import { Link } from "react-router-dom";
+
 const Navbar = () => {
   const [open, setOpen] = useState(false);
 
-  const toggleDrawer = (state:any) => () => {
+  const toggleDrawer = (state: any) => () => {
     setOpen(state);
   };
 
-  const menuItems = ["Inicio", "Sobre Nosotros", "Comunidad", "Contacto"];
+  // Menú principal
+  const menuItems = [
+    { text: "Inicio", path: "/" },
+    { text: "Comunidad", path: "/comunidad" },
+    { text: "Tendencias", path: "/tendencias" },
+    { text: "Conocenos", path: "/acerca-de" },
+  ];
 
   return (
     <>
-      <AppBar position="static" sx={{ bgcolor: "#fff", borderRadius: 3 }}>
+      <AppBar position="static" sx={{ bgcolor: "#fff" }}>
         <Toolbar sx={{ justifyContent: "space-between" }}>
           {/* LOGO */}
-          <img src={logo} alt="Logo AgroVets" width="80" />
+          <Link to="/">
+            <img src={logo} alt="Logo AgroVets" width="80" />
+          </Link>
 
           {/* LINKS (desktop) */}
           <Box
             sx={{
-              display: { xs: "none", md: "flex" }, // oculta en móvil
+              display: { xs: "none", md: "flex" },
               gap: 3,
               color: "#103e68",
             }}>
             {menuItems.map((item) => (
-              <Button key={item} color="inherit">
-                {item}
+              <Button
+                key={item.text}
+                component={Link}
+                to={item.path}
+                sx={{ color: "#103e68" }}>
+                {item.text}
               </Button>
             ))}
           </Box>
 
           {/* CTA (desktop) */}
-          <Button
-            component={Link}
-            to="/dashboard"
-            variant="contained"
-            sx={{
-              display: { xs: "none", md: "inline-flex" },
-              bgcolor: "#103E68",
-              color: "#fff",
-              "&:hover": { bgcolor: "#35722b", color: "#fff" },
-              fontWeight: "bold",
-              borderRadius: 3,
-            }}>
-            Dashboard
-          </Button>
+          <Box sx={{ display: { xs: "none", md: "flex" }, gap: 2 }}>
+            <Button
+              component={Link}
+              to="/login"
+              variant="outlined"
+              sx={{
+                borderColor: "#103E68",
+                color: "#103E68",
+                borderRadius: 3,
+              }}>
+              Login
+            </Button>
+            <Button
+              component={Link}
+              to="/register"
+              variant="contained"
+              sx={{
+                bgcolor: "#103E68",
+                color: "#fff",
+                "&:hover": { bgcolor: "#35722b", color: "#fff" },
+                fontWeight: "bold",
+                borderRadius: 3,
+              }}>
+              Registrarme
+            </Button>
+          </Box>
 
           {/* Hamburguesa (solo en móvil) */}
           <IconButton
@@ -75,17 +99,33 @@ const Navbar = () => {
           role="presentation"
           onClick={toggleDrawer(false)}>
           <List>
-            {menuItems.map((text) => (
-              <ListItem key={text} disablePadding>
-                <ListItemButton>
-                  <ListItemText primary={text} />
+            {menuItems.map((item) => (
+              <ListItem key={item.text} disablePadding>
+                <ListItemButton component={Link} to={item.path}>
+                  <ListItemText primary={item.text} />
                 </ListItemButton>
               </ListItem>
             ))}
+            {/* Login / Register en móvil */}
             <ListItem>
               <Button
                 component={Link}
-                to="/dashboard"
+                to="/login"
+                variant="outlined"
+                sx={{
+                  borderColor: "#103E68",
+                  color: "#103E68",
+                  width: "100%",
+                  borderRadius: 2,
+                  mb: 1,
+                }}>
+                Login
+              </Button>
+            </ListItem>
+            <ListItem>
+              <Button
+                component={Link}
+                to="/register"
                 variant="contained"
                 sx={{
                   bgcolor: "#103E68",
@@ -95,7 +135,7 @@ const Navbar = () => {
                   width: "100%",
                   borderRadius: 2,
                 }}>
-                Ir a Dashboard
+                Registrarme
               </Button>
             </ListItem>
           </List>
