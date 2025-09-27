@@ -1,32 +1,45 @@
-import React from "react";
-import {
-  Container,
-  Grid,
-  Typography,
-  Button,
-  Box,
-  Card,
-  CardContent,
-  CardMedia,
-} from "@mui/material";
+import React, { useState, useEffect } from "react";
+import { Container, Typography, Button, Box, CardMedia } from "@mui/material";
+import { motion } from "framer-motion";
 
-import banner from "../assets/banner.png";
+import banner1 from "../assets/banner1.png";
+import banner2 from "../assets/banner2.svg";
+import banner3 from "../assets/banner3.png";
 import Movil from "../assets/movil.svg";
 
 import NotificationsSection from "./HomePage/NotificationsSection";
+import LandingAgrovets from "./HomePage/LandingAgrovets";
+
+const fadeInUp = {
+  hidden: { opacity: 0, y: 50 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.8 } },
+};
+
 const WelcomePage = () => {
+  const banners = [banner1, banner2, banner3];
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % banners.length);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [banners.length]);
+
   return (
     <Box sx={{ bgcolor: "#f8f9fa" }}>
+      {/* Hero / Banner con carrusel */}
       <Box
         sx={{
           position: "relative",
           color: "white",
           padding: "10px",
-          backgroundImage: `url(${banner})`, // ✅ usando import
+          backgroundImage: `url(${banners[currentIndex]})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
           minHeight: "100vh",
+          transition: "background-image 1s ease-in-out",
         }}>
         <Box
           sx={{
@@ -56,147 +69,134 @@ const WelcomePage = () => {
                 textAlign: { xs: "center", md: "left" },
                 mb: { xs: 5, md: 0 },
               }}>
-              <Typography variant="h3" fontWeight="bold">
-                Bienvenido a AgroVets
-              </Typography>
-              <Typography variant="h6" sx={{ mt: 2 }}>
-                La primera comunidad de agrónomos y veterinarios,
-              </Typography>
-              <Typography variant="h6">
-                para resolver problemas reales de campo.
-              </Typography>
-              <Container
-                sx={{
-                  display: "flex",
-                  flexDirection: { xs: "column", md: "row" }, // columna en móvil, fila en escritorio
-                  alignItems: { xs: "center", md: "flex-start" },
-                  gap: 2,
-                  mt: 4,
-                }}>
-                <Button
-                  variant="contained"
-                  sx={{
-                    bgcolor: "#103E68",
-                    color: "#fff",
-                    fontWeight: "bold",
-                    "&:hover": {
-                      bgcolor: "#35722b",
-                      color: "#fff",
-                    },
-                    px: 4,
-                    py: 1.5,
-                    borderRadius: 3,
-                    width: { xs: "100%", md: "auto" }, // full en móvil, auto en desktop
-                  }}>
-                  Descargar App
-                </Button>
+              <motion.div
+                initial="hidden"
+                animate="visible"
+                variants={fadeInUp}>
+                <Typography variant="h3" fontWeight="bold">
+                  Bienvenido a AgroVets
+                </Typography>
+              </motion.div>
 
-                <Button
-                  variant="outlined"
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3, duration: 0.8 }}>
+                <Typography variant="h6" sx={{ mt: 2 }}>
+                  La primera comunidad de agrónomos y veterinarios,
+                </Typography>
+                <Typography variant="h6">
+                  para resolver problemas reales de campo.
+                </Typography>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6, duration: 0.8 }}>
+                <Container
                   sx={{
-                    borderColor: "#fff",
-                    color: "white",
-                    px: 4,
-                    py: 1.5,
-                    borderRadius: 3,
-                    width: { xs: "100%", md: "auto" }, // full en móvil, auto en desktop
+                    display: "flex",
+                    flexDirection: { xs: "column", md: "row" },
+                    alignItems: { xs: "center", md: "flex-start" },
+                    gap: 2,
+                    mt: 4,
                   }}>
-                  Registrarme
-                </Button>
-              </Container>
+                  <Button
+                    variant="contained"
+                    sx={{
+                      bgcolor: "#103E68",
+                      color: "#fff",
+                      fontWeight: "bold",
+                      "&:hover": { bgcolor: "#35722b", color: "#fff" },
+                      px: 4,
+                      py: 1.5,
+                      borderRadius: 3,
+                      width: { xs: "100%", md: "auto" },
+                    }}>
+                    Iniciar Secion
+                  </Button>
+
+                  <Button
+                    variant="outlined"
+                    sx={{
+                      borderColor: "#fff",
+                      color: "white",
+                      px: 4,
+                      py: 1.5,
+                      borderRadius: 3,
+                      width: { xs: "100%", md: "auto" },
+                    }}>
+                    Registrarme
+                  </Button>
+                </Container>
+              </motion.div>
             </Container>
-            <CardMedia
-              component="img"
-              image={Movil}
-              alt="imagen"
-              sx={{
-                display: { xs: "none", md: "block" },
-                width: 500,
-              }}
-            />
+
+            <motion.div
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.8, duration: 0.8 }}>
+              <CardMedia
+                component="img"
+                image={Movil}
+                alt="imagen"
+                sx={{
+                  display: { xs: "none", md: "block" },
+                  width: 500,
+                }}
+              />
+            </motion.div>
           </Container>
         </Box>
         <NotificationsSection />
       </Box>
+
       {/* FEATURES */}
       <Container maxWidth="lg" sx={{ py: 10 }}>
-        <Typography
-          variant="h4"
-          textAlign="center"
-          fontWeight="bold"
-          sx={{ color: "#103E68", mb: 6 }}>
-          ¿Por qué unirte a AgroVets?
-        </Typography>
-
-        <Grid container spacing={4}>
-          {[
-            {
-              title: "Comparte problemas y soluciones",
-              desc: "Publica tus dudas sobre cultivos, ganado y medicina veterinaria, y recibe retroalimentación de expertos.",
-            },
-            {
-              title: "Conecta con profesionales",
-              desc: "Crea tu perfil y colabora con otros colegas en la comunidad.",
-            },
-            {
-              title: "Accede a conocimiento validado",
-              desc: "Encuentra respuestas rápidas y confiables de personas con experiencia en el campo.",
-            },
-          ].map((feature, i) => (
-            <Grid item xs={12} md={4} key={i}>
-              <Card
-                sx={{
-                  height: "100%",
-                  borderRadius: 3,
-                  boxShadow: 3,
-                  border: "1px solid #eaeaea",
-                }}>
-                <CardContent sx={{ textAlign: "center" }}>
-                  <Typography
-                    variant="h6"
-                    fontWeight="bold"
-                    sx={{ color: "#103E68", mb: 2 }}>
-                    {feature.title}
-                  </Typography>
-                  <Typography variant="body1" color="text.secondary">
-                    {feature.desc}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          variants={fadeInUp}>
+          <Typography
+            variant="h4"
+            textAlign="center"
+            fontWeight="bold"
+            sx={{ color: "#103E68", mb: 6 }}>
+            ¿Por qué unirte a AgroVets?
+          </Typography>
+        </motion.div>
+        <LandingAgrovets />
       </Container>
-      {/* CALL TO ACTION */}
-      <Box
-        sx={{
-          bgcolor: "#35722b",
-          py: 8,
-          textAlign: "center",
-          color: "#fff",
-        }}>
-        <Typography variant="h4" fontWeight="bold" gutterBottom>
-          Únete hoy a la comunidad AgroVets
-        </Typography>
-        <Typography variant="h6" gutterBottom>
-          Comparte, aprende y haz crecer tu red profesional.
-        </Typography>
-        <Button
-          variant="contained"
-          sx={{
-            bgcolor: "#103E68",
-            color: "white",
-            fontWeight: "bold",
-            px: 4,
-            py: 1.5,
-            borderRadius: 3,
-            mt: 3,
-          }}>
-          Crear Cuenta Gratis
-        </Button>
-      </Box>
 
+      {/* CALL TO ACTION */}
+      <motion.div
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true }}
+        variants={fadeInUp}>
+        <Box
+          sx={{
+            bgcolor: "#35722b",
+            py: 8,
+            textAlign: "center",
+            color: "#fff",
+          }}>
+          <Typography variant="h4" fontWeight="bold" gutterBottom>
+            Mejora la salud de tu ganado y cultivos
+          </Typography>
+          <Typography variant="body1" sx={{ mb: 3 }}>
+            Únete a la revolución agropecuaria de Nicaragua con Agrovets y
+            potencia tu producción.
+          </Typography>
+          <Button variant="contained" color="primary" size="large">
+            Comienza ahora
+          </Button>
+        </Box>
+      </motion.div>
     </Box>
   );
 };
- export default WelcomePage
+
+export default WelcomePage;
