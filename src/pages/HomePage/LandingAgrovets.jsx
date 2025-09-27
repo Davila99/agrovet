@@ -1,11 +1,10 @@
 import React from "react";
 import { Box, Typography, Divider, Button } from "@mui/material";
 import { motion } from "framer-motion";
-import ImgOne from "../../assets/img/img1.svg"
-import ImgTwo from "../../assets/img/img2.jpg"
-import ImgThree from "../../assets/img/img3.svg"
-import ImgFour from "../../assets/img/img4.jpeg"
-import ImgFive from "../../assets/img/img5.svg"
+import ImgOne from "../../assets/image/img1.webp";
+import ImgThree from "../../assets/image/img3.webp";
+import ImgFour from "../../assets/image/img4.webp";
+import ImgFive from "../../assets/image/img5.webp";
 
 // Animación básica para secciones
 const fadeInUp = {

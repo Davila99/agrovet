@@ -2,10 +2,11 @@ import React, { useState, useEffect } from "react";
 import { Container, Typography, Button, Box, CardMedia } from "@mui/material";
 import { motion } from "framer-motion";
 
-import banner1 from "../assets/banner1.png";
-import banner2 from "../assets/banner2.svg";
-import banner3 from "../assets/banner3.png";
-import Movil from "../assets/movil.svg";
+import banner1 from "../assets/image/banner1.webp";
+import banner2 from "../assets/image/banner2.webp";
+
+import banner3 from "../assets/image/banner3.webp";
+import Movil from "../assets/image/movil.webp";
 
 import NotificationsSection from "./HomePage/NotificationsSection";
 import LandingAgrovets from "./HomePage/LandingAgrovets";
