@@ -67,11 +67,13 @@ const LandingAgrovetsAnim = () => {
             src={ImgOne}
             alt="camion"
             sx={{
-              width: 500,
+              width: "100%",
+              maxWidth: 400,
+              height: "auto",
               borderRadius: 3,
               transition: "transform 0.4s ease",
               "&:hover": {
-                transform: "scale(1.1)",
+                transform: "scale(1.05)",
               },
             }}
           />
@@ -102,7 +104,7 @@ const LandingAgrovetsAnim = () => {
           <Box
             component="img"
             src={ImgThree}
-            alt="camion"
+            alt="banner"
             sx={{
               width: "100%",
               height: 200,
@@ -142,7 +144,7 @@ const LandingAgrovetsAnim = () => {
           <Box
             component="img"
             src={ImgFour}
-            alt="camion"
+            alt="Campecino"
             sx={{
               width: { xs: "100%", md: "40%" },
               height: { xs: 300, md: 310 },
@@ -224,7 +226,7 @@ const LandingAgrovetsAnim = () => {
           <Box
             component="img"
             src={ImgFive}
-            alt="camion"
+            alt="banner1"
             sx={{
               width: "100%",
               height: 200,
@@ -240,26 +242,6 @@ const LandingAgrovetsAnim = () => {
       </motion.div>
 
       <Divider sx={{ mb: 5 }} />
-
-      {/* Sección 5: CTA final */}
-      <motion.div
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true }}
-        variants={fadeInUp}>
-        <Box sx={{ textAlign: "center", mb: 5 }}>
-          <Typography variant="h4" fontWeight="bold" gutterBottom>
-            Mejora la salud de tu ganado y cultivos
-          </Typography>
-          <Typography variant="body1" sx={{ mb: 3 }}>
-            Únete a la revolución agropecuaria de Nicaragua con Agrovets y
-            potencia tu producción.
-          </Typography>
-          <Button variant="contained" color="primary" size="large">
-            Comienza ahora
-          </Button>
-        </Box>
-      </motion.div>
     </Box>
   );
 };
