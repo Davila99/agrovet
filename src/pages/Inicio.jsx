@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Container, Typography, Button, Box, CardMedia } from "@mui/material";
 import { motion } from "framer-motion";
-
+import HelloTest from "../pages/HomePage/HelloWorld";
 import banner1 from "../assets/image/banner1.webp";
 import banner2 from "../assets/image/banner2.webp";
 
@@ -115,7 +115,7 @@ const WelcomePage = () => {
                       borderRadius: 3,
                       width: { xs: "100%", md: "auto" },
                     }}>
-                    Iniciar Secion
+                    Iniciar sesion
                   </Button>
 
                   <Button
@@ -196,6 +196,7 @@ const WelcomePage = () => {
           </Button>
         </Box>
       </motion.div>
+      <HelloTest />
     </Box>
   );
 };

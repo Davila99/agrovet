@@ -1,8 +1,56 @@
-import React from "react";
-import { Box, TextField, Button, Typography, Paper } from "@mui/material";
-import { Link } from "react-router-dom";
+import React, { useState } from "react";
+import {
+  Box,
+  TextField,
+  Button,
+  Typography,
+  Paper,
+  Alert,
+  CircularProgress,
+} from "@mui/material";
+import { Link, useNavigate } from "react-router-dom";
+import { api } from "../../services/api";
 
 const RegisterPage = () => {
+  const navigate = useNavigate();
+  const [form, setForm] = useState({
+    phone_number: "",
+    password: "",
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+
+    if (!form.phone_number || !form.password) {
+      setError("Todos los campos son obligatorios");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await api.register({
+        phone_number: form.phone_number,
+        password: form.password,
+      });
+
+      localStorage.setItem("token", res.token);
+      console.log("Usuario registrado:", res.user);
+      navigate("/login");
+    } catch (err) {
+      setError(err.message || "Error al registrarse");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Box
       sx={{
@@ -17,7 +65,7 @@ const RegisterPage = () => {
         elevation={4}
         sx={{
           p: 4,
-          maxWidth: 450,
+          maxWidth: 400,
           width: "100%",
           borderRadius: 3,
           textAlign: "center",
@@ -25,42 +73,51 @@ const RegisterPage = () => {
         <Typography variant="h5" fontWeight="bold" gutterBottom color="#103E68">
           Crear Cuenta
         </Typography>
-        <Typography variant="body2" sx={{ mb: 3 }}>
-          Únete a la comunidad <strong>AgroVets</strong>
-        </Typography>
 
-        <TextField fullWidth label="Nombre completo" margin="normal" />
-        <TextField
-          fullWidth
-          label="Correo electrónico"
-          type="email"
-          margin="normal"
-        />
-        <TextField
-          fullWidth
-          label="Contraseña"
-          type="password"
-          margin="normal"
-        />
-        <TextField
-          fullWidth
-          label="Confirmar contraseña"
-          type="password"
-          margin="normal"
-        />
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
 
-        <Button
-          fullWidth
-          variant="contained"
-          sx={{
-            mt: 3,
-            bgcolor: "#103E68",
-            "&:hover": { bgcolor: "#35722b" },
-            borderRadius: 3,
-            fontWeight: "bold",
-          }}>
-          Registrarme
-        </Button>
+        <form onSubmit={handleSubmit}>
+          <TextField
+            fullWidth
+            label="Número de teléfono"
+            margin="normal"
+            name="phone_number"
+            value={form.phone_number}
+            onChange={handleChange}
+          />
+          <TextField
+            fullWidth
+            label="Contraseña"
+            type="password"
+            margin="normal"
+            name="password"
+            value={form.password}
+            onChange={handleChange}
+          />
+
+          <Button
+            type="submit"
+            fullWidth
+            variant="contained"
+            sx={{
+              mt: 3,
+              bgcolor: "#103E68",
+              "&:hover": { bgcolor: "#35722b" },
+              borderRadius: 3,
+              fontWeight: "bold",
+            }}
+            disabled={loading}>
+            {loading ? (
+              <CircularProgress size={24} sx={{ color: "#fff" }} />
+            ) : (
+              "Registrarme"
+            )}
+          </Button>
+        </form>
 
         <Typography variant="body2" sx={{ mt: 2 }}>
           ¿Ya tienes cuenta?{" "}
