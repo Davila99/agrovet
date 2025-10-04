@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Container, Typography, Button, Box, CardMedia } from "@mui/material";
 import { motion } from "framer-motion";
-import HelloTest from "../pages/HomePage/HelloWorld";
+import { useNavigate } from "react-router-dom";
+
 import banner1 from "../assets/image/banner1.webp";
 import banner2 from "../assets/image/banner2.webp";
-
 import banner3 from "../assets/image/banner3.webp";
 import Movil from "../assets/image/movil.webp";
-
 import NotificationsSection from "./HomePage/NotificationsSection";
 import LandingAgrovets from "./HomePage/LandingAgrovets";
 
@@ -19,6 +18,13 @@ const fadeInUp = {
 const WelcomePage = () => {
   const banners = [banner1, banner2, banner3];
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) setIsLoggedIn(true);
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -27,9 +33,12 @@ const WelcomePage = () => {
     return () => clearInterval(interval);
   }, [banners.length]);
 
+  const handleExplore = () => {
+    navigate("/comunidad/explorar");
+  };
+
   return (
     <Box sx={{ bgcolor: "#f8f9fa" }}>
-      {/* Hero / Banner con carrusel */}
       <Box
         sx={{
           position: "relative",
@@ -53,7 +62,6 @@ const WelcomePage = () => {
           }}
         />
 
-        {/* Contenido encima */}
         <Box sx={{ position: "relative", zIndex: 2 }}>
           <Container
             sx={{
@@ -103,33 +111,55 @@ const WelcomePage = () => {
                     gap: 2,
                     mt: 4,
                   }}>
-                  <Button
-                    variant="contained"
-                    sx={{
-                      bgcolor: "#103E68",
-                      color: "#fff",
-                      fontWeight: "bold",
-                      "&:hover": { bgcolor: "#35722b", color: "#fff" },
-                      px: 4,
-                      py: 1.5,
-                      borderRadius: 3,
-                      width: { xs: "100%", md: "auto" },
-                    }}>
-                    Iniciar sesion
-                  </Button>
+                  {!isLoggedIn ? (
+                    <>
+                      <Button
+                        variant="contained"
+                        sx={{
+                          bgcolor: "#103E68",
+                          color: "#fff",
+                          fontWeight: "bold",
+                          "&:hover": { bgcolor: "#35722b", color: "#fff" },
+                          px: 4,
+                          py: 1.5,
+                          borderRadius: 3,
+                          width: { xs: "100%", md: "auto" },
+                        }}
+                        onClick={() => navigate("/login")}>
+                        Iniciar sesión
+                      </Button>
 
-                  <Button
-                    variant="outlined"
-                    sx={{
-                      borderColor: "#fff",
-                      color: "white",
-                      px: 4,
-                      py: 1.5,
-                      borderRadius: 3,
-                      width: { xs: "100%", md: "auto" },
-                    }}>
-                    Registrarme
-                  </Button>
+                      <Button
+                        variant="outlined"
+                        sx={{
+                          borderColor: "#fff",
+                          color: "white",
+                          px: 4,
+                          py: 1.5,
+                          borderRadius: 3,
+                          width: { xs: "100%", md: "auto" },
+                        }}
+                        onClick={() => navigate("/register")}>
+                        Registrarme
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      variant="contained"
+                      sx={{
+                        bgcolor: "#103E68",
+                        color: "#fff",
+                        fontWeight: "bold",
+                        "&:hover": { bgcolor: "#35722b", color: "#fff" },
+                        px: 4,
+                        py: 1.5,
+                        borderRadius: 3,
+                        width: { xs: "100%", md: "auto" },
+                      }}
+                      onClick={handleExplore}>
+                      Explorar
+                    </Button>
+                  )}
                 </Container>
               </motion.div>
             </Container>
@@ -153,7 +183,6 @@ const WelcomePage = () => {
         <NotificationsSection />
       </Box>
 
-      {/* FEATURES */}
       <Container maxWidth="lg" sx={{ py: 10 }}>
         <motion.div
           initial="hidden"
@@ -171,7 +200,6 @@ const WelcomePage = () => {
         <LandingAgrovets />
       </Container>
 
-      {/* CALL TO ACTION */}
       <motion.div
         initial="hidden"
         whileInView="visible"
@@ -191,12 +219,17 @@ const WelcomePage = () => {
             Únete a la revolución agropecuaria de Nicaragua con Agrovets y
             potencia tu producción.
           </Typography>
-          <Button variant="contained" color="primary" size="large">
-            Comienza ahora
-          </Button>
+          {isLoggedIn && (
+            <Button
+              variant="contained"
+              color="primary"
+              size="large"
+              onClick={handleExplore}>
+              Explorar
+            </Button>
+          )}
         </Box>
       </motion.div>
-      <HelloTest />
     </Box>
   );
 };

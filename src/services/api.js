@@ -1,6 +1,5 @@
-const BASE_URL = "http://127.0.0.1:8000/api";
+const BASE_URL = "https://agrovet.pythonanywhere.com/api";
 
-// Función genérica
 async function request(endpoint, options = {}) {
   try {
     const res = await fetch(`${BASE_URL}${endpoint}`, {
@@ -23,11 +22,7 @@ async function request(endpoint, options = {}) {
   }
 }
 
-// Métodos específicos
 export const api = {
-  // Hello (GET)
-  getHello: () => request("/auth/hello/"),
-
   // Auth
   register: (data) =>
     request("/auth/register/", {
@@ -38,7 +33,8 @@ export const api = {
   login: (data) =>
     request("/auth/login/", {
       method: "POST",
-      body: JSON.stringify(data),
+      body: JSON.stringify(data)
+      
     }),
 
   // CRUD genérico (ajusta a tu modelo/items real)
