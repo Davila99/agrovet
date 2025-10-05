@@ -9,7 +9,7 @@ import {
   CircularProgress,
 } from "@mui/material";
 import { Link, useNavigate } from "react-router-dom";
-import { api } from "../../services/api";
+import { authAPI } from "../../services/endpoints";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -36,14 +36,16 @@ const LoginPage = () => {
 
     setLoading(true);
     try {
-      const res = await api.login({
+      // 🔑 Llamada al endpoint usando authAPI
+      const res = await authAPI.login({
         phone_number: form.phone_number,
         password: form.password,
       });
 
+      // ✅ Guardar token
       localStorage.setItem("token", res.token);
-      console.log("Usuario logueado:", res.user);
 
+      console.log("Usuario logueado:", res.user);
       navigate("/");
     } catch (err) {
       setError(err.message || "Credenciales inválidas");

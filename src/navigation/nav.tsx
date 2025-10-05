@@ -13,16 +13,21 @@ import ListItemText from "@mui/material/ListItemText";
 import Collapse from "@mui/material/Collapse";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
+import Avatar from "@mui/material/Avatar";
+import Divider from "@mui/material/Divider";
 import logo from "../assets/image/logo.webp";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import ExpandLess from "@mui/icons-material/ExpandLess";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 
 const Navbar = () => {
   const [open, setOpen] = useState(false);
-
-  // Hover menú Comunidad (desktop)
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [comunidadOpen, setComunidadOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const user = JSON.parse(localStorage.getItem("user") || "null");
+
   const handleOpenMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
@@ -30,14 +35,19 @@ const Navbar = () => {
     setAnchorEl(null);
   };
 
-  // Submenú Comunidad en móvil
-  const [comunidadOpen, setComunidadOpen] = useState(false);
   const toggleComunidad = () => {
     setComunidadOpen(!comunidadOpen);
   };
 
   const toggleDrawer = (state: boolean) => () => {
     setOpen(state);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+    navigate("/login");
+    window.location.reload();
   };
 
   const menuItems = [
@@ -114,32 +124,55 @@ const Navbar = () => {
             )}
           </Box>
 
-          {/* CTA (desktop) */}
+          {/* CTA o Usuario (desktop) */}
           <Box sx={{ display: { xs: "none", md: "flex" }, gap: 2 }}>
-            <Button
-              component={Link}
-              to="/login"
-              variant="outlined"
-              sx={{
-                borderColor: "#103E68",
-                color: "#103E68",
-                borderRadius: 3,
-              }}>
-              Login
-            </Button>
-            <Button
-              component={Link}
-              to="/register"
-              variant="contained"
-              sx={{
-                bgcolor: "#103E68",
-                color: "#fff",
-                "&:hover": { bgcolor: "#35722b", color: "#fff" },
-                fontWeight: "bold",
-                borderRadius: 3,
-              }}>
-              Registrarme
-            </Button>
+            {!user ? (
+              <>
+                <Button
+                  component={Link}
+                  to="/login"
+                  variant="outlined"
+                  sx={{
+                    borderColor: "#103E68",
+                    color: "#103E68",
+                    borderRadius: 3,
+                  }}>
+                  Login
+                </Button>
+                <Button
+                  component={Link}
+                  to="/register"
+                  variant="contained"
+                  sx={{
+                    bgcolor: "#103E68",
+                    color: "#fff",
+                    "&:hover": { bgcolor: "#35722b", color: "#fff" },
+                    fontWeight: "bold",
+                    borderRadius: 3,
+                  }}>
+                  Registrarme
+                </Button>
+              </>
+            ) : (
+              <>
+                <IconButton onClick={handleOpenMenu}>
+                  <Avatar sx={{ bgcolor: "#103E68" }}>
+                    {user?.name?.[0]?.toUpperCase() || "U"}
+                  </Avatar>
+                </IconButton>
+                <Menu
+                  anchorEl={anchorEl}
+                  open={Boolean(anchorEl)}
+                  onClose={handleCloseMenu}>
+                  <MenuItem disabled>{user.name}</MenuItem>
+                  <Divider />
+                  <MenuItem component={Link} to="/perfil">
+                    Mi perfil
+                  </MenuItem>
+                  <MenuItem onClick={handleLogout}>Cerrar sesión</MenuItem>
+                </Menu>
+              </>
+            )}
           </Box>
 
           {/* Hamburguesa (solo en móvil) */}
@@ -185,38 +218,55 @@ const Navbar = () => {
               )
             )}
 
-            {/* Login / Register en móvil */}
-            <ListItem>
-              <Button
-                component={Link}
-                to="/login"
-                variant="outlined"
-                sx={{
-                  borderColor: "#103E68",
-                  color: "#103E68",
-                  width: "100%",
-                  borderRadius: 2,
-                  mb: 1,
-                }}>
-                Login
-              </Button>
-            </ListItem>
-            <ListItem>
-              <Button
-                component={Link}
-                to="/register"
-                variant="contained"
-                sx={{
-                  bgcolor: "#103E68",
-                  color: "#fff",
-                  "&:hover": { bgcolor: "#35722b", color: "#fff" },
-                  fontWeight: "bold",
-                  width: "100%",
-                  borderRadius: 2,
-                }}>
-                Registrarme
-              </Button>
-            </ListItem>
+            {/* Usuario o Login/Register en móvil */}
+            {!user ? (
+              <>
+                <ListItem>
+                  <Button
+                    component={Link}
+                    to="/login"
+                    variant="outlined"
+                    sx={{
+                      borderColor: "#103E68",
+                      color: "#103E68",
+                      width: "100%",
+                      borderRadius: 2,
+                      mb: 1,
+                    }}>
+                    Login
+                  </Button>
+                </ListItem>
+                <ListItem>
+                  <Button
+                    component={Link}
+                    to="/register"
+                    variant="contained"
+                    sx={{
+                      bgcolor: "#103E68",
+                      color: "#fff",
+                      "&:hover": { bgcolor: "#35722b", color: "#fff" },
+                      fontWeight: "bold",
+                      width: "100%",
+                      borderRadius: 2,
+                    }}>
+                    Registrarme
+                  </Button>
+                </ListItem>
+              </>
+            ) : (
+              <>
+                <Divider />
+                <ListItem>
+                  <ListItemText primary={`Hola, ${user.name}`} />
+                </ListItem>
+                <ListItemButton component={Link} to="/perfil">
+                  <ListItemText primary="Mi perfil" />
+                </ListItemButton>
+                <ListItemButton onClick={handleLogout}>
+                  <ListItemText primary="Cerrar sesión" />
+                </ListItemButton>
+              </>
+            )}
           </List>
         </Box>
       </Drawer>
