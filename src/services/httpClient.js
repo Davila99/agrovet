@@ -1,21 +1,27 @@
 const BASE_URL = "https://agrovet.pythonanywhere.com/api";
 
+/**
+ * Realiza una petición HTTP a la API.
+ * @param {string} endpoint - Ruta del endpoint.
+ * @param {object} options - Opciones de la petición fetch.
+ * @returns {Promise<any>} - Respuesta en formato JSON.
+ */
 async function request(endpoint, options = {}) {
+  const { headers, ...rest } = options;
   try {
     const res = await fetch(`${BASE_URL}${endpoint}`, {
       headers: {
         "Content-Type": "application/json",
-        ...options.headers,
+        ...headers,
       },
-      ...options,
+      ...rest,
     });
 
+    const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      const errorData = await res.json().catch(() => ({}));
-      throw new Error(errorData.detail || "Error en la petición");
+      throw new Error(data.detail || "Error en la petición");
     }
-
-    return await res.json();
+    return data;
   } catch (err) {
     console.error("❌ API error:", err.message);
     throw err;
@@ -23,7 +29,6 @@ async function request(endpoint, options = {}) {
 }
 
 export const api = {
-  // Auth
   register: (data) =>
     request("/auth/register/", {
       method: "POST",
@@ -33,16 +38,30 @@ export const api = {
   login: (data) =>
     request("/auth/login/", {
       method: "POST",
-      body: JSON.stringify(data)
-      
+      body: JSON.stringify(data),
     }),
 
-  // CRUD genérico (ajusta a tu modelo/items real)
-  getItems: () => request("/items/"),
-  getItem: (id) => request(`/items/${id}/`),
-  createItem: (data) =>
-    request("/items/", { method: "POST", body: JSON.stringify(data) }),
-  updateItem: (id, data) =>
-    request(`/items/${id}/`, { method: "PUT", body: JSON.stringify(data) }),
-  deleteItem: (id) => request(`/items/${id}/`, { method: "DELETE" }),
+  getProfile: (token) =>
+    request("/auth/profile/", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }),
 };
+
+
+//Cliente HTTP genérico.
+
+const httpClient = (endpoint, options = {}) => {
+  const opts = { ...options };
+  if (
+    opts.body &&
+    typeof opts.body === "object" &&
+    !(opts.body instanceof FormData)
+  ) {
+    opts.body = JSON.stringify(opts.body);
+  }
+  return request(endpoint, opts);
+};
+
+export default httpClient;

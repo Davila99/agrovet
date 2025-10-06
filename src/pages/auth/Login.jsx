@@ -36,13 +36,11 @@ const LoginPage = () => {
 
     setLoading(true);
     try {
-      // 🔑 Llamada al endpoint usando authAPI
       const res = await authAPI.login({
         phone_number: form.phone_number,
         password: form.password,
       });
 
-      // ✅ Guardar token
       localStorage.setItem("token", res.token);
 
       console.log("Usuario logueado:", res.user);

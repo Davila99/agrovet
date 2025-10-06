@@ -9,7 +9,7 @@ import {
   CircularProgress,
 } from "@mui/material";
 import { Link, useNavigate } from "react-router-dom";
-import { api } from "../../services/api";
+import { authAPI } from "../../services/endpoints";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -36,7 +36,7 @@ const RegisterPage = () => {
 
     setLoading(true);
     try {
-      const res = await api.register({
+      const res = await authAPI.register({
         phone_number: form.phone_number,
         password: form.password,
       });
