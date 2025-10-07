@@ -14,6 +14,7 @@ import { authAPI } from "../../services/endpoints";
 const RegisterPage = () => {
   const navigate = useNavigate();
   const [form, setForm] = useState({
+    full_name: "",
     phone_number: "",
     password: "",
   });
@@ -29,7 +30,7 @@ const RegisterPage = () => {
     e.preventDefault();
     setError("");
 
-    if (!form.phone_number || !form.password) {
+    if (!form.full_name || !form.phone_number || !form.password) {
       setError("Todos los campos son obligatorios");
       return;
     }
@@ -37,6 +38,7 @@ const RegisterPage = () => {
     setLoading(true);
     try {
       const res = await authAPI.register({
+        full_name: form.full_name,
         phone_number: form.phone_number,
         password: form.password,
       });
@@ -81,6 +83,14 @@ const RegisterPage = () => {
         )}
 
         <form onSubmit={handleSubmit}>
+          <TextField
+            gullWidth
+            label="Nombre Completo"
+            margin="normal"
+            name="full_name"
+            value={form.full_name}
+            onChange={handleChange}
+          />
           <TextField
             fullWidth
             label="Número de teléfono"

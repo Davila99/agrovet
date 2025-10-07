@@ -144,7 +144,9 @@ const Navbar = () => {
                   anchorEl={userMenuAnchor}
                   placement="bottom-end"
                   // Ensure popper is portaled to body to escape any stacking contexts
-                  container={typeof document !== "undefined" ? document.body : undefined}
+                  container={
+                    typeof document !== "undefined" ? document.body : undefined
+                  }
                   sx={{ zIndex: (theme) => theme.zIndex.modal + 20 }}>
                   <ClickAwayListener onClickAway={closeUserMenu}>
                     <Paper
@@ -157,7 +159,10 @@ const Navbar = () => {
                         zIndex: (theme) => theme.zIndex.modal + 10,
                       }}>
                       <Box display="flex" alignItems="center" gap={2} mb={1}>
-                        <Avatar alt="User Avatar" src="/static/images/avatar/1.jpg" />
+                        <Avatar
+                          alt="User Avatar"
+                          src="/static/images/avatar/1.jpg"
+                        />
                         <Box>
                           <Typography variant="subtitle1">Usuario</Typography>
                           <Typography variant="body2" color="text.secondary">
@@ -214,7 +219,7 @@ const Navbar = () => {
                   variant="contained"
                   color="primary"
                   component={Link}
-                  to="/registro">
+                  to="/register">
                   Registrarse
                 </Button>
               </>
@@ -232,7 +237,7 @@ const Navbar = () => {
 
       {/* Drawer (Mobile) */}
       <Drawer anchor="right" open={drawerOpen} onClose={toggleDrawer(false)}>
-        <Box sx={{ width: 250 , color: 'text.primary'}} role="presentation">
+        <Box sx={{ width: 250, color: "text.primary" }} role="presentation">
           <List>
             {menuItems.map((item) =>
               item.submenu ? (
@@ -298,8 +303,7 @@ const Navbar = () => {
                 <ListItem disablePadding>
                   <ListItemButton
                     component={Link}
-                      to="/login"
-                      
+                    to="/login"
                     onClick={toggleDrawer(false)}>
                     <ListItemText primary="Iniciar sesión" />
                   </ListItemButton>

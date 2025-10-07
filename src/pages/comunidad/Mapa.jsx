@@ -22,7 +22,7 @@ const ubicaciones = [
   { id: 2, nombre: "Dra. María", tipo: "Agrónoma", position: [12.9, -85.2167] },
   {
     id: 3,
-    nombre: "Finca El Sol",
+    nombre: "La Casa de cheyos",
     tipo: "Productor",
     position: [12.75, -85.1],
   },
