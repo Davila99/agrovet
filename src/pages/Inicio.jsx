@@ -50,7 +50,8 @@ const WelcomePage = () => {
           backgroundRepeat: "no-repeat",
           minHeight: "100vh",
           transition: "background-image 1s ease-in-out",
-        }}>
+        }}
+      >
         <Box
           sx={{
             position: "absolute",
@@ -72,16 +73,19 @@ const WelcomePage = () => {
               mt: { xs: 5, md: 0 },
               mb: { xs: 5, md: 0 },
               px: { xs: 5, md: 5 },
-            }}>
+            }}
+          >
             <Container
               sx={{
                 textAlign: { xs: "center", md: "left" },
                 mb: { xs: 5, md: 0 },
-              }}>
+              }}
+            >
               <motion.div
                 initial="hidden"
                 animate="visible"
-                variants={fadeInUp}>
+                variants={fadeInUp}
+              >
                 <Typography variant="h3" fontWeight="bold">
                   Bienvenido a AgroVets
                 </Typography>
@@ -90,7 +94,8 @@ const WelcomePage = () => {
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 0.3, duration: 0.8 }}>
+                transition={{ delay: 0.3, duration: 0.8 }}
+              >
                 <Typography variant="h6" sx={{ mt: 2 }}>
                   La primera comunidad de agrónomos y veterinarios,
                 </Typography>
@@ -102,7 +107,8 @@ const WelcomePage = () => {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6, duration: 0.8 }}>
+                transition={{ delay: 0.6, duration: 0.8 }}
+              >
                 <Container
                   sx={{
                     display: "flex",
@@ -110,7 +116,8 @@ const WelcomePage = () => {
                     alignItems: { xs: "center", md: "flex-start" },
                     gap: 2,
                     mt: 4,
-                  }}>
+                  }}
+                >
                   {!isLoggedIn ? (
                     <>
                       <Button
@@ -125,21 +132,24 @@ const WelcomePage = () => {
                           borderRadius: 3,
                           width: { xs: "100%", md: "auto" },
                         }}
-                        onClick={() => navigate("/login")}>
+                        onClick={() => navigate("/login")}
+                      >
                         Iniciar sesión
                       </Button>
 
                       <Button
-                        variant="outlined"
+                        variant="contained"
                         sx={{
-                          borderColor: "#fff",
-                          color: "white",
+                          background: "#fff",
+                          color: "#103E68",
                           px: 4,
                           py: 1.5,
+                          fontWeight: "bold",
                           borderRadius: 3,
                           width: { xs: "100%", md: "auto" },
                         }}
-                        onClick={() => navigate("/register")}>
+                        onClick={() => navigate("/register")}
+                      >
                         Registrarme
                       </Button>
                     </>
@@ -156,7 +166,8 @@ const WelcomePage = () => {
                         borderRadius: 3,
                         width: { xs: "100%", md: "auto" },
                       }}
-                      onClick={handleExplore}>
+                      onClick={handleExplore}
+                    >
                       Explorar
                     </Button>
                   )}
@@ -167,7 +178,8 @@ const WelcomePage = () => {
             <motion.div
               initial={{ opacity: 0, x: 50 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.8, duration: 0.8 }}>
+              transition={{ delay: 0.8, duration: 0.8 }}
+            >
               <CardMedia
                 component="img"
                 image={Movil}
@@ -188,12 +200,14 @@ const WelcomePage = () => {
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true }}
-          variants={fadeInUp}>
+          variants={fadeInUp}
+        >
           <Typography
             variant="h4"
             textAlign="center"
             fontWeight="bold"
-            sx={{ color: "#103E68", mb: 6 }}>
+            sx={{ color: "#103E68", mb: 6 }}
+          >
             ¿Por qué unirte a AgroVets?
           </Typography>
         </motion.div>
@@ -204,14 +218,16 @@ const WelcomePage = () => {
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true }}
-        variants={fadeInUp}>
+        variants={fadeInUp}
+      >
         <Box
           sx={{
             bgcolor: "#35722b",
             py: 8,
             textAlign: "center",
             color: "#fff",
-          }}>
+          }}
+        >
           <Typography variant="h4" fontWeight="bold" gutterBottom>
             Mejora la salud de tu ganado y cultivos
           </Typography>
@@ -224,7 +240,8 @@ const WelcomePage = () => {
               variant="contained"
               color="primary"
               size="large"
-              onClick={handleExplore}>
+              onClick={handleExplore}
+            >
               Explorar
             </Button>
           )}

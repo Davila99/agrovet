@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Box, Typography, Paper, Alert } from "@mui/material";
 import { Link, useNavigate } from "react-router-dom";
-import { registerUserFetch } from "../../services/endpoints";
 import RegisterFormFields from "./RegisterFormFields";
 import RegisterButton from "./RegisterButton";
 
@@ -56,17 +55,6 @@ const RegisterPage = () => {
     }
 
     setLoading(true);
-    try {
-      // Enviar todo en un solo request
-      const res = await registerUserFetch(form);
-      localStorage.setItem("token", res.token);
-      console.log("Usuario registrado:", res.user);
-      navigate("/login");
-    } catch (err) {
-      setError(err.message || "Error al registrarse");
-    } finally {
-      setLoading(false);
-    }
   };
 
   return (

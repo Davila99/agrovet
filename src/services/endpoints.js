@@ -7,10 +7,14 @@ export const authAPI = {
   
     login: (data) => httpClient("/auth/login/", { method: "POST", body: data }),
   
-    profile: (token) =>
-    httpClient("/auth/profile/", {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    }),
+profile: (id, token) =>
+  httpClient(`/auth/users/${id}/`, {
+    method: "GET",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  }),
+
+
+
   uploadProfilePicture: (data, token) =>
     httpClient("/profiles/upload-profile-picture/", {
       method: "POST",
@@ -19,6 +23,6 @@ export const authAPI = {
 };
 
 
-export const getProfile = async (token) => {
-  return authAPI.profile(token);
-}
+export const getProfile = async (id, token) => {
+  return authAPI.profile(id, token);
+};

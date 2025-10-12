@@ -41,17 +41,26 @@ const LoginPage = () => {
         password: form.password,
       });
 
+      // Guardamos token
       localStorage.setItem("token", res.token);
 
-      console.log("Usuario logueado:", res.user);
-      navigate("/");
+      // 🔥 Guardamos el id del usuario para usarlo en /auth/profile/:id/
+      if (res.user && res.user.id) {
+        localStorage.setItem("userId", res.user.id);
+        console.log("ID del usuario guardado:", res.user.id);
+      } else {
+        console.warn(
+          "No se recibió el ID del usuario en la respuesta del login"
+        );
+      }
+
+      navigate("/"); // Redirigimos
     } catch (err) {
       setError(err.message || "Credenciales inválidas");
     } finally {
       setLoading(false);
     }
   };
-
   return (
     <Box
       sx={{
@@ -61,7 +70,8 @@ const LoginPage = () => {
         justifyContent: "center",
         bgcolor: "#f5f7fa",
         p: 2,
-      }}>
+      }}
+    >
       <Paper
         elevation={4}
         sx={{
@@ -70,7 +80,8 @@ const LoginPage = () => {
           width: "100%",
           borderRadius: 3,
           textAlign: "center",
-        }}>
+        }}
+      >
         <Typography variant="h5" fontWeight="bold" gutterBottom color="#103E68">
           Iniciar Sesión
         </Typography>
@@ -111,7 +122,8 @@ const LoginPage = () => {
               borderRadius: 3,
               fontWeight: "bold",
             }}
-            disabled={loading}>
+            disabled={loading}
+          >
             {loading ? (
               <CircularProgress size={24} sx={{ color: "#fff" }} />
             ) : (
