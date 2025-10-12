@@ -9,16 +9,20 @@ const BASE_URL = "https://agrovet.pythonanywhere.com/api";
 async function request(endpoint, options = {}) {
   const { headers, ...rest } = options;
   try {
+    let fetchHeaders = { ...headers };
+    if (rest.body instanceof FormData) {
+      delete fetchHeaders["Content-Type"];
+    } else {
+      fetchHeaders["Content-Type"] = "application/json";
+    }
     const res = await fetch(`${BASE_URL}${endpoint}`, {
-      headers: {
-        "Content-Type": "application/json",
-        ...headers,
-      },
+      headers: fetchHeaders,
       ...rest,
     });
 
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
+      console.error("❌ API error:", data);
       throw new Error(data.detail || "Error en la petición");
     }
     return data;
@@ -50,8 +54,6 @@ export const api = {
 };
 
 
-//Cliente HTTP genérico.
-
 const httpClient = (endpoint, options = {}) => {
   const opts = { ...options };
   if (
@@ -61,6 +63,7 @@ const httpClient = (endpoint, options = {}) => {
   ) {
     opts.body = JSON.stringify(opts.body);
   }
+  // Si es FormData, no modificar
   return request(endpoint, opts);
 };
 

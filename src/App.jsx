@@ -13,6 +13,7 @@ import RegisterPage from "./pages/auth/Register";
 import FeedView from "./pages/comunidad/FeedView";
 import ExploreView from "./pages/comunidad/ExploreView";
 import Footer from "./pages/Fotter";
+import Perfil from "./pages/Perfil";
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/acerca-de" element={<QuienesSomos />} />
+        <Route path="/perfil" element={<Perfil />} />
       </Routes>
       <Footer />
     </Router>

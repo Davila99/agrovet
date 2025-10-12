@@ -1,15 +1,9 @@
 import React, { useState } from "react";
-import {
-  Box,
-  TextField,
-  Button,
-  Typography,
-  Paper,
-  Alert,
-  CircularProgress,
-} from "@mui/material";
+import { Box, Typography, Paper, Alert } from "@mui/material";
 import { Link, useNavigate } from "react-router-dom";
-import { authAPI } from "../../services/endpoints";
+import { registerUserFetch } from "../../services/endpoints";
+import RegisterFormFields from "./RegisterFormFields";
+import RegisterButton from "./RegisterButton";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -17,32 +11,54 @@ const RegisterPage = () => {
     full_name: "",
     phone_number: "",
     password: "",
+    last_name: "",
+    role: "",
+    bio: "",
+    profile_picture: null,
   });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    if (e.target.type === "file") {
+      setForm({ ...form, [e.target.name]: e.target.files[0] });
+    } else {
+      setForm({ ...form, [e.target.name]: e.target.value });
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
-    if (!form.full_name || !form.phone_number || !form.password) {
+    // Validación básica
+    if (
+      !form.full_name ||
+      !form.last_name ||
+      !form.phone_number ||
+      !form.password ||
+      !form.role ||
+      !form.bio ||
+      !form.profile_picture
+    ) {
       setError("Todos los campos son obligatorios");
       return;
     }
 
+    // DEBUG: Mostrar el contenido del FormData antes de enviar
+    const formData = new FormData();
+    Object.entries(form).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) formData.append(key, value);
+    });
+    for (let pair of formData.entries()) {
+      console.log(pair[0] + ":", pair[1]);
+    }
+
     setLoading(true);
     try {
-      const res = await authAPI.register({
-        full_name: form.full_name,
-        phone_number: form.phone_number,
-        password: form.password,
-      });
-
+      // Enviar todo en un solo request
+      const res = await registerUserFetch(form);
       localStorage.setItem("token", res.token);
       console.log("Usuario registrado:", res.user);
       navigate("/login");
@@ -62,7 +78,8 @@ const RegisterPage = () => {
         justifyContent: "center",
         bgcolor: "#f5f7fa",
         p: 2,
-      }}>
+      }}
+    >
       <Paper
         elevation={4}
         sx={{
@@ -71,7 +88,8 @@ const RegisterPage = () => {
           width: "100%",
           borderRadius: 3,
           textAlign: "center",
-        }}>
+        }}
+      >
         <Typography variant="h5" fontWeight="bold" gutterBottom color="#103E68">
           Crear Cuenta
         </Typography>
@@ -82,51 +100,9 @@ const RegisterPage = () => {
           </Alert>
         )}
 
-        <form onSubmit={handleSubmit}>
-          <TextField
-            gullWidth
-            label="Nombre Completo"
-            margin="normal"
-            name="full_name"
-            value={form.full_name}
-            onChange={handleChange}
-          />
-          <TextField
-            fullWidth
-            label="Número de teléfono"
-            margin="normal"
-            name="phone_number"
-            value={form.phone_number}
-            onChange={handleChange}
-          />
-          <TextField
-            fullWidth
-            label="Contraseña"
-            type="password"
-            margin="normal"
-            name="password"
-            value={form.password}
-            onChange={handleChange}
-          />
-
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            sx={{
-              mt: 3,
-              bgcolor: "#103E68",
-              "&:hover": { bgcolor: "#35722b" },
-              borderRadius: 3,
-              fontWeight: "bold",
-            }}
-            disabled={loading}>
-            {loading ? (
-              <CircularProgress size={24} sx={{ color: "#fff" }} />
-            ) : (
-              "Registrarme"
-            )}
-          </Button>
+        <form onSubmit={handleSubmit} encType="multipart/form-data">
+          <RegisterFormFields form={form} handleChange={handleChange} />
+          <RegisterButton loading={loading} />
         </form>
 
         <Typography variant="body2" sx={{ mt: 2 }}>
