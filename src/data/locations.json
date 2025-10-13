@@ -1,0 +1,92 @@
+[
+  {
+    "id": 101,
+    "full_name": "Dr. José Pérez",
+    "last_name": "Pérez",
+    "role": "Veterinario",
+    "latitude": "12.136389",
+    "longitude": "-86.251389",
+    "profile_picture": "https://randomuser.me/api/portraits/men/32.jpg"
+  },
+  {
+    "id": 102,
+    "full_name": "Dra. Ana Gómez",
+    "last_name": "Gómez",
+    "role": "Zootecnista",
+    "latitude": "12.120278",
+    "longitude": "-86.236111",
+    "profile_picture": "https://randomuser.me/api/portraits/women/44.jpg"
+  },
+  {
+    "id": 103,
+    "full_name": "Ing. Carlos Ruiz",
+    "last_name": "Ruiz",
+    "role": "Agrónomo",
+    "latitude": "12.150000",
+    "longitude": "-86.300000",
+    "profile_picture": "https://randomuser.me/api/portraits/men/15.jpg"
+  },
+  {
+    "id": 104,
+    "full_name": "MVZ. Laura Martínez",
+    "last_name": "Martínez",
+    "role": "Veterinaria",
+    "latitude": "13.092222",
+    "longitude": "-86.000833",
+    "profile_picture": "https://randomuser.me/api/portraits/women/65.jpg"
+  },
+  {
+    "id": 105,
+    "full_name": "Ing. Javier López",
+    "last_name": "López",
+    "role": "Productor Agropecuario",
+    "latitude": "11.934167",
+    "longitude": "-85.956389",
+    "profile_picture": "https://randomuser.me/api/portraits/men/7.jpg"
+  },
+  {
+    "id": 106,
+    "full_name": "Dra. María Torres",
+    "last_name": "Torres",
+    "role": "Veterinaria",
+    "latitude": "12.436944",
+    "longitude": "-86.879722",
+    "profile_picture": "https://randomuser.me/api/portraits/women/28.jpg"
+  },
+  {
+    "id": 107,
+    "full_name": "Ing. Rafael Castillo",
+    "last_name": "Castillo",
+    "role": "Agrónomo",
+    "latitude": "12.624167",
+    "longitude": "-87.131944",
+    "profile_picture": "https://randomuser.me/api/portraits/men/23.jpg"
+  },
+  {
+    "id": 108,
+    "full_name": "MVZ. Sofía Hernández",
+    "last_name": "Hernández",
+    "role": "Especialista en Ganado",
+    "latitude": "13.483333",
+    "longitude": "-86.583333",
+    "profile_picture": "https://randomuser.me/api/portraits/women/11.jpg"
+  },
+  {
+    "id": 109,
+    "full_name": "Ing. Luis García",
+    "last_name": "García",
+    "role": "Productor Agropecuario",
+    "latitude": "11.427778",
+    "longitude": "-85.827778",
+    "profile_picture": "https://randomuser.me/api/portraits/men/36.jpg"
+  },
+  {
+    "id": 110,
+    "full_name": "Dra. Carolina Mejía",
+    "last_name": "Mejía",
+    "role": "Veterinaria",
+    "latitude": "12.618611",
+    "longitude": "-87.132778",
+    "profile_picture": "https://randomuser.me/api/portraits/women/56.jpg"
+  }
+]
