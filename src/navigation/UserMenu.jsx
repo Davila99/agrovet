@@ -1,4 +1,3 @@
-// src/components/Navbar/UserMenu.jsx
 import React, { useState, useEffect } from "react";
 import {
   Avatar,
@@ -10,24 +9,25 @@ import {
   Popper,
   Typography,
   IconButton,
+  Stack,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { getProfile } from "../services/endpoints";
 
-const UserMenu = ({ onLogout }) => {
+const UserMenu = ({ onLogout, user: userProp }) => {
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(userProp || null);
 
   const open = Boolean(anchorEl);
 
   useEffect(() => {
     const loadUser = async () => {
       try {
+        if (userProp) return;
         const token = localStorage.getItem("token");
-        const id = localStorage.getItem("userId");
-        if (token && id) {
-          const res = await getProfile(id, token);
+        if (token) {
+          const res = await getProfile(token);
           setUser(res);
         }
       } catch (e) {
@@ -35,7 +35,7 @@ const UserMenu = ({ onLogout }) => {
       }
     };
     loadUser();
-  }, []);
+  }, [userProp]);
 
   const handleOpen = (e) => setAnchorEl(e.currentTarget);
   const handleClose = () => setAnchorEl(null);
@@ -48,7 +48,13 @@ const UserMenu = ({ onLogout }) => {
         <Avatar
           alt={user.full_name}
           src={user.profile_picture || undefined}
-          sx={{ bgcolor: "#103E68" }}
+          sx={{
+            bgcolor: "#103e68",
+            color: "#fff",
+            width: 40,
+            height: 40,
+            fontWeight: 600,
+          }}
         >
           {!user.profile_picture &&
             `${user.full_name?.[0] || ""}${user.last_name?.[0] || ""}`}
@@ -62,23 +68,63 @@ const UserMenu = ({ onLogout }) => {
         sx={{ zIndex: (theme) => theme.zIndex.modal + 20 }}
       >
         <ClickAwayListener onClickAway={handleClose}>
-          <Paper elevation={4} sx={{ mt: 1, minWidth: 230, p: 2 }}>
-            <Box display="flex" alignItems="center" gap={2} mb={1}>
+          <Paper
+            elevation={6}
+            sx={{
+              mt: 1.5,
+              minWidth: 270,
+              borderRadius: 3,
+              p: 2.5,
+              bgcolor: "background.paper",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+            }}
+          >
+            <Stack direction="row" alignItems="center" spacing={2} mb={2}>
               <Avatar
                 alt={user.full_name}
                 src={user.profile_picture || undefined}
-              />
+                sx={{
+                  width: 48,
+                  height: 48,
+                  bgcolor: "#103e68",
+                  fontWeight: 600,
+                }}
+              >
+                {!user.profile_picture &&
+                  `${user.full_name?.[0] || ""}${user.last_name?.[0] || ""}`}
+              </Avatar>
               <Box>
-                <Typography variant="subtitle1">
+                <Typography variant="subtitle1" fontWeight={600}>
                   {user.full_name} {user.last_name}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   {user.email}
                 </Typography>
               </Box>
-            </Box>
+            </Stack>
 
-            <Divider sx={{ my: 1 }} />
+            <Divider sx={{ my: 1.5 }} />
+
+            <Button
+              fullWidth
+              variant="contained"
+              size="small"
+              onClick={() => {
+                handleClose();
+                navigate("/perfil");
+              }}
+              sx={{
+                mb: 1,
+                borderRadius: 2,
+                textTransform: "none",
+                fontWeight: 500,
+                bgcolor: "#103e68",
+                color: "#fff",
+                ":hover": { bgcolor: "#103e68" },
+              }}
+            >
+              Ver perfil
+            </Button>
 
             <Button
               fullWidth
@@ -86,33 +132,32 @@ const UserMenu = ({ onLogout }) => {
               size="small"
               onClick={() => {
                 handleClose();
-                navigate("/perfil");
-              }}
-              sx={{ mb: 1 }}
-            >
-              Ver perfil
-            </Button>
-
-            <Button
-              fullWidth
-              variant="text"
-              size="small"
-              onClick={() => {
-                handleClose();
                 navigate("/configuracion");
+              }}
+              sx={{
+                mb: 1,
+                borderRadius: 2,
+                textTransform: "none",
+                fontWeight: 500,
               }}
             >
               Configuración
             </Button>
 
-            <Divider sx={{ my: 1 }} />
+            <Divider sx={{ my: 1.5 }} />
 
             <Button
               fullWidth
               color="error"
+              variant="text"
               onClick={() => {
                 handleClose();
                 onLogout();
+              }}
+              sx={{
+                borderRadius: 2,
+                textTransform: "none",
+                fontWeight: 500,
               }}
             >
               Cerrar sesión

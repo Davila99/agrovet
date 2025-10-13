@@ -9,11 +9,18 @@ import {
   ListItemText,
   Collapse,
   Divider,
+  Avatar,
+  Typography,
 } from "@mui/material";
 import ExpandLess from "@mui/icons-material/ExpandLess";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 import { Link } from "react-router-dom";
 import { menuItems, comunidadSubmenu } from "./data";
+
+const drawerBg = "#fff";
+const accent = "#00BFA6";
+const textColor = "#000";
+const hoverBg = "#f0f0f0";
 
 const MobileDrawer = ({
   open,
@@ -22,15 +29,70 @@ const MobileDrawer = ({
   handleComunidadCollapse,
   isLoggedIn,
   handleLogout,
+  user,
 }) => (
-  <Drawer anchor="right" open={open} onClose={onClose}>
-    <Box sx={{ width: 250, color: "text.primary" }} role="presentation">
+  <Drawer
+    anchor="right"
+    open={open}
+    onClose={onClose}
+    PaperProps={{
+      sx: {
+        width: 280,
+        bgcolor: drawerBg,
+        color: textColor,
+        borderTopLeftRadius: 18,
+        borderBottomLeftRadius: 18,
+        boxShadow: 8,
+      },
+    }}
+  >
+    <Box sx={{ p: 2 }}>
+      {isLoggedIn && (
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            mb: 2,
+            gap: 2,
+            px: 1,
+          }}
+        >
+          <Avatar
+            src={user?.profile_picture || undefined}
+            sx={{ bgcolor: accent }}
+          >
+            {!user?.profile_picture &&
+              `${user?.full_name?.[0] || ""}${user?.last_name?.[0] || ""}`}
+          </Avatar>
+          <Box>
+            <Typography variant="subtitle1" sx={{ color: textColor }}>
+              {user?.full_name || user?.name || "Usuario"}
+            </Typography>
+            <Typography variant="caption" sx={{ color: "#b0b0b0" }}>
+              {user?.email}
+            </Typography>
+          </Box>
+        </Box>
+      )}
       <List>
         {menuItems.map((item) =>
           item.submenu ? (
             <React.Fragment key={item.text}>
-              <ListItemButton onClick={handleComunidadCollapse}>
-                <ListItemText primary={item.text} />
+              <ListItemButton
+                onClick={handleComunidadCollapse}
+                sx={{
+                  borderRadius: 2,
+                  mb: 0.5,
+                  "&:hover": { bgcolor: hoverBg },
+                }}
+              >
+                <ListItemText
+                  primary={item.text}
+                  primaryTypographyProps={{
+                    fontWeight: 600,
+                    fontSize: 16,
+                  }}
+                />
                 {comunidadOpen ? <ExpandLess /> : <ExpandMore />}
               </ListItemButton>
               <Collapse in={comunidadOpen} timeout="auto" unmountOnExit>
@@ -40,10 +102,22 @@ const MobileDrawer = ({
                       key={sub.text}
                       component={Link}
                       to={sub.path}
-                      sx={{ pl: 4 }}
+                      sx={{
+                        pl: 5,
+                        borderRadius: 2,
+                        mb: 0.5,
+                        color: "#b0f1e6",
+                        "&:hover": { bgcolor: hoverBg, color: accent },
+                      }}
                       onClick={onClose}
                     >
-                      <ListItemText primary={sub.text} />
+                      <ListItemText
+                        primary={sub.text}
+                        primaryTypographyProps={{
+                          fontWeight: 500,
+                          fontSize: 15,
+                        }}
+                      />
                     </ListItemButton>
                   ))}
                 </List>
@@ -51,18 +125,42 @@ const MobileDrawer = ({
             </React.Fragment>
           ) : (
             <ListItem key={item.text} disablePadding>
-              <ListItemButton component={Link} to={item.path} onClick={onClose}>
-                <ListItemText primary={item.text} />
+              <ListItemButton
+                component={Link}
+                to={item.path}
+                onClick={onClose}
+                sx={{
+                  borderRadius: 2,
+                  mb: 0.5,
+                  "&:hover": { bgcolor: hoverBg },
+                }}
+              >
+                <ListItemText
+                  primary={item.text}
+                  primaryTypographyProps={{
+                    fontWeight: 600,
+                    fontSize: 16,
+                  }}
+                />
               </ListItemButton>
             </ListItem>
           )
         )}
 
-        <Divider />
+        <Divider sx={{ my: 2, bgcolor: "#232936" }} />
         {isLoggedIn ? (
           <>
             <ListItem disablePadding>
-              <ListItemButton component={Link} to="/perfil" onClick={onClose}>
+              <ListItemButton
+                component={Link}
+                to="/perfil"
+                onClick={onClose}
+                sx={{
+                  borderRadius: 2,
+                  mb: 0.5,
+                  "&:hover": { bgcolor: hoverBg },
+                }}
+              >
                 <ListItemText primary="Perfil" />
               </ListItemButton>
             </ListItem>
@@ -71,12 +169,24 @@ const MobileDrawer = ({
                 component={Link}
                 to="/configuracion"
                 onClick={onClose}
+                sx={{
+                  borderRadius: 2,
+                  mb: 0.5,
+                  "&:hover": { bgcolor: hoverBg },
+                }}
               >
                 <ListItemText primary="Configuración" />
               </ListItemButton>
             </ListItem>
             <ListItem disablePadding>
-              <ListItemButton onClick={handleLogout}>
+              <ListItemButton
+                onClick={handleLogout}
+                sx={{
+                  borderRadius: 2,
+                  color: "#ff5252",
+                  "&:hover": { bgcolor: "#2a1a1a" },
+                }}
+              >
                 <ListItemText primary="Cerrar sesión" />
               </ListItemButton>
             </ListItem>
@@ -84,12 +194,36 @@ const MobileDrawer = ({
         ) : (
           <>
             <ListItem disablePadding>
-              <ListItemButton component={Link} to="/login" onClick={onClose}>
+              <ListItemButton
+                component={Link}
+                to="/login"
+                onClick={onClose}
+                sx={{
+                  borderRadius: 2,
+                  mb: 0.5,
+                  bgcolor: accent,
+                  color: "#181C24",
+                  fontWeight: 700,
+                  "&:hover": { bgcolor: "#00a58c", color: "#fff" },
+                }}
+              >
                 <ListItemText primary="Iniciar sesión" />
               </ListItemButton>
             </ListItem>
             <ListItem disablePadding>
-              <ListItemButton component={Link} to="/register" onClick={onClose}>
+              <ListItemButton
+                component={Link}
+                to="/register"
+                onClick={onClose}
+                sx={{
+                  borderRadius: 2,
+                  mb: 0.5,
+                  border: `1px solid ${accent}`,
+                  color: accent,
+                  fontWeight: 700,
+                  "&:hover": { bgcolor: hoverBg, color: "#fff" },
+                }}
+              >
                 <ListItemText primary="Registrarse" />
               </ListItemButton>
             </ListItem>

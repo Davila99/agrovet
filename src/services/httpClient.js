@@ -20,10 +20,23 @@ async function request(endpoint, options = {}) {
       ...rest,
     });
 
-    const data = await res.json().catch(() => ({}));
+    let text = await res.text().catch(() => "");
+    let data = {};
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch (e) {
+      data = { raw: text };
+    }
+
     if (!res.ok) {
-      console.error("❌ API error:", data);
-      throw new Error(data.detail || "Error en la petición");
+      console.error("❌ API error:", {
+        status: res.status,
+        statusText: res.statusText,
+        body: data,
+        endpoint: `${BASE_URL}${endpoint}`,
+      });
+      const message = data.detail || data.error || data.message || `HTTP ${res.status} ${res.statusText}`;
+      throw new Error(message);
     }
     return data;
   } catch (err) {
