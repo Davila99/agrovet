@@ -13,8 +13,6 @@ profile: (id, token) =>
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   }),
 
-
-
   uploadProfilePicture: (data, token) =>
     httpClient("/profiles/upload-profile-picture/", {
       method: "POST",

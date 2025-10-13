@@ -13,7 +13,7 @@ import RegisterPage from "./pages/auth/Register";
 import FeedView from "./pages/comunidad/FeedView";
 import ExploreView from "./pages/comunidad/ExploreView";
 import Footer from "./pages/Fotter";
-import Perfil from "./pages/Perfil";
+import Perfil from "./pages/profile/Perfil";
 
 function App() {
   return (
