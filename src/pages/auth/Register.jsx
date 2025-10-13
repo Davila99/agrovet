@@ -3,6 +3,7 @@ import { Box, Typography, Paper, Alert } from "@mui/material";
 import { Link, useNavigate } from "react-router-dom";
 import RegisterFormFields from "./RegisterFormFields";
 import RegisterButton from "./RegisterButton";
+import { authAPI } from "../../services/endpoints";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -53,8 +54,20 @@ const RegisterPage = () => {
     for (let pair of formData.entries()) {
       console.log(pair[0] + ":", pair[1]);
     }
-
     setLoading(true);
+
+    try {
+      // Enviar FormData al endpoint de registro
+      const res = await authAPI.register(formData);
+      console.log("Registro exitoso:", res);
+      // Redirigir al login después de registrarse correctamente
+      navigate("/login");
+    } catch (err) {
+      console.error("Error al registrar:", err);
+      setError(err.message || "Error al registrar usuario");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
