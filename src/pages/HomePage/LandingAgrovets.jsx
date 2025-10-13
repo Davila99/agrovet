@@ -5,6 +5,7 @@ import ImgOne from "../../assets/image/img1.webp";
 import ImgThree from "../../assets/image/img3.webp";
 import ImgFour from "../../assets/image/img4.webp";
 import ImgFive from "../../assets/image/img5.webp";
+import ChatBot from "./ChatBot";
 
 // Animación básica para secciones
 const fadeInUp = {
@@ -242,6 +243,8 @@ const LandingAgrovetsAnim = () => {
       </motion.div>
 
       <Divider sx={{ mb: 5 }} />
+      <ChatBot />
+
     </Box>
   );
 };
