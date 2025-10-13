@@ -23,7 +23,7 @@ export default function ChatBot() {
       poweredBy: false,
       i18n: {
         es: {
-          title: "AVA 🤖",
+          title: AVALogo ? "AVA" : "AVA",
           subtitle: "Te ayudo con dudas agrícolas y veterinarias.",
           getStarted: "Nueva conversación",
           inputPlaceholder: "Escribe tu pregunta aquí...",
