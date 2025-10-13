@@ -1,7 +1,7 @@
 
 /* Header transparente y limpio */
 #n8n-chat-widget .chat-layout .chat-header {
-    background: linear-gradient(90deg, #47cb26 0%, #4792d8 100%) !important;
+    background:#4792d8!important;
     padding: 0px 4px !important;
     margin: 0 !important;
 }
