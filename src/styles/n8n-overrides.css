@@ -1,27 +1,10 @@
-
-/* Header transparente y limpio */
 #n8n-chat-widget .chat-layout .chat-header {
-    background:#4792d8!important;
-    padding: 0px 4px !important;
-    margin: 0 !important;
-}
-
-/* Input: redondeado y con sombra sutil */
-#n8n-chat-widget .chat-inputs textarea[data-v-040531b3],
-#n8n-chat-widget .chat-inputs textarea {
-    border-radius: 8px !important;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
-}
-
-/* Botones dentro del widget con estilo AVA */
-#n8n-chat-widget .chat-button,
-#n8n-chat-widget ._button_slkfq_115 {
-  border-radius: 8px !important;
-  box-shadow: none !important;
-}
-
-/* Aumentar contraste de textos secundarios */
-#n8n-chat-widget .chat-layout .chat-footer,
-#n8n-chat-widget .chat-layout .chat-header p {
-  color: #475569 !important;
+  background: rgba(100, 255, 165, 0.527) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 2px solid rgba(255, 255, 255, 0.562) !important;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.08) !important;
+  padding: 1px 4px !important;
+  color: #000 !important;
+  font-weight: bold !important;
 }

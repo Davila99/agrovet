@@ -16,7 +16,7 @@ export const authAPI = {
 
   // Endpoint dedicado al perfil autenticado
   profile: (token) =>
-    httpClient(`/auth/profile/`, {
+    httpClient(`/auth/users/${id}`, {
       method: "GET",
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     }),
