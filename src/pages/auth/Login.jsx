@@ -44,10 +44,10 @@ const LoginPage = () => {
       // Guardamos token
       localStorage.setItem("token", res.token);
 
-      // 🔥 Guardamos el id del usuario para usarlo en /auth/profile/:id/
       if (res.user && res.user.id) {
         localStorage.setItem("userId", res.user.id);
         console.log("ID del usuario guardado:", res.user.id);
+        console.log("Respuesta del login:", res);
       } else {
         console.warn(
           "No se recibió el ID del usuario en la respuesta del login"

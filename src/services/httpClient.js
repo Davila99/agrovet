@@ -59,7 +59,7 @@ export const api = {
     }),
 
   getProfile: (token) =>
-    request("/auth/profile/", {
+    request("/auth/users/", {
       headers: {
         Authorization: `Bearer ${token}`,
       },
