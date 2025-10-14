@@ -23,7 +23,7 @@ export default function ChatBot() {
       poweredBy: false,
       i18n: {
         es: {
-          title: AVALogo ? "AVA" : "AVA",
+          title: "AVA - Asistente Agrovets",
           subtitle: "Te ayudo con dudas agrícolas y veterinarias.",
           getStarted: "Nueva conversación",
           inputPlaceholder: "Escribe tu pregunta aquí...",
@@ -32,53 +32,7 @@ export default function ChatBot() {
       defaultLanguage: "es",
     });
 
-    // Estilos globales forzados para mejor contraste
     const style = document.createElement("style");
-    style.innerHTML = `
-      /* Forzar color del input a negro y mejorar contraste */
-      #n8n-chat-widget input, 
-      #n8n-chat-widget textarea, 
-      #n8n-chat-widget .chat-input {
-        color: #000 !important;
-        caret-color: #000 !important;
-      }
-
-      /* Personalizaciones para el contenedor de AVA */
-      .ava-container {
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-      }
-
-      .ava-header {
-        display: flex;
-
-      .ava-avatar {
-        width: 44px;
-      }
-      .ava-quick {
-        display: flex;
-        gap: 8px;
-        padding: 12px 16px;
-        flex-wrap: wrap;
-      }
-
-      .ava-quick button {
-        background: #fff;
-        border: 1px solid rgba(15,23,42,0.06);
-        padding: 8px 12px;
-        border-radius: 999px;
-        cursor: pointer;
-        font-size: 13px;
-      }
-
-      .ava-main {
-        flex: 1 1 auto;
-        min-height: 0; /* allow children to scroll */
-        display: flex;
-        flex-direction: column;
-  }}
-    `;
     document.head.appendChild(style);
 
     // Reemplazar la burbuja del toggle por el logo AVA (intentos repetidos hasta que exista)
@@ -103,8 +57,7 @@ export default function ChatBot() {
             if (AVAFallback) this.src = AVAFallback;
           };
           toggle.appendChild(img);
-          // ajustar estilos del toggle para centrar imagen
-          toggle.style.padding = "6px";
+          toggle.style.padding = "1px";
           toggle.style.background = "none";
           toggle.style.border = "none";
           toggle.style.boxShadow = "none";
