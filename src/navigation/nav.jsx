@@ -87,7 +87,6 @@ const Navbar = () => {
               display: "flex",
               alignItems: "center",
               flex: { xs: 1, md: "none" },
-              justifyContent: { xs: "center", md: "flex-start" },
             }}
           >
             <Link to="/" style={{ display: "flex", alignItems: "center" }}>

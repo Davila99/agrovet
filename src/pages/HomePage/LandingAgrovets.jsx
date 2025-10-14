@@ -21,7 +21,8 @@ const LandingAgrovetsAnim = () => {
         margin: "0 auto",
         padding: "2rem",
         color: "#000",
-      }}>
+      }}
+    >
       {/* Sección 1: Hero */}
       <motion.div initial="hidden" animate="visible" variants={fadeInUp}>
         <Box
@@ -31,7 +32,8 @@ const LandingAgrovetsAnim = () => {
             alignItems: "center",
             gap: 3,
             mb: 5,
-          }}>
+          }}
+        >
           <Box sx={{ flex: 1 }}>
             <Typography variant="h3" fontWeight="bold" gutterBottom>
               Descubre el futuro agropecuario de Nicaragua con Agrovets
@@ -57,7 +59,8 @@ const LandingAgrovetsAnim = () => {
                 py: 1.5,
                 borderRadius: 3,
                 width: { xs: "100%", md: "auto" },
-              }}>
+              }}
+            >
               Únete ahora
             </Button>
           </Box>
@@ -88,7 +91,8 @@ const LandingAgrovetsAnim = () => {
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true }}
-        variants={fadeInUp}>
+        variants={fadeInUp}
+      >
         <Box sx={{ mb: 5 }}>
           <Typography variant="h4" fontWeight="bold" gutterBottom>
             Situación del sector agropecuario
@@ -127,7 +131,8 @@ const LandingAgrovetsAnim = () => {
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true }}
-        variants={fadeInUp}>
+        variants={fadeInUp}
+      >
         <Box
           sx={{
             borderRadius: 5,
@@ -141,7 +146,8 @@ const LandingAgrovetsAnim = () => {
             pb: 2,
             p: { xs: 1, md: 0 },
             mt: 10,
-          }}>
+          }}
+        >
           <Box
             component="img"
             src={ImgFour}
@@ -169,7 +175,8 @@ const LandingAgrovetsAnim = () => {
               variant="h4"
               fontWeight="bold"
               gutterBottom
-              sx={{ fontSize: { xs: "1.8rem", md: "2.2rem" } }}>
+              sx={{ fontSize: { xs: "1.8rem", md: "2.2rem" } }}
+            >
               Salud de cultivos y ganado
             </Typography>
             <Typography
@@ -178,7 +185,8 @@ const LandingAgrovetsAnim = () => {
                 mb: 2,
                 fontSize: { xs: "0.95rem", md: "1.05rem" },
                 lineHeight: 1.6,
-              }}>
+              }}
+            >
               La salud de cultivos y ganado, tanto bovino como porcino, es
               esencial. Sin embargo, los productores enfrentan desafíos debido a
               la falta de accesibilidad en tiempo real a veterinarios y
@@ -189,7 +197,8 @@ const LandingAgrovetsAnim = () => {
               sx={{
                 fontSize: { xs: "0.95rem", md: "1.05rem" },
                 lineHeight: 1.6,
-              }}>
+              }}
+            >
               Aquí es donde entra Agrovets, la aplicación móvil revolucionaria
               diseñada para impulsar a los agricultores y ganaderos de
               Nicaragua.
@@ -199,52 +208,7 @@ const LandingAgrovetsAnim = () => {
       </motion.div>
 
       <Divider sx={{ mb: 5 }} />
-
-      {/* Sección 4: Funcionalidades */}
-      <motion.div
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true }}
-        variants={fadeInUp}>
-        <Box sx={{ mb: 5 }}>
-          <Typography variant="h4" fontWeight="bold" gutterBottom>
-            Funcionalidades de Agrovets
-          </Typography>
-          <Typography variant="body1" sx={{ mb: 2 }}>
-            Con Agrovets podrás:
-          </Typography>
-          <ul>
-            <li>
-              Acceder a una lista de veterinarios y agrónomos según tu
-              ubicación.
-            </li>
-            <li>Chatear y hacer llamadas o videollamadas en tiempo real.</li>
-            <li>Ver publicaciones y anuncios de profesionales del sector.</li>
-            <li>
-              Explorar perfiles profesionales de veterinarios y agrónomos.
-            </li>
-          </ul>
-          <Box
-            component="img"
-            src={ImgFive}
-            alt="banner1"
-            sx={{
-              width: "100%",
-              height: 200,
-              borderRadius: 3,
-              objectFit: "cover",
-              transition: "transform 0.4s ease",
-              "&:hover": {
-                transform: "scale(1.1)",
-              },
-            }}
-          />
-        </Box>
-      </motion.div>
-
-      <Divider sx={{ mb: 5 }} />
       <ChatBot />
-
     </Box>
   );
 };
