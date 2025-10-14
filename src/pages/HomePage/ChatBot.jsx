@@ -13,7 +13,6 @@ export default function ChatBot() {
     const webhookUrl =
       "https://agrovets.app.n8n.cloud/webhook/f776f25c-b6ea-4453-ade5-30b0710845c1/chat";
 
-    // Inicializar el chat de n8n y guardar referencia para enviar mensajes desde quick replies
     chatRef.current = createChat({
       webhookUrl,
       webhookConfig: { method: "POST" },
@@ -35,6 +34,35 @@ export default function ChatBot() {
     const style = document.createElement("style");
     document.head.appendChild(style);
 
+    style.innerHTML = `
+      /* Forzar color visible en los campos del widget de chat */
+      #n8n-chat, #n8n-chat-widget, #n8n-chat * {
+        color: #000 !important;
+        caret-color: #000 !important;
+      }
+
+      /* Inputs, textareas y elementos contenteditable dentro del widget */
+      #n8n-chat input,
+      #n8n-chat textarea,
+      #n8n-chat [contenteditable],
+      #n8n-chat .chat-input,
+      #n8n-chat .chat-input__input,
+      #n8n-chat-widget input,
+      #n8n-chat-widget textarea,
+      #n8n-chat-widget [contenteditable] {
+        color: #000 !important;
+        caret-color: #000 !important;
+        background: transparent !important;
+      }
+
+      /* Placeholder visible */
+      #n8n-chat ::placeholder,
+      #n8n-chat-widget ::placeholder,
+      #n8n-chat textarea::placeholder,
+      #n8n-chat input::placeholder {
+        color: rgba(0,0,0,0.6) !important;
+      }
+    `;
     // Reemplazar la burbuja del toggle por el logo AVA (intentos repetidos hasta que exista)
     const replaceToggleWithLogo = () => {
       const selector = ".chat-window-toggle";
@@ -44,7 +72,6 @@ export default function ChatBot() {
         attempts += 1;
         const toggle = document.querySelector(selector);
         if (toggle) {
-          // limpiar contenido y colocar imagen
           toggle.innerHTML = "";
           const img = document.createElement("img");
           img.src = AVALogo || AVAFallback;
@@ -68,10 +95,8 @@ export default function ChatBot() {
       }, 200);
     };
 
-    // Llamar tras una pequeña espera para que createChat tenga tiempo de montar el DOM
     setTimeout(replaceToggleWithLogo, 300);
 
-    // Marcar listo cuando createChat esté inicializado (siempre devuelve objeto)
     setReady(true);
 
     return () => {
@@ -84,79 +109,16 @@ export default function ChatBot() {
     };
   }, []);
 
-  const quickReplies = [
-    "¿Cuándo fertilizar?",
-    "Signos de enfermedad en vacas",
-    "Control de plagas en maíz",
-    "Agrotécnicas sostenibles",
-  ];
-
-  // Envía un mensaje al widget n8n chat si es posible
-  function sendQuickReply(text) {
-    // n8n chat exposes window.n8nChat? (no garantizado) — intentar usar la referencia creada
-    try {
-      const chat = chatRef.current;
-      if (chat && typeof chat.sendMessage === "function") {
-        chat.sendMessage(text);
-        return;
-      }
-
-      // Fallback: dispatch a custom event that el widget pueda escuchar
-      const event = new CustomEvent("n8n-chat-message", { detail: { text } });
-      window.dispatchEvent(event);
-    } catch (err) {
-      // Silenciar errores; el chat aún puede recibir input manualmente
-      // eslint-disable-next-line no-console
-      console.error("No se pudo enviar quick reply:", err);
-    }
-  }
-
   return (
     <div className="ava-container" ref={containerRef}>
       <header className="ava-header" role="banner">
-        <div className="ava-avatar" aria-hidden>
-          <img
-            src={AVALogo}
-            alt="AVA"
-            style={{ width: "100%", height: "100%", borderRadius: 12 }}
-            onError={(e) => {
-              // si el svg está vacío o falla, usar fallback
-              // @ts-ignore
-              e.currentTarget.onerror = null;
-              // @ts-ignore
-              e.currentTarget.src = AVAFallback;
-            }}
-          />
-        </div>
-        <div>
-          <div className="ava-title">AVA — Asistente Agrovets</div>
-          <div className="ava-subtitle">
-            Pregúntame sobre agricultura y veterinaria
-          </div>
-        </div>
+        <div className="ava-avatar" aria-hidden></div>
       </header>
-
-      <div className="ava-quick" aria-label="Sugerencias rápidas">
-        {quickReplies.map((q) => (
-          <button
-            key={q}
-            onClick={() => sendQuickReply(q)}
-            type="button"
-            title={`Enviar: ${q}`}
-          >
-            {q}
-          </button>
-        ))}
-      </div>
 
       <main className="ava-main" role="main">
         {/* Punto de montaje para el widget n8n chat */}
         <div id="n8n-chat-widget" style={{ flex: 1 }} />
       </main>
-
-      <div className="ava-footer">
-        ¿Necesitas ayuda avanzada? Contacta con soporte Agrovets.
-      </div>
     </div>
   );
 }
