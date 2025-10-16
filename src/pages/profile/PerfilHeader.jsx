@@ -1,6 +1,5 @@
 import React from "react";
 import { Box, Avatar, Typography, IconButton } from "@mui/material";
-import { Edit, Cancel } from "@mui/icons-material";
 
 const PerfilHeader = ({ user, editing, setEditing }) => {
   const handleEditToggle = () => setEditing((prev) => !prev);
@@ -58,15 +57,11 @@ const PerfilHeader = ({ user, editing, setEditing }) => {
             {user.full_name} {user.last_name}
           </Typography>
           <Typography color="text.secondary">
-            {user.role === "Specialist" && "Especialista Veterinario"}
-            {user.role === "businessman" && "Negocio Agropecuario"}
+            {user.role === "Specialist" && "Especialista"}
+            {user.role === "businessman" && "Negocio "}
             {user.role === "consumer" && "Consumidor"}
           </Typography>
         </Box>
-
-        <IconButton color="primary" onClick={handleEditToggle}>
-          {editing ? <Cancel /> : <Edit />}
-        </IconButton>
       </Box>
     </>
   );

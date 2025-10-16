@@ -1,9 +1,7 @@
 #n8n-chat-widget .chat-layout .chat-header {
-  background: rgba(100, 255, 165, 0.527) !important;
   backdrop-filter: blur(16px) !important;
   -webkit-backdrop-filter: blur(16px) !important;
   box-shadow: 0 4px 24px rgba(0,0,0,0.08) !important;
   padding: 1px 4px !important;
-  color: #000 !important;
   font-weight: bold !important;
 }

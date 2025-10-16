@@ -29,7 +29,6 @@ const Navbar = () => {
       window.removeEventListener("focus", onFocus);
     };
   }, []);
-
   const location = useLocation();
   useEffect(() => {
     setToken(localStorage.getItem("token"));
