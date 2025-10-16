@@ -18,7 +18,7 @@ import { Link } from "react-router-dom";
 import { menuItems, comunidadSubmenu } from "./data";
 
 const drawerBg = "#fff";
-const accent = "#00BFA6";
+const accent = "#103E68";
 const textColor = "#000";
 const hoverBg = "#f0f0f0";
 
@@ -106,7 +106,7 @@ const MobileDrawer = ({
                         pl: 5,
                         borderRadius: 2,
                         mb: 0.5,
-                        color: "#b0f1e6",
+                        color: "#103E68",
                         "&:hover": { bgcolor: hoverBg, color: accent },
                       }}
                       onClick={onClose}
@@ -202,9 +202,9 @@ const MobileDrawer = ({
                   borderRadius: 2,
                   mb: 0.5,
                   bgcolor: accent,
-                  color: "#181C24",
+                  color: "#ffffffff",
                   fontWeight: 700,
-                  "&:hover": { bgcolor: "#00a58c", color: "#fff" },
+                  "&:hover": { bgcolor: "#4f7ba3ff", color: "#fff" },
                 }}
               >
                 <ListItemText primary="Iniciar sesión" />
@@ -221,7 +221,7 @@ const MobileDrawer = ({
                   border: `1px solid ${accent}`,
                   color: accent,
                   fontWeight: 700,
-                  "&:hover": { bgcolor: hoverBg, color: "#fff" },
+                  "&:hover": { bgcolor: hoverBg, color: "#103E68" },
                 }}
               >
                 <ListItemText primary="Registrarse" />

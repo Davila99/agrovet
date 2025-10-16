@@ -266,14 +266,17 @@ const RegisterPage = () => {
           </Stack>
         </form>
 
-        {/* Diálogo para preguntar si guardar ubicación */}
+        {/* Diálogo para preguntar si guardar ubicación (estilizado) */}
         <Dialog
           open={showLocationDialog}
           onClose={() => setShowLocationDialog(false)}
+          PaperProps={{ sx: { borderRadius: 3, p: 1 } }}
         >
-          <DialogTitle>¿Deseas guardar tu ubicación?</DialogTitle>
-          <DialogContent>
-            <DialogContentText>
+          <DialogTitle sx={{ color: "#103E68", fontWeight: "bold" }}>
+            ¿Deseas guardar tu ubicación?
+          </DialogTitle>
+          <DialogContent dividers>
+            <DialogContentText sx={{ mb: 1, color: "text.secondary" }}>
               Podemos guardar tu ubicación (latitud y longitud) para ofrecer una
               mejor experiencia (mapas, recomendaciones locales). ¿Deseas que
               guardemos tu ubicación?
@@ -284,10 +287,18 @@ const RegisterPage = () => {
               </DialogContentText>
             )}
           </DialogContent>
-          <DialogActions>
+          <DialogActions sx={{ px: 3, pb: 2 }}>
             <Button
               onClick={handleAskLocationConfirm}
               disabled={locationLoading}
+              variant="outlined"
+              sx={{
+                color: "#103E68",
+                borderColor: "#103E68",
+                textTransform: "none",
+                borderRadius: 3,
+                "&:hover": { borderColor: "#35722b", color: "#35722b" },
+              }}
             >
               No guardar
             </Button>
@@ -299,6 +310,12 @@ const RegisterPage = () => {
                   <CircularProgress size={18} color="inherit" />
                 ) : null
               }
+              sx={{
+                bgcolor: "#103E68",
+                "&:hover": { bgcolor: "#35722b" },
+                textTransform: "none",
+                borderRadius: 3,
+              }}
             >
               {locationLoading ? "Obteniendo..." : "Guardar ubicación"}
             </Button>
