@@ -1,9 +1,15 @@
 import React from "react";
 import { Button, CircularProgress } from "@mui/material";
 
-const RegisterButton = ({ loading }) => (
+// Botón flexible: acepta label, loading, type y onClick opcional
+const RegisterButton = ({
+  label = "Enviar",
+  loading = false,
+  type = "button",
+  onClick,
+}) => (
   <Button
-    type="submit"
+    type={type}
     fullWidth
     variant="contained"
     sx={{
@@ -14,12 +20,9 @@ const RegisterButton = ({ loading }) => (
       fontWeight: "bold",
     }}
     disabled={loading}
+    onClick={onClick}
   >
-    {loading ? (
-      <CircularProgress size={24} sx={{ color: "#fff" }} />
-    ) : (
-      "Registrarme"
-    )}
+    {loading ? <CircularProgress size={24} sx={{ color: "#fff" }} /> : label}
   </Button>
 );
 
