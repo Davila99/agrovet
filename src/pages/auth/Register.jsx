@@ -80,10 +80,12 @@ const RegisterPage = () => {
     }
   };
 
-  const submitForm = async () => {
+  // Enviar formulario. Si se pasa formObj, usarlo (útil para enviar con lat/lon sin esperar setState)
+  const submitForm = async (formObj = null) => {
     setError("");
+    const source = formObj || form;
     const formData = new FormData();
-    Object.entries(form).forEach(([key, value]) => {
+    Object.entries(source).forEach(([key, value]) => {
       // no enviar confirm_password
       if (key === "confirm_password") return;
       if (value !== null && value !== undefined) formData.append(key, value);
@@ -187,12 +189,14 @@ const RegisterPage = () => {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const { latitude, longitude } = pos.coords;
-        // añadir al form y enviar
-        setForm((prev) => ({ ...prev, latitude, longitude }));
+        // crear un objeto temporal con lat/lon y enviar inmediatamente
+        const newForm = { ...form, latitude, longitude };
         setLocationLoading(false);
         setLocationAsked(true);
         setShowLocationDialog(false);
-        submitForm();
+        // actualizar estado para consistencia visual
+        setForm(newForm);
+        submitForm(newForm);
       },
       (err) => {
         console.error("Error geolocalización:", err);
