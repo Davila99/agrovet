@@ -1,5 +1,18 @@
 import React, { useState } from "react";
-import { Box, Typography, Paper, Alert, Stack } from "@mui/material";
+import {
+  Box,
+  Typography,
+  Paper,
+  Alert,
+  Stack,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Button,
+  CircularProgress,
+} from "@mui/material";
 import { Link, useNavigate } from "react-router-dom";
 import RegisterFormFields from "./RegisterFormFields";
 import RegisterButton from "./RegisterButton";
@@ -11,6 +24,7 @@ const RegisterPage = () => {
     full_name: "",
     phone_number: "",
     password: "",
+    confirm_password: "",
     last_name: "",
     role: "",
     bio: "",
@@ -20,12 +34,71 @@ const RegisterPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [step, setStep] = useState(1); // 1 o 2
+  const [showLocationDialog, setShowLocationDialog] = useState(false);
+  const [locationAsked, setLocationAsked] = useState(false);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [locationError, setLocationError] = useState("");
+
+  const isPasswordValid = (pwd) => {
+    if (!pwd || typeof pwd !== "string") return false;
+    const minLength = /.{8,}/;
+    const upper = /[A-Z]/;
+    const lower = /[a-z]/;
+    const number = /[0-9]/;
+    const special = /[!@#$%^&*(),.?":{}|<>]/;
+    return (
+      minLength.test(pwd) &&
+      upper.test(pwd) &&
+      lower.test(pwd) &&
+      number.test(pwd) &&
+      special.test(pwd)
+    );
+  };
 
   const handleChange = (e) => {
     if (e.target.type === "file") {
-      setForm({ ...form, [e.target.name]: e.target.files[0] });
-    } else {
-      setForm({ ...form, [e.target.name]: e.target.value });
+      const newForm = { ...form, [e.target.name]: e.target.files[0] };
+      setForm(newForm);
+      return;
+    }
+
+    const newForm = { ...form, [e.target.name]: e.target.value };
+    setForm(newForm);
+
+    // Limpia error si las contraseñas ahora coinciden y son válidas
+    if (
+      (e.target.name === "password" || e.target.name === "confirm_password") &&
+      newForm.password &&
+      newForm.confirm_password
+    ) {
+      if (
+        newForm.password === newForm.confirm_password &&
+        isPasswordValid(newForm.password)
+      ) {
+        setError("");
+      }
+    }
+  };
+
+  const submitForm = async () => {
+    setError("");
+    const formData = new FormData();
+    Object.entries(form).forEach(([key, value]) => {
+      // no enviar confirm_password
+      if (key === "confirm_password") return;
+      if (value !== null && value !== undefined) formData.append(key, value);
+    });
+
+    setLoading(true);
+    try {
+      const res = await authAPI.register(formData);
+      console.log("Registro exitoso:", res);
+      navigate("/login");
+    } catch (err) {
+      console.error("Error al registrar:", err);
+      setError(err.message || "Error al registrar usuario");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -45,8 +118,19 @@ const RegisterPage = () => {
       }
     }
     if (currentStep === 2) {
-      if (!form.password || !form.role || !form.bio) {
-        setError("Completa contraseña, perfil y sobre mi");
+      if (!form.password || !form.confirm_password || !form.role || !form.bio) {
+        setError("Completa contraseña, confirmación, perfil y sobre mi");
+        return false;
+      }
+      if (form.password !== form.confirm_password) {
+        setError("Las contraseñas no coinciden");
+        return false;
+      }
+      // Validación de contraseña mínima
+      if (!isPasswordValid(form.password)) {
+        setError(
+          "La contraseña no cumple los requisitos: mínimo 8 caracteres, mayúscula, minúscula y número"
+        );
         return false;
       }
     }
@@ -68,26 +152,55 @@ const RegisterPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-
     // Validar todo antes de enviar
     if (!validateStep(1) || !validateStep(2)) return;
 
-    const formData = new FormData();
-    Object.entries(form).forEach(([key, value]) => {
-      if (value !== null && value !== undefined) formData.append(key, value);
-    });
-
-    setLoading(true);
-    try {
-      const res = await authAPI.register(formData);
-      console.log("Registro exitoso:", res);
-      navigate("/login");
-    } catch (err) {
-      console.error("Error al registrar:", err);
-      setError(err.message || "Error al registrar usuario");
-    } finally {
-      setLoading(false);
+    // Si no hemos preguntado aún, mostrar diálogo para pedir permiso
+    if (!locationAsked) {
+      setShowLocationDialog(true);
+      return;
     }
+
+    // Si ya preguntamos (aceptó o rechazó), enviamos directamente
+    await submitForm();
+  };
+
+  const handleAskLocationConfirm = () => {
+    // Usuario eligió no guardar ubicación
+    setLocationAsked(true);
+    setShowLocationDialog(false);
+    setLocationError("");
+    // enviar sin ubicación
+    submitForm();
+  };
+
+  const handleAskLocationSave = () => {
+    // Intentar obtener geolocalización
+    setLocationLoading(true);
+    setLocationError("");
+    if (!navigator.geolocation) {
+      setLocationLoading(false);
+      setLocationError("Geolocalización no soportada en este navegador");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        // añadir al form y enviar
+        setForm((prev) => ({ ...prev, latitude, longitude }));
+        setLocationLoading(false);
+        setLocationAsked(true);
+        setShowLocationDialog(false);
+        submitForm();
+      },
+      (err) => {
+        console.error("Error geolocalización:", err);
+        setLocationLoading(false);
+        setLocationError(err.message || "Error al obtener ubicación");
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
   };
 
   return (
@@ -129,10 +242,8 @@ const RegisterPage = () => {
           />
 
           <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
-            {step === 2 ? (
+            {step === 2 && (
               <RegisterButton label="Atrás" type="button" onClick={prevStep} />
-            ) : (
-              <RegisterButton label="" type="button" onClick={() => {}} />
             )}
 
             {step === 1 ? (
@@ -150,6 +261,45 @@ const RegisterPage = () => {
             )}
           </Stack>
         </form>
+
+        {/* Diálogo para preguntar si guardar ubicación */}
+        <Dialog
+          open={showLocationDialog}
+          onClose={() => setShowLocationDialog(false)}
+        >
+          <DialogTitle>¿Deseas guardar tu ubicación?</DialogTitle>
+          <DialogContent>
+            <DialogContentText>
+              Podemos guardar tu ubicación (latitud y longitud) para ofrecer una
+              mejor experiencia (mapas, recomendaciones locales). ¿Deseas que
+              guardemos tu ubicación?
+            </DialogContentText>
+            {locationError && (
+              <DialogContentText sx={{ color: "error.main", mt: 1 }}>
+                {locationError}
+              </DialogContentText>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button
+              onClick={handleAskLocationConfirm}
+              disabled={locationLoading}
+            >
+              No guardar
+            </Button>
+            <Button
+              onClick={handleAskLocationSave}
+              variant="contained"
+              startIcon={
+                locationLoading ? (
+                  <CircularProgress size={18} color="inherit" />
+                ) : null
+              }
+            >
+              {locationLoading ? "Obteniendo..." : "Guardar ubicación"}
+            </Button>
+          </DialogActions>
+        </Dialog>
 
         <Typography variant="body2" sx={{ mt: 2 }}>
           ¿Ya tienes cuenta?{" "}

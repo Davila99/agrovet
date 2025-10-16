@@ -1,7 +1,35 @@
 import React from "react";
-import { TextField, Avatar, Button, IconButton } from "@mui/material";
+import {
+  TextField,
+  Avatar,
+  Button,
+  IconButton,
+  Box,
+  Typography,
+} from "@mui/material";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import CancelIcon from "@mui/icons-material/Cancel";
 import PhotoCamera from "@mui/icons-material/PhotoCamera";
 import DeleteIcon from "@mui/icons-material/Delete";
+
+const renderPasswordRequirement = (pwd, regex, text) => {
+  const ok = pwd && regex.test(pwd);
+  return (
+    <Box key={text} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+      {ok ? (
+        <CheckCircleIcon sx={{ color: "success.main", fontSize: 18 }} />
+      ) : (
+        <CancelIcon sx={{ color: "error.main", fontSize: 18 }} />
+      )}
+      <Typography
+        variant="body2"
+        sx={{ color: ok ? "text.primary" : "text.secondary" }}
+      >
+        {text}
+      </Typography>
+    </Box>
+  );
+};
 
 const RegisterFormFields = ({ form, handleChange, step = 1 }) => {
   return (
@@ -108,6 +136,46 @@ const RegisterFormFields = ({ form, handleChange, step = 1 }) => {
             value={form.password}
             onChange={handleChange}
           />
+          <TextField
+            fullWidth
+            label="Confirmar contraseña"
+            type="password"
+            margin="normal"
+            name="confirm_password"
+            value={form.confirm_password || ""}
+            onChange={handleChange}
+            error={
+              form.confirm_password && form.password !== form.confirm_password
+            }
+            helperText={
+              form.confirm_password && form.password !== form.confirm_password
+                ? "Las contraseñas no coinciden"
+                : ""
+            }
+          />
+          {/* Feedback de requisitos de contraseña */}
+          <Box sx={{ textAlign: "left", mt: 1 }}>
+            <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
+              Requisitos de la contraseña:
+            </Typography>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+              {renderPasswordRequirement(
+                form.password,
+                /.{8,}/,
+                "Al menos 8 caracteres"
+              )}
+              {renderPasswordRequirement(
+                form.password,
+                /[A-Z]/,
+                "Una letra mayúscula"
+              )}
+              {renderPasswordRequirement(
+                form.password,
+                /[a-z]/,
+                "Una letra minúscula"
+              )}
+            </Box>
+          </Box>
           <TextField
             select
             fullWidth

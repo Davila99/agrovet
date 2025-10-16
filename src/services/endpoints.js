@@ -16,7 +16,7 @@ export const authAPI = {
 
   // Endpoint dedicado al perfil autenticado
   profile: (token) =>
-    httpClient(`/auth/users/${id}`, {
+    httpClient(`/auth/users/me/`, {
       method: "GET",
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     }),
@@ -24,6 +24,7 @@ export const authAPI = {
   uploadProfilePicture: (data, token) =>
     httpClient("/profiles/upload-profile-picture/", {
       method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: data,
     }),
 };
