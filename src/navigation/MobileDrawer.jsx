@@ -14,6 +14,9 @@ import {
 } from "@mui/material";
 import ExpandLess from "@mui/icons-material/ExpandLess";
 import ExpandMore from "@mui/icons-material/ExpandMore";
+import HomeIcon from "@mui/icons-material/Home";
+import MapIcon from "@mui/icons-material/Map";
+import InfoIcon from "@mui/icons-material/Info";
 import { Link } from "react-router-dom";
 import { menuItems, comunidadSubmenu } from "./data";
 
@@ -135,6 +138,9 @@ const MobileDrawer = ({
                   "&:hover": { bgcolor: hoverBg },
                 }}
               >
+                {item.icon === "home" && <HomeIcon sx={{ mr: 1 }} />}
+                {item.icon === "map" && <MapIcon sx={{ mr: 1 }} />}
+                {item.icon === "info" && <InfoIcon sx={{ mr: 1 }} />}
                 <ListItemText
                   primary={item.text}
                   primaryTypographyProps={{

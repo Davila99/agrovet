@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useLocation, Link } from "react-router-dom";
+import { useLocation, Link, useNavigate } from "react-router-dom";
 import { AppBar, Toolbar, Box, IconButton, Button, Stack } from "@mui/material";
+import { TextField, InputAdornment, Paper } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import logo from "../assets/logo.svg";
 import DesktopMenu from "./DesktopMenu";
 import UserMenu from "./UserMenu";
 import MobileDrawer from "./MobileDrawer";
 import { getProfile } from "../services/endpoints";
+import SearchIcon from "@mui/icons-material/Search";
+import CloseIcon from "@mui/icons-material/Close";
 
 const Navbar = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -14,6 +17,9 @@ const Navbar = () => {
   const [comunidadOpen, setComunidadOpen] = useState(false);
   const [token, setToken] = useState(() => localStorage.getItem("token"));
   const [user, setUser] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const navigate = useNavigate();
 
   const isLoggedIn = !!token;
 
@@ -112,6 +118,40 @@ const Navbar = () => {
               closeComunidadMenu={closeComunidadMenu}
               isLoggedIn={isLoggedIn}
             />
+
+            {/* Search (desktop) */}
+            <Box sx={{ ml: 2, width: 420 }}>
+              <TextField
+                size="small"
+                fullWidth
+                placeholder="Buscar negocios, veterinarias..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+                    setSearchQuery("");
+                  }
+                }}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        size="small"
+                        onClick={() => {
+                          navigate(
+                            `/search?q=${encodeURIComponent(searchQuery)}`
+                          );
+                          setSearchQuery("");
+                        }}
+                      >
+                        <SearchIcon fontSize="small" />
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Box>
           </Box>
 
           {/* User Actions */}
@@ -161,7 +201,23 @@ const Navbar = () => {
           </Stack>
 
           {/* Mobile Menu Button */}
-          <Box sx={{ display: { xs: "flex", md: "none" }, ml: 1 }}>
+          <Box
+            sx={{
+              display: { xs: "flex", md: "none" },
+              ml: 1,
+              alignItems: "center",
+            }}
+          >
+            {/* Mobile search icon */}
+            <IconButton
+              color="primary"
+              size="large"
+              onClick={() => setMobileSearchOpen((s) => !s)}
+            >
+              {mobileSearchOpen ? <CloseIcon /> : <SearchIcon />}
+            </IconButton>
+
+            {/* Mobile Menu Button */}
             <IconButton
               onClick={toggleDrawer(true)}
               color="primary"
@@ -172,6 +228,45 @@ const Navbar = () => {
           </Box>
         </Toolbar>
       </AppBar>
+
+      {/* Mobile inline search popover */}
+      {mobileSearchOpen && (
+        <Paper
+          sx={{ p: 1, display: { xs: "flex", md: "none" }, gap: 1 }}
+          elevation={3}
+        >
+          <TextField
+            size="small"
+            placeholder="Buscar..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+                setSearchQuery("");
+                setMobileSearchOpen(false);
+              }
+            }}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    size="small"
+                    onClick={() => {
+                      navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+                      setSearchQuery("");
+                      setMobileSearchOpen(false);
+                    }}
+                  >
+                    <SearchIcon fontSize="small" />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+            sx={{ flex: 1 }}
+          />
+        </Paper>
+      )}
 
       <MobileDrawer
         open={drawerOpen}

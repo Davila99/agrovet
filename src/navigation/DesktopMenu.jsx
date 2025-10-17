@@ -1,5 +1,9 @@
 import React, { useState } from "react";
 import { Box, Button, Menu, MenuItem } from "@mui/material";
+import HomeIcon from "@mui/icons-material/Home";
+import MapIcon from "@mui/icons-material/Map";
+import InfoIcon from "@mui/icons-material/Info";
+import DashboardIcon from "@mui/icons-material/Dashboard";
 import { Link } from "react-router-dom";
 import { menuItems, comunidadSubmenu } from "./data";
 
@@ -19,7 +23,7 @@ const DesktopMenu = ({
         alignItems: "center",
       }}
     >
-      {menuItems.map(({ text, path, submenu }) =>
+      {menuItems.map(({ text, path, submenu, icon }) =>
         submenu ? (
           <Box
             key={text}
@@ -27,7 +31,19 @@ const DesktopMenu = ({
             onMouseLeave={closeComunidadMenu}
             sx={{ position: "relative" }}
           >
-            <Button sx={{ color: "#103e68" }}>{text}</Button>
+            <Button
+              sx={{
+                color: "#103e68",
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+              }}
+            >
+              {icon === "home" && <HomeIcon fontSize="small" />}
+              {icon === "map" && <MapIcon fontSize="small" />}
+              {icon === "info" && <InfoIcon fontSize="small" />}
+              {text}
+            </Button>
             <Menu
               anchorEl={comunidadMenuAnchor}
               open={Boolean(comunidadMenuAnchor)}
@@ -53,8 +69,16 @@ const DesktopMenu = ({
             key={text}
             component={Link}
             to={path}
-            sx={{ color: "#103e68" }}
+            sx={{
+              color: "#103e68",
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+            }}
           >
+            {icon === "home" && <HomeIcon fontSize="small" />}
+            {icon === "map" && <MapIcon fontSize="small" />}
+            {icon === "info" && <InfoIcon fontSize="small" />}
             {text}
           </Button>
         )
@@ -66,6 +90,12 @@ const DesktopMenu = ({
             sx={{ color: "#103e68" }}
             onClick={(e) => setAdminAnchor(e.currentTarget)}
           >
+            <DashboardIcon
+              fontSize="small"
+              sx={{
+                marginRight: 1,
+              }}
+            />
             Dashboard
           </Button>
           <Menu

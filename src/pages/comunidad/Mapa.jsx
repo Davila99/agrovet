@@ -182,7 +182,7 @@ const Mapa3DGratis = () => {
     >
       <Box ref={mapContainer} sx={{ width: "100%", height: "100%" }} />
 
-      {/* 📍 Panel superior: ubicación (estilo "liquid" — vidrio + gradiente animado) */}
+      {/* 📍 Panel superior: ubicación (más transparente, estilo Google Maps) */}
       <Paper
         elevation={3}
         sx={{
@@ -191,42 +191,14 @@ const Mapa3DGratis = () => {
           left: 12,
           p: 1,
           borderRadius: 2,
+          bgcolor: "rgba(0,0,0,0.32)",
           color: "white",
           fontSize: "0.85rem",
-          backdropFilter: "blur(6px) saturate(120%)",
+          backdropFilter: "blur(6px)",
           boxShadow: "0 6px 18px rgba(0,0,0,0.18)",
           minWidth: 160,
-          overflow: "hidden",
-          // animated liquid gradient
-          background:
-            "linear-gradient(135deg, rgba(58,123,213,0.28), rgba(58,213,163,0.18))",
-          backgroundSize: "300% 300%",
-          animation: "liquidAnim 8s ease-in-out infinite",
-          // keyframes
-          "@keyframes liquidAnim": {
-            "0%": { backgroundPosition: "0% 50%" },
-            "50%": { backgroundPosition: "100% 50%" },
-            "100%": { backgroundPosition: "0% 50%" },
-          },
         }}
       >
-        {/* decorative floating blob */}
-        <Box
-          sx={{
-            position: "absolute",
-            right: -30,
-            top: -20,
-            width: 120,
-            height: 120,
-            borderRadius: "50%",
-            filter: "blur(24px)",
-            opacity: 0.18,
-            background:
-              "radial-gradient(circle at 30% 30%, rgba(255,255,255,0.45), rgba(255,255,255,0) 40%)",
-            pointerEvents: "none",
-          }}
-        />
-
         <Typography variant="caption" display="block">
           🧭 Centro: {center[1].toFixed(4)}, {center[0].toFixed(4)}
         </Typography>
@@ -241,7 +213,7 @@ const Mapa3DGratis = () => {
         )}
       </Paper>
 
-      {/* 🧭 Panel inferior: selector de tipo de mapa y controles (estilo "liquid") */}
+      {/* 🧭 Panel inferior: selector de tipo de mapa y controles (estilo Google Maps) */}
       <Paper
         elevation={3}
         sx={{
@@ -251,41 +223,19 @@ const Mapa3DGratis = () => {
           transform: "translateX(-50%)",
           p: 0.75,
           borderRadius: 20,
-          color: "#000",
+          bgcolor: "rgba(255,255,255,0.95)",
           display: "flex",
           alignItems: "center",
-
           gap: 1,
           boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
-          animation: "liquidAnimBottom 10s ease-in-out infinite",
-          backdropFilter: "blur(6px) saturate(120%)",
-          background:
-            "linear-gradient(135deg, hsla(0, 0%, 100%, 0.28), rgba(255, 255, 255, 0.55))",
         }}
       >
-        {/* subtle animated blob */}
-        <Box
-          sx={{
-            position: "absolute",
-            left: -40,
-            bottom: -30,
-            width: 160,
-            height: 160,
-            borderRadius: "50%",
-            filter: "blur(30px)",
-            opacity: 0.12,
-            background:
-              "radial-gradient(circle at 40% 40%, rgba(255,255,255,0.36), rgba(255,255,255,0) 45%)",
-            pointerEvents: "none",
-          }}
-        />
-
         <Typography
           variant="body2"
           sx={{
             pl: 1,
             pr: 0.5,
-            color: "rgba(255,255,255,0.9)",
+            color: "text.secondary",
             display: { xs: "none", sm: "inline-block" },
           }}
         >
@@ -301,13 +251,7 @@ const Mapa3DGratis = () => {
             fontSize: "0.85rem",
             borderRadius: 8,
             bgcolor: "transparent",
-            // slightly translucent inner background to emulate liquid button
-            "& .MuiSelect-select": {
-              backgroundColor: "rgba(255,255,255,0.06)",
-              padding: "6px 12px",
-              borderRadius: 6,
-            },
-            color: "white",
+            backgroundColor: "rgba(184, 234, 253, 0.13)",
           }}
         >
           {BASE_PROVIDERS.map((p, idx) => (
@@ -324,11 +268,7 @@ const Mapa3DGratis = () => {
               onClick={() =>
                 mapRef.current?.flyTo({ center, zoom: 7, essential: true })
               }
-              sx={{
-                bgcolor: "rgba(255,255,255,0.06)",
-                borderRadius: 1,
-                color: "white",
-              }}
+              sx={{ bgcolor: "rgba(0,0,0,0.06)", borderRadius: 1 }}
             >
               <MyLocationIcon fontSize="small" />
             </IconButton>
@@ -337,9 +277,9 @@ const Mapa3DGratis = () => {
           <Tooltip title="Limpiar marcadores">
             <IconButton
               size="small"
-              color="inherit"
+              color="error"
               onClick={handleClearMarkers}
-              sx={{ bgcolor: "rgba(255,255,255,0.06)", borderRadius: 1 }}
+              sx={{ bgcolor: "rgba(0,0,0,0.06)", borderRadius: 1 }}
             >
               <RefreshIcon fontSize="small" />
             </IconButton>
