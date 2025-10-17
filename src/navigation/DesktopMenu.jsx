@@ -7,6 +7,7 @@ const DesktopMenu = ({
   comunidadMenuAnchor,
   openComunidadMenu,
   closeComunidadMenu,
+  isLoggedIn,
 }) => {
   return (
     <Box
@@ -56,6 +57,12 @@ const DesktopMenu = ({
             {text}
           </Button>
         )
+      )}
+
+      {isLoggedIn && (
+        <Button component={Link} to="/dashboard" sx={{ color: "#103e68" }}>
+          Dashboard
+        </Button>
       )}
     </Box>
   );

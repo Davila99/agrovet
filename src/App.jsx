@@ -10,6 +10,8 @@ import ChatView from "./pages/comunidad/ChatView";
 import RegisterPage from "./pages/auth/Register";
 import Footer from "./pages/Fotter";
 import Perfil from "./pages/profile/Perfil";
+import ProtectedRoute from "./components/ProtectedRoute";
+import Dashboard from "./pages/Dashboard";
 
 function App() {
   return (
@@ -19,12 +21,26 @@ function App() {
         <Route path="/" element={<HomePage />} />
 
         <Route path="/comunidad/mapa" element={<NicaraguaMap />} />
-        <Route path="/comunidad/chat" element={<ChatView />} />
 
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/acerca-de" element={<QuienesSomos />} />
-        <Route path="/perfil" element={<Perfil />} />
+        <Route
+          path="/perfil"
+          element={
+            <ProtectedRoute>
+              <Perfil />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
       <Footer />
     </Router>

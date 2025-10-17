@@ -54,7 +54,7 @@ const LoginPage = () => {
         );
       }
 
-      navigate("/"); // Redirigimos
+      navigate("/dashboard", { replace: true }); // Redirigimos al dashboard
     } catch (err) {
       setError(err.message || "Credenciales inválidas");
     } finally {

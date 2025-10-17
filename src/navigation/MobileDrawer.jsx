@@ -167,6 +167,20 @@ const MobileDrawer = ({
             <ListItem disablePadding>
               <ListItemButton
                 component={Link}
+                to="/dashboard"
+                onClick={onClose}
+                sx={{
+                  borderRadius: 2,
+                  mb: 0.5,
+                  "&:hover": { bgcolor: hoverBg },
+                }}
+              >
+                <ListItemText primary="Dashboard" />
+              </ListItemButton>
+            </ListItem>
+            <ListItem disablePadding>
+              <ListItemButton
+                component={Link}
                 to="/configuracion"
                 onClick={onClose}
                 sx={{

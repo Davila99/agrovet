@@ -9,6 +9,8 @@ import {
 } from "@mui/material";
 import { Save } from "@mui/icons-material";
 import BusinessmanProfile from "./RoleProfile/Businessman";
+import ConsumerProfile from "./RoleProfile/consumer";
+import SpecialistProfile from "./RoleProfile/Specialist";
 
 const PerfilForm = ({ editing, form, onChange, onSave }) => {
   const fields = [
@@ -83,7 +85,13 @@ const PerfilForm = ({ editing, form, onChange, onSave }) => {
           </Box>
         )}
       </Box>
-      <BusinessmanProfile />
+      {!editing && (
+        <Box sx={{ mt: 3 }}>
+          {form.role === "businessman" && <BusinessmanProfile user={form} />}
+          {form.role === "consumer" && <ConsumerProfile user={form} />}
+          {form.role === "specialist" && <SpecialistProfile user={form} />}
+        </Box>
+      )}
     </Box>
   );
 };

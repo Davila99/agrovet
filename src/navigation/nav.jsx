@@ -110,6 +110,7 @@ const Navbar = () => {
               comunidadMenuAnchor={comunidadMenuAnchor}
               openComunidadMenu={openComunidadMenu}
               closeComunidadMenu={closeComunidadMenu}
+              isLoggedIn={isLoggedIn}
             />
           </Box>
 

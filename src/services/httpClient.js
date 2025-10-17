@@ -10,6 +10,15 @@ async function request(endpoint, options = {}) {
   const { headers, ...rest } = options;
   try {
     let fetchHeaders = { ...headers };
+    // Añadir Authorization si hay token en localStorage y no fue pasada en headers
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      if (token && !fetchHeaders.Authorization && !fetchHeaders.authorization) {
+        fetchHeaders.Authorization = `Bearer ${token}`;
+      }
+    } catch (e) {
+      // Ignorar acceso a localStorage en entornos no-browser
+    }
     if (rest.body instanceof FormData) {
       delete fetchHeaders["Content-Type"];
     } else {
