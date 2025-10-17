@@ -87,9 +87,16 @@ const PerfilForm = ({ editing, form, onChange, onSave }) => {
       </Box>
       {!editing && (
         <Box sx={{ mt: 3 }}>
-          {form.role === "businessman" && <BusinessmanProfile user={form} />}
-          {form.role === "consumer" && <ConsumerProfile user={form} />}
-          {form.role === "specialist" && <SpecialistProfile user={form} />}
+          {/* Comparaciones case-insensitive por si el backend devuelve 'Specialist' */}
+          {(form.role || "").toString().toLowerCase() === "businessman" && (
+            <BusinessmanProfile user={form} />
+          )}
+          {(form.role || "").toString().toLowerCase() === "consumer" && (
+            <ConsumerProfile user={form} />
+          )}
+          {(form.role || "").toString().toLowerCase() === "specialist" && (
+            <SpecialistProfile user={form} />
+          )}
         </Box>
       )}
     </Box>
