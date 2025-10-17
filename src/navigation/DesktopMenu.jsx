@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Box, Button, Menu, MenuItem } from "@mui/material";
 import { Link } from "react-router-dom";
 import { menuItems, comunidadSubmenu } from "./data";
@@ -9,6 +9,7 @@ const DesktopMenu = ({
   closeComunidadMenu,
   isLoggedIn,
 }) => {
+  const [adminAnchor, setAdminAnchor] = useState(null);
   return (
     <Box
       sx={{
@@ -60,9 +61,34 @@ const DesktopMenu = ({
       )}
 
       {isLoggedIn && (
-        <Button component={Link} to="/dashboard" sx={{ color: "#103e68" }}>
-          Dashboard
-        </Button>
+        <Box>
+          <Button
+            sx={{ color: "#103e68" }}
+            onClick={(e) => setAdminAnchor(e.currentTarget)}
+          >
+            Dashboard
+          </Button>
+          <Menu
+            anchorEl={adminAnchor}
+            open={Boolean(adminAnchor)}
+            onClose={() => setAdminAnchor(null)}
+          >
+            <MenuItem
+              component={Link}
+              to="/dashboard?tab=chat"
+              onClick={() => setAdminAnchor(null)}
+            >
+              Chat
+            </MenuItem>
+            <MenuItem
+              component={Link}
+              to="/dashboard?tab=config"
+              onClick={() => setAdminAnchor(null)}
+            >
+              Configuración
+            </MenuItem>
+          </Menu>
+        </Box>
       )}
     </Box>
   );

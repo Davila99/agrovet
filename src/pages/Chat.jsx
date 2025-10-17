@@ -1,292 +1,245 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import {
   Box,
-  Drawer,
   List,
   ListItemButton,
   ListItemAvatar,
   Avatar,
   ListItemText,
   Typography,
-  IconButton,
   Divider,
-  TextField,
+  IconButton,
+  InputBase,
   Paper,
   useMediaQuery,
-  Stack,
+  AppBar,
+  Toolbar,
 } from "@mui/material";
-import MenuIcon from "@mui/icons-material/Menu";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import SendIcon from "@mui/icons-material/Send";
+import AttachFileIcon from "@mui/icons-material/AttachFile";
 
-const mockChats = [
+const initialConversations = [
   {
-    id: "1",
-    name: "María",
-    lastMessage: "¿Cómo va ese proyecto?",
-    avatar: "",
+    id: "c1",
+    name: "María García",
+    avatar: "https://i.pravatar.cc/40?img=12",
+    lastMessage: "Gracias, lo reviso esta tarde",
     messages: [
-      { id: 1, from: "them", text: "Hola!" },
-      { id: 2, from: "me", text: "Bien, trabajando en ello." },
+      { id: 1, fromMe: false, text: "¿Puedes revisar el informe?" },
+      { id: 2, fromMe: true, text: "Sí, en 10 minutos te lo envío" },
+      { id: 3, fromMe: false, text: "Perfecto, gracias" },
     ],
   },
   {
-    id: "2",
-    name: "Carlos",
-    lastMessage: "Nos vemos mañana",
-    avatar: "",
-    messages: [{ id: 1, from: "them", text: "Listo, confirmé hora" }],
+    id: "c2",
+    name: "Comunidad Agro",
+    avatar: "https://i.pravatar.cc/40?img=5",
+    lastMessage: "Nuevo anuncio publicado",
+    messages: [
+      { id: 1, fromMe: false, text: "Recordatorio: plática mañana 10AM" },
+    ],
+  },
+  {
+    id: "c3",
+    name: "Tienda Local",
+    avatar: "https://i.pravatar.cc/40?img=3",
+    lastMessage: "Pedido listo para recogida",
+    messages: [{ id: 1, fromMe: false, text: "Tu pedido está listo" }],
   },
 ];
 
-const Sidebar = ({ chats, onSelect, selectedId }) => {
-  return (
-    <Box
-      sx={{
-        width: 300,
-        bgcolor: "background.paper",
-        height: "100%",
-        borderRight: "1px solid rgba(0,0,0,0.06)",
-      }}
-    >
-      <Box
-        sx={{
-          p: 2,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <Typography variant="h6">Chats</Typography>
-        <IconButton size="small">{/* placeholder for new chat */}+</IconButton>
-      </Box>
-      <Divider />
-      <List>
-        {chats.map((c) => (
-          <ListItemButton
-            key={c.id}
-            selected={selectedId === c.id}
-            onClick={() => onSelect(c.id)}
-            sx={{ py: 1.25 }}
-          >
-            <ListItemAvatar>
-              <Avatar sx={{ bgcolor: "primary.main" }}>
-                {c.name?.[0] || "U"}
-              </Avatar>
-            </ListItemAvatar>
-            <ListItemText
-              primary={c.name}
-              secondary={c.lastMessage}
-              primaryTypographyProps={{ fontWeight: 600 }}
-            />
-          </ListItemButton>
-        ))}
-      </List>
-    </Box>
+export default function Chat() {
+  const isMd = useMediaQuery("(min-width:900px)");
+  const [conversations, setConversations] = useState(initialConversations);
+  // No seleccionar automáticamente ningún chat al cargar — comportamiento tipo WhatsApp
+  const [activeId, setActiveId] = useState(null);
+  const [text, setText] = useState("");
+  const messagesEndRef = useRef(null);
+
+  const activeConv = useMemo(
+    () => conversations.find((c) => c.id === activeId) || null,
+    [conversations, activeId]
   );
-};
 
-const ChatWindow = ({ chat, onSend }) => {
-  const bottomRef = useRef(null);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chat]);
-
-  return (
-    <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      <Box
-        sx={{
-          p: 2,
-          borderBottom: "1px solid rgba(0,0,0,0.08)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <Box>
-          <Typography variant="h6">
-            {chat?.name || "Selecciona un chat"}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {chat?.lastMessage}
-          </Typography>
-        </Box>
-        <Stack direction="row" spacing={1}>
-          <IconButton size="small">📎</IconButton>
-          <IconButton size="small">⋯</IconButton>
-        </Stack>
-      </Box>
-
-      <Box sx={{ flex: 1, p: 2, overflowY: "auto", bgcolor: "#fafbfd" }}>
-        {chat?.messages?.map((m) => (
-          <Box
-            key={m.id}
-            sx={{
-              display: "flex",
-              mb: 1.25,
-              justifyContent: m.from === "me" ? "flex-end" : "flex-start",
-              px: 1,
-            }}
-          >
-            <Paper
-              elevation={0}
-              sx={{
-                p: 1.25,
-                maxWidth: { xs: "80%", md: "60%" },
-                borderRadius: 2,
-                bgcolor: m.from === "me" ? "primary.main" : "#fff",
-                color: m.from === "me" ? "#fff" : "text.primary",
-                boxShadow: m.from === "me" ? 2 : 1,
-              }}
-            >
-              <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>
-                {m.text}
-              </Typography>
-            </Paper>
-          </Box>
-        ))}
-        <div ref={bottomRef} />
-      </Box>
-
-      <Box
-        sx={{
-          p: 1.5,
-          borderTop: "1px solid rgba(0,0,0,0.06)",
-          background: "linear-gradient(180deg, #fff, #f7fbff)",
-        }}
-      >
-        <MessageInput onSend={onSend} />
-      </Box>
-    </Box>
-  );
-};
-
-const MessageInput = ({ onSend }) => {
-  const [value, setValue] = useState("");
-
-  const send = () => {
-    if (!value.trim()) return;
-    onSend(value.trim());
-    setValue("");
+  const selectChat = (id) => {
+    setActiveId(id);
   };
 
-  const onKeyDown = (e) => {
+  const goBackToList = () => setActiveId(null);
+
+  const handleSend = () => {
+    const trimmed = text.trim();
+    if (!trimmed || !activeId) return;
+    setConversations((prev) =>
+      prev.map((c) => {
+        if (c.id !== activeId) return c;
+        const nextMsg = { id: Date.now(), fromMe: true, text: trimmed };
+        return {
+          ...c,
+          messages: [...c.messages, nextMsg],
+          lastMessage: trimmed,
+        };
+      })
+    );
+    setText("");
+    // Scroll to bottom
+    setTimeout(
+      () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }),
+      50
+    );
+  };
+
+  const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      send();
+      handleSend();
     }
   };
 
   return (
-    <Box sx={{ display: "flex", gap: 1 }}>
-      <TextField
-        multiline
-        maxRows={4}
-        placeholder="Escribe un mensaje"
-        fullWidth
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onKeyDown={onKeyDown}
-        size="small"
-      />
-      <IconButton color="primary" onClick={send} sx={{ alignSelf: "flex-end" }}>
-        <SendIcon />
-      </IconButton>
-    </Box>
-  );
-};
-
-const Chat = () => {
-  const [chats, setChats] = useState(mockChats);
-  const [selectedId, setSelectedId] = useState(chats[0]?.id || null);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const isMd = useMediaQuery("(min-width:900px)");
-
-  useEffect(() => {
-    if (!selectedId && chats.length) setSelectedId(chats[0].id);
-  }, [chats, selectedId]);
-
-  const selectedChat = chats.find((c) => c.id === selectedId) || null;
-
-  const handleSelect = (id) => {
-    setSelectedId(id);
-    if (!isMd) setMobileOpen(false);
-  };
-
-  const handleSend = (text) => {
-    if (!selectedId) return;
-    setChats((prev) =>
-      prev.map((c) =>
-        c.id === selectedId
-          ? {
-              ...c,
-              lastMessage: text,
-              messages: [
-                ...(c.messages || []),
-                { id: Date.now(), from: "me", text },
-              ],
-            }
-          : c
-      )
-    );
-  };
-
-  return (
-    <Box sx={{ height: "100%", display: { xs: "block", md: "flex" } }}>
-      {isMd ? (
-        <Sidebar
-          chats={chats}
-          onSelect={handleSelect}
-          selectedId={selectedId}
-        />
-      ) : (
-        <IconButton
-          onClick={() => setMobileOpen(true)}
-          sx={{ position: "absolute", top: 86, left: 18, zIndex: 1200 }}
+    <Box sx={{ display: "flex", height: "100%" }}>
+      {/* Lista lateral - oculta en móvil cuando se está en un chat */}
+      {(!activeId || isMd) && (
+        <Box
+          sx={{
+            width: { xs: "100%", md: 320 },
+            borderRight: { md: "1px solid rgba(0,0,0,0.08)" },
+            bgcolor: "background.paper",
+            display: { xs: activeId && !isMd ? "none" : "block" },
+          }}
         >
-          <MenuIcon />
-        </IconButton>
+          <Box sx={{ p: 2 }}>
+            <Typography variant="h6">Chats</Typography>
+            <Typography variant="caption" color="text.secondary">
+              Conversaciones recientes
+            </Typography>
+          </Box>
+          <Divider />
+          <List>
+            {conversations.map((c) => (
+              <ListItemButton
+                key={c.id}
+                onClick={() => selectChat(c.id)}
+                selected={activeId === c.id}
+              >
+                <ListItemAvatar>
+                  <Avatar src={c.avatar} alt={c.name} />
+                </ListItemAvatar>
+                <ListItemText
+                  primary={c.name}
+                  secondary={
+                    <Typography variant="body2" color="text.secondary">
+                      {c.lastMessage}
+                    </Typography>
+                  }
+                />
+              </ListItemButton>
+            ))}
+          </List>
+        </Box>
       )}
 
-      <Drawer
-        anchor="left"
-        open={mobileOpen}
-        onClose={() => setMobileOpen(false)}
-      >
-        <Sidebar
-          chats={chats}
-          onSelect={handleSelect}
-          selectedId={selectedId}
-        />
-      </Drawer>
+      {/* Panel de conversación */}
+      <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        {/* Header en mobile con botón atrás */}
+        {!isMd && activeId && (
+          <AppBar position="static" color="transparent" elevation={1}>
+            <Toolbar>
+              <IconButton edge="start" onClick={goBackToList} aria-label="back">
+                <ArrowBackIcon />
+              </IconButton>
+              <Typography variant="subtitle1">{activeConv?.name}</Typography>
+            </Toolbar>
+          </AppBar>
+        )}
 
-      <Box
-        sx={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          minHeight: 420,
-        }}
-      >
-        {selectedChat ? (
-          <ChatWindow chat={selectedChat} onSend={handleSend} />
-        ) : (
+        {/* Mostrar placeholder sólo en escritorio cuando no hay chat seleccionado */}
+        {!activeId && isMd ? (
           <Box
             sx={{
               flex: 1,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
+              p: 2,
             }}
           >
-            <Typography variant="h6" color="text.secondary">
-              Selecciona un chat
+            <Typography variant="body1" color="text.secondary">
+              Selecciona un chat para comenzar a conversar
             </Typography>
           </Box>
-        )}
+        ) : activeId ? (
+          <Box
+            sx={{ display: "flex", flexDirection: "column", height: "100%" }}
+          >
+            <Box sx={{ flex: 1, overflowY: "auto", p: 2 }}>
+              {activeConv?.messages.map((m) => (
+                <Box
+                  key={m.id}
+                  sx={{
+                    display: "flex",
+                    justifyContent: m.fromMe ? "flex-end" : "flex-start",
+                    mb: 1,
+                  }}
+                >
+                  <Paper
+                    sx={{
+                      p: 1.2,
+                      maxWidth: "75%",
+                      bgcolor: m.fromMe ? "primary.main" : "grey.100",
+                      color: m.fromMe ? "#fff" : "text.primary",
+                    }}
+                  >
+                    <Typography variant="body2">{m.text}</Typography>
+                  </Paper>
+                </Box>
+              ))}
+              <div ref={messagesEndRef} />
+            </Box>
+
+            {/* Input */}
+            <Box
+              sx={{
+                p: 1,
+                borderTop: "1px solid rgba(0,0,0,0.08)",
+                display: "flex",
+                gap: 1,
+                alignItems: "center",
+              }}
+            >
+              <IconButton>
+                <AttachFileIcon />
+              </IconButton>
+              <Paper
+                component="form"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSend();
+                }}
+                sx={{ flex: 1, display: "flex", alignItems: "center", px: 1 }}
+              >
+                <InputBase
+                  multiline
+                  maxRows={4}
+                  placeholder="Escribe un mensaje"
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  sx={{ width: "100%" }}
+                />
+              </Paper>
+              <IconButton
+                color="primary"
+                onClick={handleSend}
+                aria-label="send"
+              >
+                <SendIcon />
+              </IconButton>
+            </Box>
+          </Box>
+        ) : null}
       </Box>
     </Box>
   );
-};
-
-export default Chat;
+}
