@@ -188,7 +188,7 @@ const RegisterFormFields = ({ form, handleChange, step = 1 }) => {
           >
             <option value=""></option>
             <option value="Specialist">Especialista</option>
-            <option value="businessman">Negocio Agropecuario</option>
+            <option value="businessman">Negocio</option>
             <option value="consumer">Consumidor</option>
           </TextField>
           <TextField

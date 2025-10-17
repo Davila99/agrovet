@@ -70,7 +70,7 @@ async function request(endpoint, options = {}) {
     return data;
   } catch (err) {
     console.error("❌ API error:", err && err.message ? err.message : err);
-    // Detectar errores de red / timeout: incluir AbortError, TypeError y mensajes comunes
+    
     const msg = err && (err.message || "") ;
     const isNetworkError = Boolean(
       err && (

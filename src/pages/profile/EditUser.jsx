@@ -167,6 +167,12 @@ const EditUser = () => {
           value={user.last_name || ""}
           onChange={handleChange}
         />
+        <TextField
+          label="Biografía"
+          name="bio"
+          value={user.bio || ""}
+          onChange={handleChange}
+        />
 
         <Box>
           <Typography variant="caption" display="block" sx={{ mb: 0.5 }}>
