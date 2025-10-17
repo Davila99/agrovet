@@ -4,6 +4,7 @@ import { getProfile } from "../../services/endpoints";
 import PerfilHeader from "./PerfilHeader";
 import PerfilForm from "./PerfilForm";
 import PerfilPortfolio from "./PerfilPortfolio";
+import PerfilContactHistory from "./PerfilContactHistory";
 
 const Perfil = () => {
   const [user, setUser] = useState(null);
@@ -74,9 +75,9 @@ const Perfil = () => {
         display: "flex",
         justifyContent: "center",
         alignItems: "flex-start",
-        minHeight: "90vh",
+
         bgcolor: "#f0f2f5",
-        p: { xs: 1, sm: 2, md: 4 },
+        p: 1,
       }}
     >
       <Paper
@@ -109,7 +110,15 @@ const Perfil = () => {
             onChange={handleChange}
             onSave={handleSave}
           />
-          <PerfilPortfolio editing={editing} portfolio={user.portfolio || []} />
+          {/* Mostrar portafolio para especialistas/empresarios; para consumer mostrar historial de contacto */}
+          {(user.role || "").toString().toLowerCase() === "consumer" ? (
+            <PerfilContactHistory contactHistory={user.contact_history || []} />
+          ) : (
+            <PerfilPortfolio
+              editing={editing}
+              portfolio={user.portfolio || []}
+            />
+          )}
         </Box>
       </Paper>
     </Box>

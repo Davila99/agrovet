@@ -9,7 +9,6 @@ import {
 } from "@mui/material";
 import { Save } from "@mui/icons-material";
 import BusinessmanProfile from "./RoleProfile/Businessman";
-import ConsumerProfile from "./RoleProfile/consumer";
 import SpecialistProfile from "./RoleProfile/Specialist";
 
 const PerfilForm = ({ editing, form, onChange, onSave }) => {
@@ -90,9 +89,6 @@ const PerfilForm = ({ editing, form, onChange, onSave }) => {
           {/* Comparaciones case-insensitive por si el backend devuelve 'Specialist' */}
           {(form.role || "").toString().toLowerCase() === "businessman" && (
             <BusinessmanProfile user={form} />
-          )}
-          {(form.role || "").toString().toLowerCase() === "consumer" && (
-            <ConsumerProfile user={form} />
           )}
           {(form.role || "").toString().toLowerCase() === "specialist" && (
             <SpecialistProfile user={form} />

@@ -1,67 +1,117 @@
-import React, { useState } from "react";
-import { Box, Grid, TextField, Button, Typography } from "@mui/material";
+import React from "react";
+import {
+  Box,
+  Avatar,
+  Typography,
+  Divider,
+  Grid,
+  Link as MuiLink,
+} from "@mui/material";
+import { Link as RouterLink } from "react-router-dom";
 
-const BusinessmanProfile = () => {
-  const [values, setValues] = useState({
-    business_name: "",
-    description: "",
-    contact: "",
-    business_email: "",
-  });
+const FieldRow = ({ label, value }) => (
+  <Box sx={{ py: 1 }}>
+    <Typography variant="subtitle2" sx={{ color: "text.secondary" }}>
+      {label}
+    </Typography>
+    <Typography
+      variant="body2"
+      sx={{ color: value ? "text.primary" : "text.disabled" }}
+    >
+      {value ?? "— Sin información —"}
+    </Typography>
+  </Box>
+);
 
-  const fields = [
-    { name: "business_name", label: "Nombre del negocio" },
-    { name: "description", label: "Descripción del negocio" },
-    { name: "contact", label: "Contacto" },
-    { name: "business_email", label: "Email del negocio" },
-  ];
+const BusinessmanProfile = ({ user }) => {
+  if (!user) return null;
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setValues((prev) => ({ ...prev, [name]: value }));
-  };
+  // Comparar role case-insensitive
+  if ((user.role || "").toString().toLowerCase() !== "businessman") return null;
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // Aquí puedes enviar `values` al servidor o al contexto/global store
-    console.log("Guardar perfil de negocio:", values);
-  };
+  const profile = user.businessman_profile || {};
+  const {
+    user_display,
+    business_name,
+    descriptions,
+    contact,
+    location_description,
+    offers_local_products,
+  } = profile;
+
+  // las coordenadas las proporciona el objeto `user` (cliente)
+  const lat = user.latitude ?? null;
+  const lon = user.longitude ?? null;
+  const mapLink =
+    lat && lon
+      ? `/comunidad/mapa?lat=${encodeURIComponent(
+          lat
+        )}&lon=${encodeURIComponent(lon)}`
+      : `/comunidad/mapa?q=${encodeURIComponent(
+          location_description || business_name || ""
+        )}`;
 
   return (
-    <Box component="form" onSubmit={handleSubmit} sx={{ p: 2 }}>
-      <Typography variant="h5" gutterBottom>
-        Perfil de Empresario
-      </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Aquí puedes gestionar la información específica relacionada con tu rol
-        como empresario.
-      </Typography>
+    <Box>
+      <Box
+        sx={{
+          p: 2,
+          borderRadius: 2,
+          bgcolor: "white",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+        }}
+      >
+        <Typography variant="h6" sx={{ mb: 1 }}>
+          Información del negocio
+        </Typography>
 
-      <Grid container spacing={2}>
-        {fields.map((f) => (
-          <Grid
-            item
-            xs={12}
-            sm={f.name === "description" ? 12 : 6}
-            key={f.name}
-          >
-            <TextField
-              fullWidth
-              label={f.label}
-              name={f.name}
-              value={values[f.name]}
-              onChange={handleChange}
-              multiline={f.name === "description"}
-              minRows={f.name === "description" ? 3 : 1}
-            />
+        <Divider sx={{ mb: 2 }} />
+
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={6}>
+            {/* Nombre público, Sobre mí (descriptions) y Nombre del negocio apilados */}
+            <FieldRow label="Nombre público" value={user_display} />
+            <FieldRow label="Descripción" value={descriptions} />
+            <FieldRow label="Nombre del negocio" value={business_name} />
           </Grid>
-        ))}
-      </Grid>
 
-      <Box sx={{ mt: 2 }}>
-        <Button type="submit" variant="contained">
-          Guardar
-        </Button>
+          <Grid item xs={12} md={6}>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <FieldRow label="Contacto" value={contact} />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Box sx={{ py: 1 }}>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ color: "text.secondary" }}
+                  >
+                    Descripción ubicación
+                  </Typography>
+                  {location_description ? (
+                    <MuiLink
+                      component={RouterLink}
+                      to={mapLink}
+                      sx={{ fontSize: "0.95rem" }}
+                    >
+                      {location_description}
+                    </MuiLink>
+                  ) : (
+                    <Typography variant="body2" sx={{ color: "text.disabled" }}>
+                      — Sin información —
+                    </Typography>
+                  )}
+                </Box>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <FieldRow
+                  label="Ofrece productos locales"
+                  value={offers_local_products ? "Sí" : "No"}
+                />
+              </Grid>
+            </Grid>
+          </Grid>
+        </Grid>
       </Box>
     </Box>
   );

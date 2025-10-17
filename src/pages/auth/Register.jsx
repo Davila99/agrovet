@@ -85,10 +85,35 @@ const RegisterPage = () => {
     setError("");
     const source = formObj || form;
     const formData = new FormData();
+    // Helper para formatear coordenadas y evitar demasiados dígitos
+    const formatCoordinate = (num) => {
+      if (num === null || num === undefined || Number.isNaN(Number(num)))
+        return num;
+      const v = Number(num);
+      const abs = Math.abs(v);
+      const intDigits = Math.floor(abs).toString().length; // dígitos antes del punto
+      const maxDigits = 10; // límite del backend
+      // permitimos hasta 6 decimales por defecto
+      let allowedDecimals = Math.max(0, maxDigits - intDigits);
+      if (allowedDecimals > 6) allowedDecimals = 6;
+      // si intDigits ya excede maxDigits, truncar sin decimales
+      if (intDigits > maxDigits) return v.toFixed(0);
+      return v.toFixed(allowedDecimals);
+    };
+
     Object.entries(source).forEach(([key, value]) => {
       // no enviar confirm_password
       if (key === "confirm_password") return;
-      if (value !== null && value !== undefined) formData.append(key, value);
+      let toAppend = value;
+      if (
+        (key === "latitude" || key === "longitude") &&
+        value !== null &&
+        value !== undefined
+      ) {
+        toAppend = formatCoordinate(value);
+      }
+      if (toAppend !== null && toAppend !== undefined)
+        formData.append(key, toAppend);
     });
 
     setLoading(true);
@@ -269,7 +294,7 @@ const RegisterPage = () => {
         {/* Diálogo para preguntar si guardar ubicación (estilizado) */}
         <Dialog
           open={showLocationDialog}
-          onClose={() => setShowLocationDialog(false)}
+          onClose={handleAskLocationConfirm}
           PaperProps={{ sx: { borderRadius: 3, p: 1 } }}
         >
           <DialogTitle sx={{ color: "#103E68", fontWeight: "bold" }}>
@@ -278,8 +303,16 @@ const RegisterPage = () => {
           <DialogContent dividers>
             <DialogContentText sx={{ mb: 1, color: "text.secondary" }}>
               Podemos guardar tu ubicación (latitud y longitud) para ofrecer una
-              mejor experiencia (mapas, recomendaciones locales). ¿Deseas que
-              guardemos tu ubicación?
+              mejor experiencia (mapas, recomendaciones locales). Si eliges
+              guardar tu ubicación, ésta se almacenará junto con tu cuenta.
+              Puedes revisar los{" "}
+              <Link
+                to="/terms"
+                style={{ color: "#103E68", fontWeight: "bold" }}
+              >
+                Términos y Condiciones
+              </Link>{" "}
+              antes de continuar.
             </DialogContentText>
             {locationError && (
               <DialogContentText sx={{ color: "error.main", mt: 1 }}>
@@ -288,20 +321,6 @@ const RegisterPage = () => {
             )}
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 2 }}>
-            <Button
-              onClick={handleAskLocationConfirm}
-              disabled={locationLoading}
-              variant="outlined"
-              sx={{
-                color: "#103E68",
-                borderColor: "#103E68",
-                textTransform: "none",
-                borderRadius: 3,
-                "&:hover": { borderColor: "#35722b", color: "#35722b" },
-              }}
-            >
-              No guardar
-            </Button>
             <Button
               onClick={handleAskLocationSave}
               variant="contained"
@@ -317,7 +336,7 @@ const RegisterPage = () => {
                 borderRadius: 3,
               }}
             >
-              {locationLoading ? "Obteniendo..." : "Guardar ubicación"}
+              {locationLoading ? "Obteniendo..." : "Aceptar"}
             </Button>
           </DialogActions>
         </Dialog>
