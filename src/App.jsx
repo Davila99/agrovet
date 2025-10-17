@@ -6,7 +6,6 @@ import HomePage from "./pages/Inicio";
 import QuienesSomos from "./pages/AcercaDe";
 import LoginPage from "./pages/auth/Login";
 import NicaraguaMap from "./pages/comunidad/Mapa";
-import ChatView from "./pages/comunidad/ChatView";
 import RegisterPage from "./pages/auth/Register";
 import Footer from "./pages/Fotter";
 import Perfil from "./pages/profile/Perfil";

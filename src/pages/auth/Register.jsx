@@ -177,7 +177,7 @@ const RegisterPage = () => {
   };
 
   const handleAskLocationSave = () => {
-    // Intentar obtener geolocalización
+    // Intentar obtener geolocalización con
     setLocationLoading(true);
     setLocationError("");
     if (!navigator.geolocation) {

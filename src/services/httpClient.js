@@ -24,9 +24,20 @@ async function request(endpoint, options = {}) {
     } else {
       fetchHeaders["Content-Type"] = "application/json";
     }
+    // Implementar timeout para fetch
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const signal = controller ? controller.signal : undefined;
+    const timeoutMs = 15000; // 15s
+    const timeout = controller
+      ? setTimeout(() => controller.abort(), timeoutMs)
+      : null;
+
     const res = await fetch(`${BASE_URL}${endpoint}`, {
       headers: fetchHeaders,
+      signal,
       ...rest,
+    }).finally(() => {
+      if (timeout) clearTimeout(timeout);
     });
 
     let text = await res.text().catch(() => "");
@@ -45,11 +56,37 @@ async function request(endpoint, options = {}) {
         endpoint: `${BASE_URL}${endpoint}`,
       });
       const message = data.detail || data.error || data.message || `HTTP ${res.status} ${res.statusText}`;
-      throw new Error(message);
+      // Si es error de servidor (5xx) notificamos que el servicio está caído
+      if (res.status >= 500 && typeof window !== 'undefined') {
+        try {
+          window.__AGROVET_SERVICE_DOWN = true;
+          window.dispatchEvent(new CustomEvent('agrovet:service-down'));
+        } catch (e) {}
+      }
+      const err = new Error(message);
+      err.status = res.status;
+      throw err;
     }
     return data;
   } catch (err) {
-    console.error("❌ API error:", err.message);
+    console.error("❌ API error:", err && err.message ? err.message : err);
+    // Detectar errores de red / timeout: incluir AbortError, TypeError y mensajes comunes
+    const msg = err && (err.message || "") ;
+    const isNetworkError = Boolean(
+      err && (
+        err.name === 'AbortError' ||
+        err instanceof TypeError ||
+        /failed to fetch/i.test(msg) ||
+        /networkerror/i.test(msg) ||
+        /network error/i.test(msg)
+      )
+    );
+    if (isNetworkError && typeof window !== 'undefined') {
+      try {
+        window.__AGROVET_SERVICE_DOWN = true;
+        window.dispatchEvent(new CustomEvent('agrovet:service-down'));
+      } catch (e) {}
+    }
     throw err;
   }
 }
@@ -90,3 +127,33 @@ const httpClient = (endpoint, options = {}) => {
 };
 
 export default httpClient;
+
+export function clearServiceDownFlag() {
+  if (typeof window !== 'undefined') {
+    window.__AGROVET_SERVICE_DOWN = false;
+    window.dispatchEvent(new CustomEvent('agrovet:service-up'));
+  }
+}
+
+// Comprobación rápida del servicio (intenta hacer fetch a la base URL)
+export async function checkService(timeoutMs = 5000) {
+  if (typeof window === 'undefined') return true;
+  try {
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const signal = controller ? controller.signal : undefined;
+    const t = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+    await fetch(BASE_URL + "/", { method: "GET", signal });
+    if (t) clearTimeout(t);
+    // si llega aquí, servicio responde (aunque sea 404 o CORS opaque), limpiamos flag
+    window.__AGROVET_SERVICE_DOWN = false;
+    window.dispatchEvent(new CustomEvent('agrovet:service-up'));
+    return true;
+  } catch (e) {
+    // network error / timeout
+    try {
+      window.__AGROVET_SERVICE_DOWN = true;
+      window.dispatchEvent(new CustomEvent('agrovet:service-down'));
+    } catch (err) {}
+    return false;
+  }
+}

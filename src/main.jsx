@@ -3,6 +3,8 @@ import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.jsx";
 import "./styles/n8n-overrides.css";
+
+import { checkService } from "./services/httpClient";
 // En src/main.jsx o App.jsx
 import {
   Chart as ChartJS,
@@ -29,3 +31,6 @@ createRoot(document.getElementById("root")).render(
     <App />
   </StrictMode>
 );
+
+// Hacer una comprobación rápida del servicio al inicio para mostrar overlay si está caído
+checkService().catch(() => {});

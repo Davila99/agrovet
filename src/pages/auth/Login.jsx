@@ -10,6 +10,7 @@ import {
 } from "@mui/material";
 import { Link, useNavigate } from "react-router-dom";
 import { authAPI } from "../../services/endpoints";
+import showSweetAlert from "../../utils/alert";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -56,6 +57,20 @@ const LoginPage = () => {
 
       navigate("/dashboard", { replace: true }); // Redirigimos al dashboard
     } catch (err) {
+      // Si es un error de servidor (5xx) o el servicio fue marcado como caído, mostrar alerta especial
+      const status = err && err.status ? err.status : null;
+      if (status && status >= 500) {
+        await showSweetAlert(
+          "Sistema fuera de servicio",
+          "Error del servidor (5xx). Intenta más tarde."
+        );
+      }
+      if (typeof window !== "undefined" && window.__AGROVET_SERVICE_DOWN) {
+        await showSweetAlert(
+          "Sistema fuera de servicio",
+          "No se puede conectar con el backend. Intenta más tarde."
+        );
+      }
       setError(err.message || "Credenciales inválidas");
     } finally {
       setLoading(false);
