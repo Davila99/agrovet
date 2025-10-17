@@ -117,6 +117,13 @@ const DesktopMenu = ({
             >
               Configuración
             </MenuItem>
+            <MenuItem
+              component={Link}
+              to="/dashboard?tab=specialists"
+              onClick={() => setAdminAnchor(null)}
+            >
+              Especialistas
+            </MenuItem>
           </Menu>
         </Box>
       )}

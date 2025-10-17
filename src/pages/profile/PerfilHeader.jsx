@@ -1,9 +1,9 @@
 import React from "react";
 import { Box, Avatar, Typography, Button, Rating } from "@mui/material";
 import MapOutlinedIcon from "@mui/icons-material/MapOutlined";
-import { Link as RouterLink } from "react-router-dom";
+import { Link as RouterLink, useNavigate } from "react-router-dom";
 
-const PerfilHeader = ({ user, editing, setEditing }) => {
+const PerfilHeader = ({ user, editing, setEditing, isOwnProfile = true }) => {
   const handleEditToggle = () => setEditing && setEditing((prev) => !prev);
 
   const buildMapLinkForBusiness = () => {
@@ -30,6 +30,32 @@ const PerfilHeader = ({ user, editing, setEditing }) => {
       )}&lon=${encodeURIComponent(lon)}`;
     }
     return `/comunidad/mapa?q=${encodeURIComponent(q)}`;
+  };
+
+  const navigate = useNavigate();
+
+  const handleEditClick = () => {
+    const target = `/perfil/editar/${
+      user?.id || localStorage.getItem("userId")
+    }`;
+    try {
+      const token =
+        typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      if (!token) {
+        // No token: redirigir al login (evita 403 al abrir editor sin credenciales)
+        // También podemos mostrar una alerta breve
+        try {
+          window.alert("Debes iniciar sesión para editar el perfil.");
+        } catch (e) {}
+        navigate("/auth/login");
+        return;
+      }
+    } catch (e) {
+      // Si falla el acceso a localStorage, prevenir navegación insegura
+      navigate("/auth/login");
+      return;
+    }
+    navigate(target);
   };
 
   return (
@@ -113,16 +139,20 @@ const PerfilHeader = ({ user, editing, setEditing }) => {
             </Button>
           )}
 
-          {/* Botón para editar usuario (perfil general) */}
-          <Button
-            component={RouterLink}
-            to={`/perfil/editar/${user?.id || localStorage.getItem("userId")}`}
-            variant="contained"
-            color="primary"
-            sx={{ textTransform: "none", borderRadius: 2 }}
-          >
-            Editar usuario
-          </Button>
+          {/* Botón para editar usuario (perfil general) - oculto si se está viendo como visitante */}
+          {isOwnProfile && (
+            <Button
+              component={RouterLink}
+              to={`/perfil/editar/${
+                user?.id || localStorage.getItem("userId")
+              }`}
+              variant="contained"
+              color="primary"
+              sx={{ textTransform: "none", borderRadius: 2 }}
+            >
+              Editar usuario
+            </Button>
+          )}
         </Box>
       </Box>
     </>

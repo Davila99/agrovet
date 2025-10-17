@@ -11,6 +11,7 @@ import {
 } from "@mui/material";
 
 import Chat from "./Chat";
+import SpecialistsList from "./Dashboard/SpecialistsList";
 // import Configuracion from "./Configuracion";
 
 const Dashboard = () => {
@@ -25,8 +26,14 @@ const Dashboard = () => {
     try {
       const params = new URLSearchParams(location.search);
       const tab = params.get("tab");
-      if (tab === "chat" || tab === "config")
-        setSelected(tab === "config" ? "config" : "chat");
+      if (tab === "chat" || tab === "config" || tab === "specialists")
+        setSelected(
+          tab === "config"
+            ? "config"
+            : tab === "specialists"
+            ? "specialists"
+            : "chat"
+        );
     } catch (e) {
       // ignore
     }
@@ -59,6 +66,7 @@ const Dashboard = () => {
           }}
         >
           {selected === "chat" && <Chat />}
+          {selected === "specialists" && <SpecialistsList />}
           {selected === "config" && (
             <Typography variant="h6" color="text.secondary">
               Aquí irán las configuraciones ⚙️
