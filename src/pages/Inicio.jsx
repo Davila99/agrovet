@@ -246,6 +246,47 @@ const WelcomePage = () => {
             </Button>
           )}
         </Box>
+        <Box sx={{ py: 6 }}>
+          <Container
+            maxWidth="sm"
+            sx={{
+              bgcolor: "#fff",
+              p: 4,
+              borderRadius: 2,
+              boxShadow: 3,
+              textAlign: "center",
+            }}
+          >
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={fadeInUp}
+            >
+              <Typography
+                variant="h6"
+                fontWeight="bold"
+                sx={{ mb: 1, color: "#000" }}
+              >
+                Reseña de usuario satisfecho
+              </Typography>
+
+              <Typography
+                variant="body1"
+                sx={{ fontStyle: "italic", mb: 2, color: "#000" }}
+              >
+                "AgroVets me ayudó a identificar y resolver problemas en mi hato
+                en tiempo récord. La comunidad y los consejos profesionales
+                marcaron una gran diferencia en mi producción. ¡Muy
+                recomendable!"
+              </Typography>
+
+              <Typography variant="subtitle2" color="text.secondary">
+                — María López, productora
+              </Typography>
+            </motion.div>
+          </Container>
+        </Box>
       </motion.div>
     </Box>
   );

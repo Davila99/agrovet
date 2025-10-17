@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Avatar, Typography, Button } from "@mui/material";
+import { Box, Avatar, Typography, Button, Rating } from "@mui/material";
 import MapOutlinedIcon from "@mui/icons-material/MapOutlined";
 import { Link as RouterLink } from "react-router-dom";
 
@@ -70,9 +70,29 @@ const PerfilHeader = ({ user, editing, setEditing }) => {
         </Avatar>
 
         <Box sx={{ flexGrow: 1, textAlign: { xs: "center", sm: "left" } }}>
-          <Typography variant="h6" fontWeight="bold" color="#103E68">
-            {user?.full_name} {user?.last_name}
-          </Typography>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              justifyContent: { xs: "center", sm: "flex-start" },
+            }}
+          >
+            <Typography variant="h6" fontWeight="bold" color="#103E68">
+              {user?.full_name} {user?.last_name}
+            </Typography>
+            {/* Mostrar puntuación como estrellas para profesionales (specialist) */}
+            {(user?.role || "").toString().toLowerCase() === "specialist" && (
+              <Rating
+                name="read-only-rating"
+                value={Number(user?.specialist_profile?.puntuations || 0)}
+                precision={0.5}
+                size="small"
+                readOnly
+              />
+            )}
+          </Box>
+
           <Typography color="text.secondary">
             {user?.role === "Specialist" && "Especialista"}
             {user?.role === "businessman" && "Negocio"}
@@ -87,11 +107,22 @@ const PerfilHeader = ({ user, editing, setEditing }) => {
               to={buildMapLinkForBusiness()}
               variant="outlined"
               startIcon={<MapOutlinedIcon />}
-              sx={{ textTransform: "none", borderRadius: 2 }}
+              sx={{ textTransform: "none", borderRadius: 2, mr: 1 }}
             >
               Ir al mapa
             </Button>
           )}
+
+          {/* Botón para editar usuario (perfil general) */}
+          <Button
+            component={RouterLink}
+            to={`/perfil/editar/${user?.id || localStorage.getItem("userId")}`}
+            variant="contained"
+            color="primary"
+            sx={{ textTransform: "none", borderRadius: 2 }}
+          >
+            Editar usuario
+          </Button>
         </Box>
       </Box>
     </>

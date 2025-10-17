@@ -30,14 +30,8 @@ const BusinessmanProfile = ({ user }) => {
   if ((user.role || "").toString().toLowerCase() !== "businessman") return null;
 
   const profile = user.businessman_profile || {};
-  const {
-    user_display,
-    business_name,
-    descriptions,
-    contact,
-    location_description,
-    offers_local_products,
-  } = profile;
+  const { user_display, business_name, descriptions, offers_local_products } =
+    profile;
 
   // las coordenadas las proporciona el objeto `user` (cliente)
   const lat = user.latitude ?? null;
@@ -77,32 +71,6 @@ const BusinessmanProfile = ({ user }) => {
 
           <Grid item xs={12} md={6}>
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <FieldRow label="Contacto" value={contact} />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Box sx={{ py: 1 }}>
-                  <Typography
-                    variant="subtitle2"
-                    sx={{ color: "text.secondary" }}
-                  >
-                    Descripción ubicación
-                  </Typography>
-                  {location_description ? (
-                    <MuiLink
-                      component={RouterLink}
-                      to={mapLink}
-                      sx={{ fontSize: "0.95rem" }}
-                    >
-                      {location_description}
-                    </MuiLink>
-                  ) : (
-                    <Typography variant="body2" sx={{ color: "text.disabled" }}>
-                      — Sin información —
-                    </Typography>
-                  )}
-                </Box>
-              </Grid>
               <Grid item xs={12} sm={6}>
                 <FieldRow
                   label="Ofrece productos locales"

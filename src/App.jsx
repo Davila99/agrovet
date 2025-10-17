@@ -9,6 +9,7 @@ import NicaraguaMap from "./pages/comunidad/Mapa";
 import RegisterPage from "./pages/auth/Register";
 import Footer from "./pages/Fotter";
 import Perfil from "./pages/profile/Perfil";
+import EditUser from "./pages/profile/EditUser";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 
@@ -29,6 +30,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Perfil />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/perfil/editar/:id"
+          element={
+            <ProtectedRoute>
+              <EditUser />
             </ProtectedRoute>
           }
         />

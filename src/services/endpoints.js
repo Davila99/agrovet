@@ -14,6 +14,13 @@ export const authAPI = {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     }),
 
+  updateUser: (id, data, token) =>
+    httpClient(`/auth/users/${id}/`, {
+      method: "PATCH",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: data,
+    }),
+
   // Endpoint dedicado al perfil autenticado
   profile: (token) =>
     httpClient(`/auth/users/me/`, {

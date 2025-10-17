@@ -97,11 +97,30 @@ const Mapa3DGratis = () => {
   useEffect(() => {
     if (!mapContainer.current) return;
 
+    // revisar query params para centrar el mapa desde enlaces (p. ej. /comunidad/mapa?lat=...&lon=...)
+    const params = new URLSearchParams(window.location.search);
+    const latParam = params.get("lat");
+    const lonParam = params.get("lon");
+
+    let initialCenter = center;
+    let initialZoom = zoom;
+    let centerFromParams = false;
+
+    if (latParam && lonParam) {
+      const latN = parseFloat(latParam);
+      const lonN = parseFloat(lonParam);
+      if (!isNaN(latN) && !isNaN(lonN)) {
+        initialCenter = [lonN, latN];
+        initialZoom = 14; // más cercano al abrir desde perfil
+        centerFromParams = true;
+      }
+    }
+
     const map = new maplibregl.Map({
       container: mapContainer.current,
       style: makeStyle(BASE_PROVIDERS[providerIdx]),
-      center,
-      zoom,
+      center: initialCenter,
+      zoom: initialZoom,
       pitch: 0,
     });
 
@@ -138,6 +157,23 @@ const Mapa3DGratis = () => {
         .addTo(map);
     };
     map.on("click", onClick);
+
+    // Si las coords venían en la URL, agregar un marcador inicial
+    if (centerFromParams) {
+      const coords = initialCenter;
+      setLastClick(coords);
+      setMarkers((prev) => [...prev, coords]);
+      new maplibregl.Marker({ color: "#ff6600" })
+        .setLngLat(coords)
+        .setPopup(
+          new maplibregl.Popup().setHTML(
+            `<b>Ubicación</b><br/>Lat: ${coords[1].toFixed(
+              5
+            )}, Lng: ${coords[0].toFixed(5)}`
+          )
+        )
+        .addTo(map);
+    }
 
     map.on("move", () => {
       const c = map.getCenter();
