@@ -10,7 +10,7 @@ import {
   FormControlLabel,
 } from "@mui/material";
 import { useParams, useNavigate } from "react-router-dom";
-import { authAPI } from "../../services/endpoints";
+import { authAPI, profilesAPI } from "../../services/endpoints";
 
 const EditUser = () => {
   const { id } = useParams();
@@ -114,6 +114,23 @@ const EditUser = () => {
         }
 
         await authAPI.updateUser(id, fd, token);
+        // Si hay specialist_profile, intentar actualizarlo por user id
+        if (user.specialist_profile) {
+          try {
+            await profilesAPI.patchSpecialistByUser(
+              Number(id),
+              user.specialist_profile,
+              token
+            );
+          } catch (e) {
+            // fallback a PUT si PATCH no está soportado por user id
+            await profilesAPI.putSpecialistByUser(
+              Number(id),
+              user.specialist_profile,
+              token
+            );
+          }
+        }
       } else {
         const payload = { ...user };
         // evitar enviar preview blob como profile_picture
@@ -124,6 +141,22 @@ const EditUser = () => {
           delete payload.profile_picture;
         }
         await authAPI.updateUser(id, payload, token);
+        // actualizar specialist_profile por separado si existe
+        if (user.specialist_profile) {
+          try {
+            await profilesAPI.patchSpecialistByUser(
+              Number(id),
+              user.specialist_profile,
+              token
+            );
+          } catch (e) {
+            await profilesAPI.putSpecialistByUser(
+              Number(id),
+              user.specialist_profile,
+              token
+            );
+          }
+        }
       }
       navigate("/perfil");
     } catch (e) {
