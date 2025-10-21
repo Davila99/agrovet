@@ -147,6 +147,12 @@ const LoginPage = () => {
           </Button>
         </form>
 
+        <Typography variant="body2" sx={{ mt: 1 }}>
+          <Link to="/auth/reset-phone" style={{ color: "#103E68", fontWeight: "bold" }}>
+            ¿Olvidaste tu contraseña?
+          </Link>
+        </Typography>
+
         <Typography variant="body2" sx={{ mt: 2 }}>
           ¿No tienes cuenta?{" "}
           <Link to="/register" style={{ color: "#103E68", fontWeight: "bold" }}>

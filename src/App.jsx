@@ -5,6 +5,7 @@ import Navbar from "./navigation/nav.jsx";
 import HomePage from "./pages/Inicio";
 import QuienesSomos from "./pages/AcercaDe";
 import LoginPage from "./pages/auth/Login";
+import ResetByPhone from "./pages/auth/ResetByPhone";
 import NicaraguaMap from "./pages/comunidad/Mapa";
 import RegisterPage from "./pages/auth/Register";
 import Footer from "./pages/Fotter";
@@ -23,6 +24,7 @@ function App() {
         <Route path="/comunidad/mapa" element={<NicaraguaMap />} />
 
         <Route path="/login" element={<LoginPage />} />
+  <Route path="/auth/reset-phone" element={<ResetByPhone />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/acerca-de" element={<QuienesSomos />} />
         <Route
