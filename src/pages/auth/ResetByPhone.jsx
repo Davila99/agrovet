@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { requestPasswordResetByPhone, verifyCodeAndResetPassword } from "../../services/passwordReset";
 import { Box, TextField, Button, Typography, Alert } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import showSweetAlert from "../../utils/alert";
 
 export default function ResetByPhone() {
   const [step, setStep] = useState(1); // 1: solicitar, 2: verificar
@@ -34,6 +35,7 @@ export default function ResetByPhone() {
     if (!res.ok) {
       setError(res.error || "Error al verificar código");
       setMsg("");
+      await showSweetAlert("Error", res.error || "Error al verificar código", "error");
       return;
     }
     setMsg("Contraseña actualizada correctamente. Ya puedes iniciar sesión.");
@@ -41,8 +43,9 @@ export default function ResetByPhone() {
     setPhone("");
     setCode("");
     setNewPass("");
-    // opcional: redirigir a login
-    setTimeout(() => navigate("/auth/login"), 1500);
+    // mostrar sweet alert y redirigir a login
+    await showSweetAlert("Éxito", "Contraseña actualizada correctamente", "success");
+    navigate("/login");
   }
 
   return (
