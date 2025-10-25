@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import AVALogo from "../../assets/AVA.svg";
-import AVAFallback from "../../assets/logo.svg";
+import AVALogo from "../../../assets/AVA.svg";
+import AVAFallback from "../../../assets/logo.svg";
 import "@n8n/chat/style.css";
 import { createChat } from "@n8n/chat";
 

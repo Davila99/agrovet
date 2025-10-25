@@ -18,8 +18,8 @@ import Button from "../../atoms/Button";
 import HomeIcon from "@mui/icons-material/Home";
 import MapIcon from "@mui/icons-material/Map";
 import InfoIcon from "@mui/icons-material/Info";
-import DashboardIcon from "@mui/icons-material/Dashboard";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
+import DashboardIcon from "@mui/icons-material/Dashboard";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
 import PeopleIcon from "@mui/icons-material/People";
 import BusinessIcon from "@mui/icons-material/Business";
@@ -60,6 +60,15 @@ const DesktopMenu = ({
                 {icon === "map" && (
                   <MapIcon sx={{ marginRight: 1 }} fontSize="small" />
                 )}
+                {icon === "chat" && (
+                  <ChatBubbleOutlineIcon
+                    sx={{ marginRight: 1 }}
+                    fontSize="small"
+                  />
+                )}
+                {icon === "ava" && (
+                  <SmartToyIcon sx={{ marginRight: 1 }} fontSize="small" />
+                )}
                 {icon === "info" && (
                   <InfoIcon sx={{ marginRight: 1 }} fontSize="small" />
                 )}
@@ -94,6 +103,12 @@ const DesktopMenu = ({
               )}
               {icon === "map" && (
                 <MapIcon sx={{ marginRight: 1 }} fontSize="small" />
+              )}
+              {icon === "chat" && (
+                <ChatBubbleOutlineIcon
+                  sx={{ marginRight: 1 }}
+                  fontSize="small"
+                />
               )}
               {icon === "info" && (
                 <InfoIcon sx={{ marginRight: 1 }} fontSize="small" />

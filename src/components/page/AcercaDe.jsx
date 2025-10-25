@@ -1,6 +1,6 @@
 import React from "react";
-import AVALogo from "../assets/AVA.svg";
-import AVAFallback from "../assets/logo.svg";
+import AVALogo from "../../assets/AVA.svg";
+import AVAFallback from "../../assets/logo.svg";
 import {
   Box,
   Typography,

@@ -4,17 +4,18 @@ import { ThemeProvider } from "@mui/material/styles";
 import { theme } from "./theme/theme.js";
 
 // Páginas
-import HomePage from "./pages/Inicio";
-import QuienesSomos from "./pages/AcercaDe";
-import LoginPage from "./pages/auth/Login";
-import ResetByPhone from "./pages/auth/ResetByPhone";
-import NicaraguaMap from "./pages/comunidad/Mapa";
-import RegisterPage from "./pages/auth/Register";
-import Footer from "./pages/Fotter";
-import Perfil from "./pages/profile/Perfil";
-import EditUser from "./pages/profile/EditUser";
+import HomePage from "./components/page/Inicio";
+import QuienesSomos from "./components/page/AcercaDe.jsx";
+import LoginPage from "./components/page/auth/Login.jsx";
+import RegisterPage from "./components/page/auth/Register.jsx";
+import ResetByPhone from "./components/page/auth/ResetByPhone";
+import NicaraguaMap from "./components/page/map/Mapa.jsx";
+import Footer from "./components/page/Fotter.jsx";
+import Perfil from "./components/page/profile/Perfil.jsx";
+import EditUser from "./components/page/profile/EditUser.jsx";
 import ProtectedRoute from "./middleware/ProtectedRoute.jsx";
-import Dashboard from "./pages/Dashboard";
+import Dashboard from "./components/page/Dashboard.jsx";
+import ChatPage from "./components/page/ChatPage";
 
 function App() {
   return (
@@ -54,6 +55,7 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route path="/chat" element={<ChatPage />} />
         </Routes>
         <Footer />
       </Router>

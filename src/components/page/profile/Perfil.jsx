@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Box, Paper, CircularProgress, Alert } from "@mui/material";
-import { getProfile, authAPI } from "../../services/endpoints";
+import { getProfile, authAPI } from "../../../services/endpoints";
 import { useLocation } from "react-router-dom";
 import PerfilHeader from "./PerfilHeader";
 import PerfilForm from "./PerfilForm";

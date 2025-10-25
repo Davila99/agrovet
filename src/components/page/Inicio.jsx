@@ -3,9 +3,9 @@ import { Container, Typography, Button, Box, CardMedia } from "@mui/material";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 
-import banner1 from "../assets/image/banner1.webp";
-import banner2 from "../assets/image/banner2.webp";
-import banner3 from "../assets/image/banner3.webp";
+import banner1 from "../../assets/image/banner1.webp";
+import banner2 from "../../assets/image/banner2.webp";
+import banner3 from "../../assets/image/banner3.webp";
 import LandingAgrovets from "./HomePage/LandingAgrovets";
 import NotificationsSection from "./HomePage/NotificationsSection";
 

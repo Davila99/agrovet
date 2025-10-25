@@ -16,7 +16,7 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import RegisterFormFields from "./RegisterFormFields";
 import RegisterButton from "./RegisterButton";
-import { authAPI } from "../../services/endpoints";
+import { authAPI } from "../../../services/endpoints";
 
 const RegisterPage = () => {
   const navigate = useNavigate();

@@ -17,6 +17,8 @@ import ExpandMore from "@mui/icons-material/ExpandMore";
 import HomeIcon from "@mui/icons-material/Home";
 import MapIcon from "@mui/icons-material/Map";
 import InfoIcon from "@mui/icons-material/Info";
+import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
+import SmartToyIcon from "@mui/icons-material/SmartToy";
 import { Link } from "react-router-dom";
 import { menuItems, comunidadSubmenu } from "./data";
 
@@ -85,7 +87,7 @@ const MobileDrawer = ({
                 onClick={handleComunidadCollapse}
                 sx={{
                   borderRadius: 2,
-                  mb: 0.5,
+
                   "&:hover": { bgcolor: hoverBg },
                 }}
               >
@@ -128,18 +130,13 @@ const MobileDrawer = ({
             </React.Fragment>
           ) : (
             <ListItem key={item.text} disablePadding>
-              <ListItemButton
-                component={Link}
-                to={item.path}
-                onClick={onClose}
-                sx={{
-                  borderRadius: 2,
-                  mb: 0.5,
-                  "&:hover": { bgcolor: hoverBg },
-                }}
-              >
+              <ListItemButton component={Link} to={item.path} onClick={onClose}>
                 {item.icon === "home" && <HomeIcon sx={{ mr: 1 }} />}
                 {item.icon === "map" && <MapIcon sx={{ mr: 1 }} />}
+                {item.icon === "ava" && <SmartToyIcon sx={{ mr: 1 }} />}
+                {item.icon === "chat" && (
+                  <ChatBubbleOutlineIcon sx={{ mr: 1 }} />
+                )}
                 {item.icon === "info" && <InfoIcon sx={{ mr: 1 }} />}
                 <ListItemText
                   primary={item.text}

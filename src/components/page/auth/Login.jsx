@@ -9,8 +9,8 @@ import {
   CircularProgress,
 } from "@mui/material";
 import { Link, useNavigate } from "react-router-dom";
-import { authAPI } from "../../services/endpoints";
-import showSweetAlert from "../../utils/alert";
+import { authAPI } from "../../../services/endpoints";
+import showSweetAlert from "../../../utils/alert";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -148,7 +148,10 @@ const LoginPage = () => {
         </form>
 
         <Typography variant="body2" sx={{ mt: 1 }}>
-          <Link to="/auth/reset-phone" style={{ color: "#103E68", fontWeight: "bold" }}>
+          <Link
+            to="/auth/reset-phone"
+            style={{ color: "#103E68", fontWeight: "bold" }}
+          >
             ¿Olvidaste tu contraseña?
           </Link>
         </Typography>

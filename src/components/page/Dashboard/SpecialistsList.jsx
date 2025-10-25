@@ -15,7 +15,7 @@ import {
   Rating,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import httpClient from "../../services/httpClient";
+import httpClient from "../../../services/httpClient";
 
 // Componente que muestra una lista de usuarios con role 'specialist'
 const SpecialistsList = () => {

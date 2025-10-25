@@ -1,10 +1,9 @@
 import React from "react";
 import { Box, Typography, Divider, Button } from "@mui/material";
 import { motion } from "framer-motion";
-import ImgOne from "../../assets/image/img1.webp";
-import ImgThree from "../../assets/image/img3.webp";
-import ImgFour from "../../assets/image/img4.webp";
-import ChatBot from "./ChatBot";
+import ImgOne from "../../../assets/image/img1.webp";
+import ImgThree from "../../../assets/image/img3.webp";
+import ImgFour from "../../../assets/image/img4.webp";
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 50 },
@@ -333,8 +332,7 @@ const LandingAgrovetsAnim = () => {
 
       <Divider sx={{ mb: 8 }} />
 
-      {/* ChatBot */}
-      <ChatBot />
+      {/* ChatBot moved to its own route (/chat) and removed from landing */}
     </Box>
   );
 };

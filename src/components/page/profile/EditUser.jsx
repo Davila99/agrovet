@@ -10,7 +10,7 @@ import {
   FormControlLabel,
 } from "@mui/material";
 import { useParams, useNavigate } from "react-router-dom";
-import { authAPI, profilesAPI } from "../../services/endpoints";
+import { authAPI, profilesAPI } from "../../../services/endpoints";
 
 const EditUser = () => {
   const { id } = useParams();
