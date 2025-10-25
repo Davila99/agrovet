@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Container, Typography, Button, Box, CardMedia } from "@mui/material";
 import { motion } from "framer-motion";
+import { getProfile } from "../services/endpoints";
 import { useNavigate } from "react-router-dom";
 
 import banner1 from "../assets/image/banner1.webp";
@@ -22,8 +23,37 @@ const WelcomePage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) setIsLoggedIn(true);
+    let mounted = true;
+    const check = async () => {
+      try {
+        const raw = localStorage.getItem("token");
+        if (!raw) {
+          if (mounted) setIsLoggedIn(false);
+          return;
+        }
+        const token = String(raw)
+          .replace(/^Token\s*/i, "")
+          .replace(/^Bearer\s*/i, "")
+          .trim();
+        if (!token) {
+          if (mounted) setIsLoggedIn(false);
+          return;
+        }
+        try {
+          const profile = await getProfile(token);
+          if (mounted && profile && profile.id) setIsLoggedIn(true);
+          else if (mounted) setIsLoggedIn(false);
+        } catch (e) {
+          if (mounted) setIsLoggedIn(false);
+        }
+      } catch (e) {
+        if (mounted) setIsLoggedIn(false);
+      }
+    };
+    check();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   useEffect(() => {
