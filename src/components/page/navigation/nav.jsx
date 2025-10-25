@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useLocation, Link, useNavigate } from "react-router-dom";
-import { AppBar, Toolbar, Box, IconButton, Button, Stack } from "@mui/material";
+import { useLocation, useNavigate } from "react-router-dom";
+import { AppBar, Toolbar, Box, IconButton, Link, Stack } from "@mui/material";
+import Button from "../../atoms/Button";
 import { TextField, InputAdornment, Paper } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
-import logo from "../assets/logo.svg";
+import logo from "../../../assets/logo.svg";
 import DesktopMenu from "./DesktopMenu";
 import UserMenu from "./UserMenu";
 import MobileDrawer from "./MobileDrawer";
-import { getProfile } from "../services/endpoints";
+import { getProfile } from "../../../services/endpoints";
 import SearchIcon from "@mui/icons-material/Search";
 import CloseIcon from "@mui/icons-material/Close";
 
@@ -177,31 +178,18 @@ const Navbar = () => {
               ) : (
                 <>
                   <Button
-                    variant="outlined"
-                    color="primary"
-                    component={Link}
+                    variant="outline"
+                    size="md"
+                    LinkComponent={Link}
                     to="/login"
-                    sx={{
-                      borderRadius: 3,
-                      borderWidth: 0,
-                      fontWeight: 600,
-                      textTransform: "none",
-                      color: "#103e68",
-                    }}
                   >
                     Iniciar sesión
                   </Button>
                   <Button
-                    variant="contained"
-                    color="primary"
-                    component={Link}
+                    variant="primaryBlue"
+                    size="md"
+                    LinkComponent={Link}
                     to="/register"
-                    sx={{
-                      borderRadius: 3,
-                      fontWeight: 600,
-                      textTransform: "none",
-                      bgcolor: "#103e68",
-                    }}
                   >
                     Registrarse
                   </Button>

@@ -38,6 +38,14 @@
     animation: logo-spin infinite 20s linear;
   }
 }
+a:focus,
+a:focus-visible,
+a:active {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
 
 .card {
   padding: 2em;

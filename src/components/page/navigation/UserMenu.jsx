@@ -12,7 +12,7 @@ import {
   Stack,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import { getProfile } from "../services/endpoints";
+import { getProfile } from "../../../services/endpoints";
 
 const UserMenu = ({ onLogout, user: userProp }) => {
   const navigate = useNavigate();
