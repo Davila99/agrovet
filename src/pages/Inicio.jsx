@@ -6,9 +6,8 @@ import { useNavigate } from "react-router-dom";
 import banner1 from "../assets/image/banner1.webp";
 import banner2 from "../assets/image/banner2.webp";
 import banner3 from "../assets/image/banner3.webp";
-import Movil from "../assets/image/movil.webp";
-import NotificationsSection from "./HomePage/NotificationsSection";
 import LandingAgrovets from "./HomePage/LandingAgrovets";
+import NotificationsSection from "./HomePage/NotificationsSection";
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 50 },
@@ -19,6 +18,7 @@ const WelcomePage = () => {
   const banners = [banner1, banner2, banner3];
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [avaQuestion, setAvaQuestion] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -43,159 +43,147 @@ const WelcomePage = () => {
         sx={{
           position: "relative",
           color: "white",
-          padding: "10px",
           backgroundImage: `url(${banners[currentIndex]})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
           minHeight: "100vh",
-          transition: "background-image 1s ease-in-out",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          textAlign: "center",
+          transition: "background-image 2s ease-in-out",
         }}
       >
         <Box
           sx={{
             position: "absolute",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
+            inset: 0,
+            background:
+              "linear-gradient(180deg, rgba(0, 25, 94, 0.65) 0%, rgba(0, 0, 0, 0.55) 50%, rgba(0, 0, 0, 0.43) 100%)",
+            backdropFilter: "blur(2px)",
             zIndex: 1,
           }}
         />
-
-        <Box sx={{ position: "relative", zIndex: 2 }}>
+        <Box sx={{ position: "relative", zIndex: 2, mt: 25 }}>
           <Container
+            maxWidth="md"
             sx={{
-              display: "flex",
-              flexDirection: { xs: "column", md: "row" },
-              alignItems: "center",
-              justifyContent: "space-between",
-              mt: { xs: 5, md: 0 },
-              mb: { xs: 5, md: 0 },
-              px: { xs: 5, md: 5 },
+              mb: 10,
             }}
           >
-            <Container
-              sx={{
-                textAlign: { xs: "center", md: "left" },
-                mb: { xs: 5, md: 0 },
-              }}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 1 }}
             >
-              <motion.div
-                initial="hidden"
-                animate="visible"
-                variants={fadeInUp}
+              <Typography
+                variant="h2"
+                sx={{
+                  fontWeight: 800,
+                  mb: 2,
+                  textShadow: "0 4px 20px rgba(0,0,0,0.5)",
+                  color: "#fff",
+                }}
               >
-                <Typography variant="h3" fontWeight="bold">
-                  Bienvenido a AgroVets
-                </Typography>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3, duration: 0.8 }}
-              >
-                <Typography variant="h6" sx={{ mt: 2 }}>
-                  La primera comunidad de agrónomos y veterinarios,
-                </Typography>
-                <Typography variant="h6">
-                  para resolver problemas reales de campo.
-                </Typography>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6, duration: 0.8 }}
-              >
-                <Container
-                  sx={{
-                    display: "flex",
-                    flexDirection: { xs: "column", md: "row" },
-                    alignItems: { xs: "center", md: "flex-start" },
-                    gap: 2,
-                    mt: 4,
-                  }}
-                >
-                  {!isLoggedIn ? (
-                    <>
-                      <Button
-                        variant="contained"
-                        sx={{
-                          bgcolor: "#103E68",
-                          color: "#fff",
-                          fontWeight: "bold",
-                          "&:hover": { bgcolor: "#35722b", color: "#fff" },
-                          px: 4,
-                          py: 1.5,
-                          borderRadius: 3,
-                          width: { xs: "100%", md: "auto" },
-                        }}
-                        onClick={() => navigate("/login")}
-                      >
-                        Iniciar sesión
-                      </Button>
-
-                      <Button
-                        variant="contained"
-                        sx={{
-                          background: "#fff",
-                          color: "#103E68",
-                          px: 4,
-                          py: 1.5,
-                          fontWeight: "bold",
-                          borderRadius: 3,
-                          width: { xs: "100%", md: "auto" },
-                        }}
-                        onClick={() => navigate("/register")}
-                      >
-                        Registrarme
-                      </Button>
-                    </>
-                  ) : (
-                    <Button
-                      variant="contained"
-                      sx={{
-                        bgcolor: "#103E68",
-                        color: "#fff",
-                        fontWeight: "bold",
-                        "&:hover": { bgcolor: "#35722b", color: "#fff" },
-                        px: 4,
-                        py: 1.5,
-                        borderRadius: 3,
-                        width: { xs: "100%", md: "auto" },
-                      }}
-                      onClick={handleExplore}
-                    >
-                      Explorar
-                    </Button>
-                  )}
-                </Container>
-              </motion.div>
-            </Container>
+                Bienvenido a{" "}
+                <Box component="span" sx={{ color: "#9EF01A" }}>
+                  AgroVets
+                </Box>
+              </Typography>
+            </motion.div>
 
             <motion.div
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.8, duration: 0.8 }}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.8 }}
             >
-              <CardMedia
-                component="img"
-                image={Movil}
-                alt="imagen"
+              <Typography
+                variant="h6"
                 sx={{
-                  display: { xs: "none", md: "block" },
-                  width: 500,
+                  opacity: 0.9,
+                  mb: 4,
+                  fontWeight: 400,
+                  lineHeight: 1.6,
+                  maxWidth: 600,
+                  mx: "auto",
                 }}
-              />
+              >
+                La comunidad donde agrónomos y veterinarios se unen para
+                resolver problemas reales del campo, compartir conocimiento y
+                potenciar su crecimiento profesional.
+              </Typography>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.8 }}
+            >
+              <Box
+                sx={{
+                  mt: 4,
+                  display: "flex",
+                  justifyContent: "center",
+                }}
+              >
+                <Box
+                  component="input"
+                  value={avaQuestion}
+                  onChange={(e) => setAvaQuestion(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      console.log("Pregunta a AVA:", avaQuestion);
+                      setAvaQuestion("");
+                    }
+                  }}
+                  placeholder="💡 Pregúntale a AVA..."
+                  aria-label="Pregúntale a AVA"
+                  sx={{
+                    width: { xs: "90%", sm: "400px" },
+                    px: 3,
+                    py: 2,
+                    fontSize: 15,
+                    borderRadius: 999,
+                    outline: "none",
+                    border: "2px solid #35722b",
+                    background: "rgba(16, 62, 104, 0.1)",
+                    color: "#fff",
+
+                    marginBottom: 3,
+                    boxShadow:
+                      "0 0 6px rgba(158, 240, 26, 0.5), 0 0 12px rgba(158, 240, 26, 0.3)",
+                    transition: "all 0.3s ease",
+                    "&::placeholder": {
+                      color: "#9EF01A",
+                      opacity: 0.7,
+                      fontWeight: 500,
+                    },
+                    "&:focus": {
+                      px: 5,
+                      py: 2.2,
+                      borderColor: "#9EF01A",
+
+                      boxShadow:
+                        "0 0 10px rgba(158, 240, 26, 0.8), 0 0 20px rgba(158, 240, 26, 0.6)",
+                      background: "rgba(16, 62, 104, 0.2)",
+                    },
+                  }}
+                />
+              </Box>
             </motion.div>
           </Container>
         </Box>
-        <NotificationsSection />
       </Box>
 
-      <Container maxWidth="lg" sx={{ py: 10 }}>
+      <Container
+        maxWidth="lg"
+        sx={{
+          py: 10,
+          borderTopLeftRadius: 16,
+          borderTopRightRadius: 16,
+        }}
+      >
+        <NotificationsSection />
         <motion.div
           initial="hidden"
           whileInView="visible"
@@ -235,6 +223,7 @@ const WelcomePage = () => {
             Únete a la revolución agropecuaria de Nicaragua con Agrovets y
             potencia tu producción.
           </Typography>
+
           {isLoggedIn && (
             <Button
               variant="contained"

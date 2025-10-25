@@ -45,13 +45,10 @@ const RegisterPage = () => {
     const upper = /[A-Z]/;
     const lower = /[a-z]/;
     const number = /[0-9]/;
-    const special = /[!@#$%^&*(),.?":{}|<>]/;
     return (
       minLength.test(pwd) &&
       upper.test(pwd) &&
-      lower.test(pwd) &&
-      number.test(pwd) &&
-      special.test(pwd)
+      lower.test(pwd) & number.test(pwd)
     );
   };
 
@@ -91,9 +88,9 @@ const RegisterPage = () => {
         return num;
       const v = Number(num);
       const abs = Math.abs(v);
-      const intDigits = Math.floor(abs).toString().length; // dígitos antes del punto
-      const maxDigits = 10; // límite del backend
-      // permitimos hasta 6 decimales por defecto
+      const intDigits = Math.floor(abs).toString().length;
+      const maxDigits = 10;
+
       let allowedDecimals = Math.max(0, maxDigits - intDigits);
       if (allowedDecimals > 6) allowedDecimals = 6;
       // si intDigits ya excede maxDigits, truncar sin decimales
@@ -130,7 +127,6 @@ const RegisterPage = () => {
   };
 
   const validateStep = (currentStep) => {
-    // Validación simple por paso
     if (currentStep === 1) {
       if (
         !form.full_name ||

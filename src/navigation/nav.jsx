@@ -71,162 +71,172 @@ const Navbar = () => {
   return (
     <>
       <AppBar
-        position="static"
-        elevation={2}
+        position="fixed"
+        elevation={0}
         sx={{
-          bgcolor: "#fff",
-          color: "primary.main",
-          px: { xs: 1, sm: 3 },
+          bgcolor: "transparent",
+
+          zIndex: (theme) => theme.zIndex.appBar,
         }}
       >
-        <Toolbar
+        <Box
           sx={{
-            justifyContent: "space-between",
-            minHeight: { xs: 56, sm: 64 },
-            px: { xs: 0, sm: 2 },
+            margin: 1,
+            bgcolor: "#ffffff",
+            borderRadius: 4,
+            boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+            px: { xs: 1, sm: 3 },
           }}
         >
-          {/* Logo */}
-          <Box
+          <Toolbar
             sx={{
-              display: "flex",
-              alignItems: "center",
-              flex: { xs: 1, md: "none" },
+              justifyContent: "space-between",
+
+              px: { xs: 0, sm: 2 },
             }}
           >
-            <Link to="/" style={{ display: "flex", alignItems: "center" }}>
-              <img
-                src={logo}
-                alt="Logo AgroVets"
-                width="90"
-                style={{ height: 48 }}
-              />
-            </Link>
-          </Box>
-
-          {/* Desktop Menu */}
-          <Box
-            sx={{
-              flex: 1,
-              display: { xs: "none", md: "flex" },
-              justifyContent: "center",
-            }}
-          >
-            <DesktopMenu
-              comunidadMenuAnchor={comunidadMenuAnchor}
-              openComunidadMenu={openComunidadMenu}
-              closeComunidadMenu={closeComunidadMenu}
-              isLoggedIn={isLoggedIn}
-            />
-
-            {/* Search (desktop) */}
-            <Box sx={{ ml: 2, width: 420 }}>
-              <TextField
-                size="small"
-                fullWidth
-                placeholder="Buscar negocios, veterinarias..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
-                    setSearchQuery("");
-                  }
-                }}
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        size="small"
-                        onClick={() => {
-                          navigate(
-                            `/search?q=${encodeURIComponent(searchQuery)}`
-                          );
-                          setSearchQuery("");
-                        }}
-                      >
-                        <SearchIcon fontSize="small" />
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            </Box>
-          </Box>
-
-          {/* User Actions */}
-          <Stack
-            direction="row"
-            spacing={2}
-            sx={{
-              alignItems: "center",
-              display: { xs: "none", md: "flex" },
-            }}
-          >
-            {isLoggedIn ? (
-              <UserMenu onLogout={handleLogout} user={user} />
-            ) : (
-              <>
-                <Button
-                  variant="outlined"
-                  color="primary"
-                  component={Link}
-                  to="/login"
-                  sx={{
-                    borderRadius: 3,
-                    borderWidth: 0,
-                    fontWeight: 600,
-                    textTransform: "none",
-                    color: "#103e68",
-                  }}
-                >
-                  Iniciar sesión
-                </Button>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  component={Link}
-                  to="/register"
-                  sx={{
-                    borderRadius: 3,
-                    fontWeight: 600,
-                    textTransform: "none",
-                    bgcolor: "#103e68",
-                  }}
-                >
-                  Registrarse
-                </Button>
-              </>
-            )}
-          </Stack>
-
-          {/* Mobile Menu Button */}
-          <Box
-            sx={{
-              display: { xs: "flex", md: "none" },
-              ml: 1,
-              alignItems: "center",
-            }}
-          >
-            {/* Mobile search icon */}
-            <IconButton
-              color="primary"
-              size="large"
-              onClick={() => setMobileSearchOpen((s) => !s)}
+            {/* Logo */}
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                flex: { xs: 1, md: "none" },
+              }}
             >
-              {mobileSearchOpen ? <CloseIcon /> : <SearchIcon />}
-            </IconButton>
+              <Link to="/" style={{ display: "flex", alignItems: "center" }}>
+                <img
+                  src={logo}
+                  alt="Logo AgroVets"
+                  width="90"
+                  style={{ height: 48 }}
+                />
+              </Link>
+            </Box>
+
+            {/* Desktop Menu */}
+            <Box
+              sx={{
+                flex: 1,
+                display: { xs: "none", md: "flex" },
+                justifyContent: "center",
+              }}
+            >
+              <DesktopMenu
+                comunidadMenuAnchor={comunidadMenuAnchor}
+                openComunidadMenu={openComunidadMenu}
+                closeComunidadMenu={closeComunidadMenu}
+                isLoggedIn={isLoggedIn}
+              />
+
+              {/* Search (desktop) */}
+              <Box sx={{ ml: 2, width: 420 }}>
+                <TextField
+                  size="small"
+                  fullWidth
+                  placeholder="Buscar negocios, veterinarias..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+                      setSearchQuery("");
+                    }
+                  }}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          size="small"
+                          onClick={() => {
+                            navigate(
+                              `/search?q=${encodeURIComponent(searchQuery)}`
+                            );
+                            setSearchQuery("");
+                          }}
+                        >
+                          <SearchIcon fontSize="small" />
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Box>
+            </Box>
+
+            {/* User Actions */}
+            <Stack
+              direction="row"
+              spacing={2}
+              sx={{
+                alignItems: "center",
+                display: { xs: "none", md: "flex" },
+              }}
+            >
+              {isLoggedIn ? (
+                <UserMenu onLogout={handleLogout} user={user} />
+              ) : (
+                <>
+                  <Button
+                    variant="outlined"
+                    color="primary"
+                    component={Link}
+                    to="/login"
+                    sx={{
+                      borderRadius: 3,
+                      borderWidth: 0,
+                      fontWeight: 600,
+                      textTransform: "none",
+                      color: "#103e68",
+                    }}
+                  >
+                    Iniciar sesión
+                  </Button>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    component={Link}
+                    to="/register"
+                    sx={{
+                      borderRadius: 3,
+                      fontWeight: 600,
+                      textTransform: "none",
+                      bgcolor: "#103e68",
+                    }}
+                  >
+                    Registrarse
+                  </Button>
+                </>
+              )}
+            </Stack>
 
             {/* Mobile Menu Button */}
-            <IconButton
-              onClick={toggleDrawer(true)}
-              color="primary"
-              size="large"
+            <Box
+              sx={{
+                display: { xs: "flex", md: "none" },
+                ml: 1,
+                alignItems: "center",
+              }}
             >
-              <MenuIcon />
-            </IconButton>
-          </Box>
-        </Toolbar>
+              {/* Mobile search icon */}
+              <IconButton
+                color="primary"
+                size="large"
+                onClick={() => setMobileSearchOpen((s) => !s)}
+              >
+                {mobileSearchOpen ? <CloseIcon /> : <SearchIcon />}
+              </IconButton>
+
+              {/* Mobile Menu Button */}
+              <IconButton
+                onClick={toggleDrawer(true)}
+                color="primary"
+                size="large"
+              >
+                <MenuIcon />
+              </IconButton>
+            </Box>
+          </Toolbar>
+        </Box>
       </AppBar>
 
       {/* Mobile inline search popover */}

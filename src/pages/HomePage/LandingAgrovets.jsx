@@ -4,10 +4,8 @@ import { motion } from "framer-motion";
 import ImgOne from "../../assets/image/img1.webp";
 import ImgThree from "../../assets/image/img3.webp";
 import ImgFour from "../../assets/image/img4.webp";
-import ImgFive from "../../assets/image/img5.webp";
 import ChatBot from "./ChatBot";
 
-// Animación básica para secciones
 const fadeInUp = {
   hidden: { opacity: 0, y: 50 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
@@ -18,30 +16,36 @@ const LandingAgrovetsAnim = () => {
     <Box
       sx={{
         maxWidth: "1200px",
-        margin: "0 auto",
-        padding: "2rem",
+        mx: "auto",
+        px: { xs: 3, md: 2 },
         color: "#000",
       }}
     >
-      {/* Sección 1: Hero */}
+      {/* Hero */}
       <motion.div initial="hidden" animate="visible" variants={fadeInUp}>
         <Box
           sx={{
             display: "flex",
-            flexDirection: { xs: "column", md: "row" },
+            flexDirection: { xs: "column-reverse", md: "row" },
             alignItems: "center",
-            gap: 3,
-            mb: 5,
+            gap: 4,
           }}
         >
           <Box sx={{ flex: 1 }}>
-            <Typography variant="h3" fontWeight="bold" gutterBottom>
-              Descubre el futuro agropecuario de Nicaragua con Agrovets
+            <Typography
+              variant="h3"
+              fontWeight="bold"
+              sx={{ mb: 3, lineHeight: 1.2, color: "#103E68" }}
+            >
+              Descubre el futuro agropecuario de Nicaragua con{" "}
+              <Box component="span" sx={{ color: "#9EF01A" }}>
+                Agrovets
+              </Box>
             </Typography>
-            <Typography variant="body1" sx={{ mb: 2 }}>
-              Sabías que Nicaragua tiene un gran potencial en el sector
-              agropecuario, pero a menudo se enfrenta a desafíos de salud e
-              información.
+            <Typography variant="body1" sx={{ mb: 3, lineHeight: 1.6 }}>
+              Nicaragua tiene un gran potencial en agricultura y ganadería, pero
+              se enfrenta a desafíos de salud e información que limitan su
+              crecimiento.
             </Typography>
             <Button
               variant="contained"
@@ -49,32 +53,28 @@ const LandingAgrovetsAnim = () => {
                 bgcolor: "#103E68",
                 color: "#fff",
                 fontWeight: "bold",
-                transition: "transform 0.4s ease",
+                px: 5,
+                py: 1.8,
+                borderRadius: 3,
+                transition: "all 0.3s ease",
                 "&:hover": {
                   bgcolor: "#35722b",
-                  color: "#fff",
-                  transform: "scale(1.1)",
+                  transform: "scale(1.05)",
                 },
-                px: 4,
-                py: 1.5,
-                borderRadius: 3,
-                width: { xs: "100%", md: "auto" },
               }}
             >
               Únete ahora
             </Button>
           </Box>
-          <Box />
-
           <Box
             component="img"
             src={ImgOne}
-            alt="camion"
+            alt="Camión agrícola"
             sx={{
-              width: "100%",
-              maxWidth: 400,
-              height: "auto",
+              width: { xs: "100%", md: 400 },
               borderRadius: 3,
+              objectFit: "cover",
+              boxShadow: "0 12px 24px rgba(0,0,0,0.15)",
               transition: "transform 0.4s ease",
               "&:hover": {
                 transform: "scale(1.05)",
@@ -84,49 +84,204 @@ const LandingAgrovetsAnim = () => {
         </Box>
       </motion.div>
 
-      <Divider sx={{ mb: 5 }} />
+      <Divider sx={{ mb: 8 }} />
 
-      {/* Sección 2: Datos del sector */}
+      {/* Estado del sector */}
       <motion.div
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true }}
         variants={fadeInUp}
       >
-        <Box sx={{ mb: 5 }}>
-          <Typography variant="h4" fontWeight="bold" gutterBottom>
+        <Box sx={{ mb: 8 }}>
+          <Typography
+            variant="h4"
+            fontWeight="bold"
+            sx={{ mb: 2, color: "#103E68" }}
+          >
             Situación del sector agropecuario
           </Typography>
-          <Typography variant="body1" sx={{ mb: 2 }}>
-            Nuestro país es destacado por su agricultura y ganadería. Según el
-            Banco Central de Nicaragua, el primer trimestre del año 2023, el
-            valor de las exportaciones totales fue de 2,014.6 millones de
-            dólares, donde el sector agropecuario representó el 2.4%. Sin
-            embargo, en el primer trimestre de este año hubo una caída del 4.5%
-            respecto al año anterior, de la cual el 3.11% se debe a la
-            disminución en las exportaciones del sector agropecuario.
+          <Typography variant="body1" sx={{ mb: 3, lineHeight: 1.6 }}>
+            Nicaragua cuenta con un potencial significativo en agricultura y
+            ganadería, pero enfrenta retos de productividad y acceso a servicios
+            técnicos en tiempo real. A continuación, datos relevantes que
+            ilustran el panorama reciente:
           </Typography>
+
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: { xs: "column", sm: "row" },
+              gap: 2,
+              mb: 3,
+            }}
+          >
+            <Box
+              sx={{
+                flex: 1,
+                bgcolor: "#F6FBF2",
+                borderRadius: 2,
+                p: 2,
+                boxShadow: "0 6px 16px rgba(16,62,104,0.06)",
+              }}
+            >
+              <Typography
+                variant="h5"
+                fontWeight="bold"
+                sx={{ color: "#103E68" }}
+              >
+                2,014.6M $
+              </Typography>
+              <Typography variant="body2" sx={{ color: "#445660" }}>
+                Valor exportaciones (1er trim. 2023)
+              </Typography>
+            </Box>
+
+            <Box
+              sx={{
+                flex: 1,
+                bgcolor: "#FFF9EF",
+                borderRadius: 2,
+                p: 2,
+                boxShadow: "0 6px 16px rgba(53,114,43,0.06)",
+              }}
+            >
+              <Typography
+                variant="h5"
+                fontWeight="bold"
+                sx={{ color: "#35722b" }}
+              >
+                -4.5%
+              </Typography>
+              <Typography variant="body2" sx={{ color: "#445660" }}>
+                Variación anual del sector
+              </Typography>
+            </Box>
+
+            <Box
+              sx={{
+                flex: 1,
+                bgcolor: "#F0F9FF",
+                borderRadius: 2,
+                p: 2,
+                boxShadow: "0 6px 16px rgba(16,62,104,0.04)",
+              }}
+            >
+              <Typography
+                variant="h5"
+                fontWeight="bold"
+                sx={{ color: "#103E68" }}
+              >
+                2.4%
+              </Typography>
+              <Typography variant="body2" sx={{ color: "#445660" }}>
+                Participación agropecuaria en exportaciones
+              </Typography>
+            </Box>
+          </Box>
+
           <Box
             component="img"
             src={ImgThree}
-            alt="banner"
+            alt="Campos agrícolas de Nicaragua"
             sx={{
               width: "100%",
-              height: 200,
+              height: { xs: 200, md: 260 },
               borderRadius: 3,
               objectFit: "cover",
+              boxShadow: "0 8px 20px rgba(0,0,0,0.12)",
               transition: "transform 0.4s ease",
-              "&:hover": {
-                transform: "scale(1.1)",
-              },
+              "&:hover": { transform: "scale(1.03)" },
             }}
           />
         </Box>
       </motion.div>
 
-      <Divider sx={{ mb: 5 }} />
+      <Divider sx={{ mb: 8 }} />
 
-      {/* Sección 3: Desafíos y solución */}
+      {/* Información sobre AVA */}
+      <motion.div
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true }}
+        variants={fadeInUp}
+      >
+        <Box sx={{ mb: 8 }}>
+          <Typography
+            variant="h4"
+            fontWeight="bold"
+            sx={{ mb: 2, color: "#103E68" }}
+          >
+            AVA (Agro Virtual Assistant)
+          </Typography>
+
+          <Typography variant="body1" sx={{ mb: 2, lineHeight: 1.6 }}>
+            AVA es una herramienta diseñada para reducir la brecha de acceso a
+            asesoría técnica en campo. Su objetivo es facilitar decisiones
+            rápidas y basadas en conocimiento, mejorando salud animal y
+            rendimiento de cultivos.
+          </Typography>
+
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="body2" sx={{ mb: 1 }}>
+              • Conecta a productores con veterinarios y agrónomos en tiempo
+              real.
+            </Typography>
+            <Typography variant="body2" sx={{ mb: 1 }}>
+              • Ofrece guías prácticas, diagnóstico inicial y seguimiento
+              integrado.
+            </Typography>
+            <Typography variant="body2">
+              • Permite priorizar intervenciones, reducir pérdidas y optimizar
+              recursos.
+            </Typography>
+          </Box>
+
+          <Box
+            sx={{
+              display: "flex",
+              gap: 2,
+              flexDirection: { xs: "column", sm: "row" },
+            }}
+          >
+            <Button
+              variant="contained"
+              sx={{
+                bgcolor: "#103E68",
+                color: "#fff",
+                fontWeight: "bold",
+                px: 4,
+                py: 1.6,
+                borderRadius: 3,
+                "&:hover": { bgcolor: "#0b2a45" },
+              }}
+              aria-label="Conoce más sobre AVA"
+            >
+              Conoce AVA
+            </Button>
+
+            <Button
+              variant="outlined"
+              sx={{
+                borderColor: "#103E68",
+                color: "#103E68",
+                fontWeight: 600,
+                px: 4,
+                py: 1.6,
+                borderRadius: 3,
+                "&:hover": { backgroundColor: "#F5F8FB" },
+              }}
+              aria-label="Únete a Agrovets"
+            >
+              Únete ahora
+            </Button>
+          </Box>
+        </Box>
+      </motion.div>
+
+      <Divider sx={{ mb: 8 }} />
+
+      {/* Desafíos y solución */}
       <motion.div
         initial="hidden"
         whileInView="visible"
@@ -135,79 +290,50 @@ const LandingAgrovetsAnim = () => {
       >
         <Box
           sx={{
-            borderRadius: 5,
-            color: "#fff",
-            mb: 6,
             display: "flex",
             flexDirection: { xs: "column", md: "row" },
             alignItems: "center",
-            gap: { xs: 4, md: 6 },
+            gap: 5,
             bgcolor: "#35722b",
-            pb: 2,
-            p: { xs: 1, md: 0 },
-            mt: 10,
+            borderRadius: 4,
+            p: { xs: 3, md: 5 },
+            color: "#fff",
+            mb: 8,
           }}
         >
           <Box
             component="img"
             src={ImgFour}
-            alt="Campecino"
+            alt="Ganadería"
             sx={{
               width: { xs: "100%", md: "40%" },
-              height: { xs: 300, md: 310 },
-              mt: { xs: 0, md: -2 },
-              ml: { xs: -0, md: -2 },
-              borderRadius: 4,
+              height: { xs: 250, md: 320 },
+              borderRadius: 3,
               objectFit: "cover",
               boxShadow: "0 12px 24px rgba(0,0,0,0.3)",
-              transform: "translateY(-20px)",
-              transition: "transform 0.4s ease, box-shadow 0.4s ease",
-              "&:hover": {
-                transform: "translateY(-25px) scale(1.05)",
-                boxShadow: "0 16px 32px rgba(0,0,0,0.4)",
-              },
             }}
           />
-
-          {/* Texto */}
           <Box sx={{ flex: 1, textAlign: { xs: "center", md: "left" } }}>
-            <Typography
-              variant="h4"
-              fontWeight="bold"
-              gutterBottom
-              sx={{ fontSize: { xs: "1.8rem", md: "2.2rem" } }}
-            >
+            <Typography variant="h4" fontWeight="bold" sx={{ mb: 2 }}>
               Salud de cultivos y ganado
             </Typography>
-            <Typography
-              variant="body1"
-              sx={{
-                mb: 2,
-                fontSize: { xs: "0.95rem", md: "1.05rem" },
-                lineHeight: 1.6,
-              }}
-            >
+            <Typography variant="body1" sx={{ mb: 2, lineHeight: 1.6 }}>
               La salud de cultivos y ganado, tanto bovino como porcino, es
-              esencial. Sin embargo, los productores enfrentan desafíos debido a
-              la falta de accesibilidad en tiempo real a veterinarios y
-              agrónomos.
+              esencial. Los productores enfrentan dificultades para acceder en
+              tiempo real a veterinarios y agrónomos.
             </Typography>
-            <Typography
-              variant="body1"
-              sx={{
-                fontSize: { xs: "0.95rem", md: "1.05rem" },
-                lineHeight: 1.6,
-              }}
-            >
-              Aquí es donde entra Agrovets, la aplicación móvil revolucionaria
-              diseñada para impulsar a los agricultores y ganaderos de
-              Nicaragua.
+            <Typography variant="body1" sx={{ lineHeight: 1.6 }}>
+              Agrovets es la solución, una plataforma móvil que conecta
+              agricultores y ganaderos con expertos, optimizando la producción y
+              cuidado del sector agropecuario.
             </Typography>
           </Box>
         </Box>
       </motion.div>
 
-      <Divider sx={{ mb: 5 }} />
+      <Divider sx={{ mb: 8 }} />
+
+      {/* ChatBot */}
       <ChatBot />
     </Box>
   );
