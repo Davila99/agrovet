@@ -15,19 +15,40 @@ const Navbar = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [comunidadMenuAnchor, setComunidadMenuAnchor] = useState(null);
   const [comunidadOpen, setComunidadOpen] = useState(false);
-  const [token, setToken] = useState(() => localStorage.getItem("token"));
+  const normalizeStoredToken = (raw) => {
+    if (!raw) return null;
+    const s = String(raw).trim();
+    if (s === 'null' || s === 'undefined' || s === '') return null;
+    // remove common prefixes
+    return s.replace(/^Token\s*/i, '').replace(/^Bearer\s*/i, '').trim();
+  };
+  const [token, setToken] = useState(() => normalizeStoredToken(localStorage.getItem("token")));
+
+  const isValidToken = (t) => {
+    if (!t) return false;
+    try {
+      const s = String(t).trim();
+      if (!s) return false;
+      if (s === 'null' || s === 'undefined') return false;
+      // heuristic: token should be at least 8 chars and contain alphanumerics
+      if (s.length < 8) return false;
+      if (!/[A-Za-z0-9]/.test(s)) return false;
+      return true;
+    } catch (e) { return false; }
+  };
   const [user, setUser] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const navigate = useNavigate();
 
-  const isLoggedIn = !!token;
+  // user/profile state determines logged-in UI
+  const [profileLoading, setProfileLoading] = useState(false);
 
   useEffect(() => {
     const onStorage = (e) => {
-      if (e.key === "token") setToken(e.newValue);
+      if (e.key === "token") setToken(normalizeStoredToken(e.newValue));
     };
-    const onFocus = () => setToken(localStorage.getItem("token"));
+    const onFocus = () => setToken(normalizeStoredToken(localStorage.getItem("token")));
     window.addEventListener("storage", onStorage);
     window.addEventListener("focus", onFocus);
     return () => {
@@ -35,26 +56,42 @@ const Navbar = () => {
       window.removeEventListener("focus", onFocus);
     };
   }, []);
+
   const location = useLocation();
   useEffect(() => {
-    setToken(localStorage.getItem("token"));
+    setToken(normalizeStoredToken(localStorage.getItem("token")));
   }, [location]);
 
   useEffect(() => {
+    let mounted = true;
     const load = async () => {
       if (!token) {
-        setUser(null);
+        if (mounted) setUser(null);
         return;
       }
+      if (!isValidToken(token)) {
+        // invalid token string: clear and bail
+        try { localStorage.removeItem('token'); localStorage.removeItem('userId'); } catch(e) {}
+        if (mounted) { setToken(null); setUser(null); }
+        return;
+      }
+      setProfileLoading(true);
       try {
         const res = await getProfile(token);
-        setUser(res);
+        if (mounted) setUser(res);
       } catch (e) {
         console.error("Error cargando perfil en Navbar:", e);
+        try { localStorage.removeItem('token'); localStorage.removeItem('userId'); } catch(err){}
+        if (mounted) { setToken(null); setUser(null); }
+      } finally {
+        if (mounted) setProfileLoading(false);
       }
     };
     load();
+    return () => { mounted = false; };
   }, [token]);
+
+  const isLoggedIn = Boolean(user);
 
   const toggleDrawer = (open) => () => setDrawerOpen(open);
   const openComunidadMenu = (e) => setComunidadMenuAnchor(e.currentTarget);

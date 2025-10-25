@@ -54,35 +54,35 @@ const SpecialistProfile = ({ user }) => {
         <Divider sx={{ mb: 2 }} />
 
         <Grid container spacing={2}>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             {/* Nombre público, Sobre mí y Profesión apilados */}
             <FieldRow label="Nombre público" value={user_display} />
             <FieldRow label="Sobre mí" value={about_us} />
             <FieldRow label="Profesión" value={profession} />
           </Grid>
 
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             {/* El resto en una grid de tarjetas pequeñas */}
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <FieldRow
                   label="Años de experiencia"
                   value={experience_years ?? "0"}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <FieldRow
                   label="Puede dar consultas"
                   value={can_give_consultations ? "Sí" : "No"}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <FieldRow
                   label="Ofrece servicios en línea"
                   value={can_offer_online_services ? "Sí" : "No"}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <Box sx={{ py: 1 }}>
                   <Typography
                     variant="subtitle2"
@@ -99,7 +99,7 @@ const SpecialistProfile = ({ user }) => {
                   />
                 </Box>
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <FieldRow label="Puntos" value={point ?? "0"} />
               </Grid>
             </Grid>
