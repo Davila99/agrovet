@@ -24,7 +24,7 @@ function App() {
         <Route path="/comunidad/mapa" element={<NicaraguaMap />} />
 
         <Route path="/login" element={<LoginPage />} />
-  <Route path="/auth/reset-phone" element={<ResetByPhone />} />
+        <Route path="/auth/reset-phone" element={<ResetByPhone />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/acerca-de" element={<QuienesSomos />} />
         <Route
