@@ -31,11 +31,11 @@ import ReplyIcon from "@mui/icons-material/Reply";
 import SpecialistsList from "./Dashboard/SpecialistsList";
 import ChatBot from "./HomePage/ChatBot";
 import {
-  chatAPI,
+  
   chatServiceFactory,
   connectPresence,
   getProfile,
-} from "../services/endpoints";
+} from "../../services/endpoints";
 
 // Start with an empty rooms list — we'll show only real rooms from the server
 const initialConversations = [];
