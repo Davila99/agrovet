@@ -1,4 +1,22 @@
-const BASE_URL = "https://agrovet.pythonanywhere.com/api";
+// Resolve API base at runtime so local dev uses local Django server while
+// production falls back to the deployed host. This also allows Vite to
+// override via VITE_API_BASE.
+const BASE_URL = (() => {
+  if (typeof window === 'undefined') return 'https://agrovet.pythonanywhere.com/api';
+  try {
+    // Allow a runtime override if a script sets window.__AGROVET_API_BASE
+    if (typeof window !== 'undefined' && window.__AGROVET_API_BASE) {
+      return String(window.__AGROVET_API_BASE).replace(/\/$/, '');
+    }
+  } catch (e) {
+    // ignore
+  }
+  const host = window.location.hostname;
+  // During local dev (frontend served from localhost) prefer a local Django backend
+  if (host === 'localhost' || host === '127.0.0.1') return 'http://127.0.0.1:8000/api';
+  // default production host
+  return 'https://agrovet.pythonanywhere.com/api';
+})();
 
 /**
  * Realiza una petición HTTP a la API.
@@ -12,9 +30,11 @@ async function request(endpoint, options = {}) {
     let fetchHeaders = { ...headers };
     // Añadir Authorization si hay token en localStorage y no fue pasada en headers
     try {
-      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-      if (token && !fetchHeaders.Authorization && !fetchHeaders.authorization) {
-        fetchHeaders.Authorization = `Bearer ${token}`;
+      const raw = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      if (raw && !fetchHeaders.Authorization && !fetchHeaders.authorization) {
+        // stored token may include prefix 'Token ' or 'Bearer ' — normalize to raw key
+        const token = raw.replace(/^Token\s*/i, '').replace(/^Bearer\s*/i, '');
+        fetchHeaders.Authorization = `Token ${token}`;
       }
     } catch (e) {
       // Ignorar acceso a localStorage en entornos no-browser
@@ -55,6 +75,10 @@ async function request(endpoint, options = {}) {
         body: data,
         endpoint: `${BASE_URL}${endpoint}`,
       });
+      try{
+        const raw = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+        if(raw) console.debug('[httpClient] stored token (masked):', String(raw).slice(0,6)+'...');
+      }catch(e){}
       const message = data.detail || data.error || data.message || `HTTP ${res.status} ${res.statusText}`;
       // Si es error de servidor (5xx) notificamos que el servicio está caído
       if (res.status >= 500 && typeof window !== 'undefined') {
@@ -65,6 +89,8 @@ async function request(endpoint, options = {}) {
       }
       const err = new Error(message);
       err.status = res.status;
+      // Attach parsed response body for callers to inspect serializer errors
+      err.body = data;
       throw err;
     }
     return data;
