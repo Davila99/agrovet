@@ -111,12 +111,22 @@ const authHeaders = (token) => {
 
 // Chat HTTP API (curried helpers used by Chat.jsx)
 export const chatAPI = {
-  createRoom: (participants = [], isPrivate = false) => ({ token } = {}) =>
-    httpClient("/chat/rooms/", {
+  createRoom: (participants = [], isPrivate = false) => ({ token } = {}) => {
+    // For private 1:1 rooms prefer the atomic endpoint which returns existing
+    // room if one exists and avoids race conditions on concurrent creates.
+    if (isPrivate && Array.isArray(participants) && participants.length === 2) {
+      return httpClient("/chat/rooms/get_or_create_private/", {
+        method: "POST",
+        headers: authHeaders(token),
+        body: { participants_ids: participants },
+      });
+    }
+    return httpClient("/chat/rooms/", {
       method: "POST",
       headers: authHeaders(token),
       body: { participants_ids: participants, is_private: !!isPrivate },
-    }),
+    });
+  },
 
   listRooms: ({ token } = {}) =>
     httpClient("/chat/rooms/", { method: "GET", headers: authHeaders(token) }),

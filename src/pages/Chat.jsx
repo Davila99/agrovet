@@ -309,7 +309,7 @@ export default function Chat() {
         setViewMode("chats");
         // Load chat history
         try {
-          const history = await chatAPI.getLastMessages(room.id, 100);
+          const history = await chatAPI.getLastMessages(room.id, 100)({ token });
           setRooms((prev) =>
             prev.map((r) =>
               String(r.id) === String(room.id)
