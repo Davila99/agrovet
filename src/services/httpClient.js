@@ -1,7 +1,8 @@
-// Resolve API base at runtime so local dev uses local Django server while
-// production falls back to the deployed host. This also allows Vite to
-// override via VITE_API_BASE.
-const BASE_URL = " http://127.0.0.1:8000/api";
+//Producción
+const BASE_URL = " https://agrovet.pythonanywhere.com/api";
+
+//Desarrollo
+// const BASE_URL = " http://127.0.0.1:8000/api";
 /**
  * Realiza una petición HTTP a la API.
  * @param {string} endpoint - Ruta del endpoint.
