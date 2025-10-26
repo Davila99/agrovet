@@ -1,22 +1,18 @@
-// Resolve API base at runtime so local dev uses local Django server while
-// production falls back to the deployed host. This also allows Vite to
-// override via VITE_API_BASE.
-const BASE_URL = (() => {
-  if (typeof window === 'undefined') return 'https://agrovet.pythonanywhere.com/api';
+// Producción (sin espacio accidental)
+// const BASE_URL = "https://agrovet.pythonanywhere.com/api";
+
+// Desarrollo por defecto (sin espacios al inicio)
+let BASE_URL = "http://127.0.0.1:8000/api";
+// Allow runtime override (e.g. tests or embed) via window.__AGROVET_API_BASE
+if (typeof window !== "undefined" && window.__AGROVET_API_BASE) {
   try {
-    // Allow a runtime override if a script sets window.__AGROVET_API_BASE
-    if (typeof window !== 'undefined' && window.__AGROVET_API_BASE) {
-      return String(window.__AGROVET_API_BASE).replace(/\/$/, '');
-    }
+    BASE_URL = String(window.__AGROVET_API_BASE);
   } catch (e) {
-    // ignore
+    /* ignore */
   }
-  const host = window.location.hostname;
-  // During local dev (frontend served from localhost) prefer a local Django backend
-  if (host === 'localhost' || host === '127.0.0.1') return 'http://127.0.0.1:8000/api';
-  // default production host
-  return 'https://agrovet.pythonanywhere.com/api';
-})();
+}
+// Normalize: remove surrounding whitespace and trailing slash
+BASE_URL = String(BASE_URL).trim().replace(/\/$/, "");
 
 /**
  * Realiza una petición HTTP a la API.
@@ -52,7 +48,11 @@ async function request(endpoint, options = {}) {
       ? setTimeout(() => controller.abort(), timeoutMs)
       : null;
 
-    const res = await fetch(`${BASE_URL}${endpoint}`, {
+    // Build a robust URL: ensure single slash between base and endpoint
+    const p = String(endpoint || "").trim();
+    const path = p.startsWith("/") ? p : "/" + p;
+    const url = BASE_URL + path;
+    const res = await fetch(url, {
       headers: fetchHeaders,
       signal,
       ...rest,
@@ -73,13 +73,13 @@ async function request(endpoint, options = {}) {
         status: res.status,
         statusText: res.statusText,
         body: data,
-        endpoint: `${BASE_URL}${endpoint}`,
+        endpoint: url,
       });
       try{
         const raw = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
         if(raw) console.debug('[httpClient] stored token (masked):', String(raw).slice(0,6)+'...');
       }catch(e){}
-      const message = data.detail || data.error || data.message || `HTTP ${res.status} ${res.statusText}`;
+        const message = data.detail || data.error || data.message || `HTTP ${res.status} ${res.statusText}`;
       // Si es error de servidor (5xx) notificamos que el servicio está caído
       if (res.status >= 500 && typeof window !== 'undefined') {
         try {
@@ -95,7 +95,7 @@ async function request(endpoint, options = {}) {
     }
     return data;
   } catch (err) {
-    console.error("❌ API error:", err && err.message ? err.message : err);
+  console.error("❌ API error:", err && err.message ? err.message : err);
     
     const msg = err && (err.message || "") ;
     const isNetworkError = Boolean(
