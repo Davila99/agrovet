@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Container, Typography, Button, Box, CardMedia } from "@mui/material";
 import { motion } from "framer-motion";
-import { getProfile } from "../services/endpoints";
+import { getProfile } from "../../services/endpoints";
 import { useNavigate } from "react-router-dom";
 
 import banner1 from "../../assets/image/banner1.webp";

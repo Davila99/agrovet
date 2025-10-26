@@ -35,7 +35,7 @@ import {
   chatServiceFactory,
   connectPresence,
   getProfile,
-} from "../services/endpoints";
+} from "../../services/endpoints";
 
 // Start with an empty rooms list — we'll show only real rooms from the server
 const initialConversations = [];
