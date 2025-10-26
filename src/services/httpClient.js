@@ -1,4 +1,18 @@
-const BASE_URL = "https://agrovet.pythonanywhere.com/api";
+// Producción (sin espacio accidental)
+// const BASE_URL = "https://agrovet.pythonanywhere.com/api";
+
+// Desarrollo por defecto (sin espacios al inicio)
+let BASE_URL = "http://127.0.0.1:8000/api";
+// Allow runtime override (e.g. tests or embed) via window.__AGROVET_API_BASE
+if (typeof window !== "undefined" && window.__AGROVET_API_BASE) {
+  try {
+    BASE_URL = String(window.__AGROVET_API_BASE);
+  } catch (e) {
+    /* ignore */
+  }
+}
+// Normalize: remove surrounding whitespace and trailing slash
+BASE_URL = String(BASE_URL).trim().replace(/\/$/, "");
 
 /**
  * Realiza una petición HTTP a la API.
@@ -12,9 +26,11 @@ async function request(endpoint, options = {}) {
     let fetchHeaders = { ...headers };
     // Añadir Authorization si hay token en localStorage y no fue pasada en headers
     try {
-      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-      if (token && !fetchHeaders.Authorization && !fetchHeaders.authorization) {
-        fetchHeaders.Authorization = `Bearer ${token}`;
+      const raw = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      if (raw && !fetchHeaders.Authorization && !fetchHeaders.authorization) {
+        // stored token may include prefix 'Token ' or 'Bearer ' — normalize to raw key
+        const token = raw.replace(/^Token\s*/i, '').replace(/^Bearer\s*/i, '');
+        fetchHeaders.Authorization = `Token ${token}`;
       }
     } catch (e) {
       // Ignorar acceso a localStorage en entornos no-browser
@@ -32,7 +48,11 @@ async function request(endpoint, options = {}) {
       ? setTimeout(() => controller.abort(), timeoutMs)
       : null;
 
-    const res = await fetch(`${BASE_URL}${endpoint}`, {
+    // Build a robust URL: ensure single slash between base and endpoint
+    const p = String(endpoint || "").trim();
+    const path = p.startsWith("/") ? p : "/" + p;
+    const url = BASE_URL + path;
+    const res = await fetch(url, {
       headers: fetchHeaders,
       signal,
       ...rest,
@@ -53,9 +73,13 @@ async function request(endpoint, options = {}) {
         status: res.status,
         statusText: res.statusText,
         body: data,
-        endpoint: `${BASE_URL}${endpoint}`,
+        endpoint: url,
       });
-      const message = data.detail || data.error || data.message || `HTTP ${res.status} ${res.statusText}`;
+      try{
+        const raw = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+        if(raw) console.debug('[httpClient] stored token (masked):', String(raw).slice(0,6)+'...');
+      }catch(e){}
+        const message = data.detail || data.error || data.message || `HTTP ${res.status} ${res.statusText}`;
       // Si es error de servidor (5xx) notificamos que el servicio está caído
       if (res.status >= 500 && typeof window !== 'undefined') {
         try {
@@ -65,11 +89,13 @@ async function request(endpoint, options = {}) {
       }
       const err = new Error(message);
       err.status = res.status;
+      // Attach parsed response body for callers to inspect serializer errors
+      err.body = data;
       throw err;
     }
     return data;
   } catch (err) {
-    console.error("❌ API error:", err && err.message ? err.message : err);
+  console.error("❌ API error:", err && err.message ? err.message : err);
     
     const msg = err && (err.message || "") ;
     const isNetworkError = Boolean(
