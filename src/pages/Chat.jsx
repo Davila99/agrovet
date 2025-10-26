@@ -281,8 +281,19 @@ export default function Chat() {
         participants,
         tokenPresent: !!token,
       });
-      const res = await chatAPI.createRoom(participants, true)({ token });
-      console.debug("[Chat] createRoom response", res);
+      let res = null;
+      try {
+        res = await chatAPI.createRoom(participants, true)({ token });
+        console.debug("[Chat] createRoom response", res);
+      } catch (err) {
+        // Surface server error body for easier debugging in browser console
+        try {
+          console.error("[Chat] createRoom failed", err);
+          if (err && err.body) console.error("[Chat] createRoom server body:", err.body);
+        } catch (ee) {}
+        setSendError("No se pudo crear la sala. Revisa la consola para más detalles.");
+        throw err;
+      }
       const room = res && (res.id ? res : Array.isArray(res) ? res[0] : null);
       if (room) {
         const incoming = [
