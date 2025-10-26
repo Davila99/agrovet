@@ -17,7 +17,7 @@ export default function ChatBot() {
       webhookUrl,
       webhookConfig: { method: "POST" },
       target: "#n8n-chat-widget",
-      mode: "embedded",
+      mode: "window",
       initialMessages: ["👋 ¡Hola! Soy AVA, tu asistente virtual de Agrovets."],
       poweredBy: false,
       i18n: {

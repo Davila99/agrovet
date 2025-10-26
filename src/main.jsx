@@ -33,5 +33,4 @@ createRoot(document.getElementById("root")).render(
 );
 
 // Hacer una comprobación rápida del servicio al inicio para mostrar overlay si está caído
-// If you need a startup service check, call checkService() from a higher-level
-// component or a developer console. Removed automatic call to avoid 404 noise.
+checkService().catch(() => {});

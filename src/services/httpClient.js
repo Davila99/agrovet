@@ -1,23 +1,7 @@
 // Resolve API base at runtime so local dev uses local Django server while
 // production falls back to the deployed host. This also allows Vite to
 // override via VITE_API_BASE.
-const BASE_URL = (() => {
-  if (typeof window === 'undefined') return 'https://agrovet.pythonanywhere.com/api';
-  try {
-    // Allow a runtime override if a script sets window.__AGROVET_API_BASE
-    if (typeof window !== 'undefined' && window.__AGROVET_API_BASE) {
-      return String(window.__AGROVET_API_BASE).replace(/\/$/, '');
-    }
-  } catch (e) {
-    // ignore
-  }
-  const host = window.location.hostname;
-  // During local dev (frontend served from localhost) prefer a local Django backend
-  if (host === 'localhost' || host === '127.0.0.1') return 'http://127.0.0.1:8000/api';
-  // default production host
-  return 'https://agrovet.pythonanywhere.com/api';
-})();
-
+const BASE_URL = " http://127.0.0.1:8000/api";
 /**
  * Realiza una petición HTTP a la API.
  * @param {string} endpoint - Ruta del endpoint.

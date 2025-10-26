@@ -53,7 +53,7 @@ const PerfilContactHistory = ({ contactHistory = [] }) => {
             const date = item.date || item.timestamp || item.created_at || "";
 
             return (
-              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={idx}>
+              <Grid item xs={12} sm={6} md={4} key={idx}>
                 <Card
                   sx={{
                     borderRadius: 2,
