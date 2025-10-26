@@ -11,8 +11,7 @@ if (typeof window !== "undefined" && window.__AGROVET_API_BASE) {
     /* ignore */
   }
 }
-// Normalize: remove surrounding whitespace and trailing slash
-BASE_URL = String(BASE_URL).trim().replace(/\/$/, "");
+
 
 /**
  * Realiza una petición HTTP a la API.
