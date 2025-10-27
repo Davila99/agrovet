@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Typography, Link, Grid } from "@mui/material";
+import { Box, Typography, Link } from "@mui/material";
 
 const Footer = () => {
   return (
@@ -12,8 +12,18 @@ const Footer = () => {
         px: { xs: 2, sm: 4 },
       }}
     >
-      <Grid container spacing={3} alignItems="flex-start">
-        <Grid item xs={12} sm={4}>
+      <Box
+        sx={{
+          display: "grid",
+          gap: 3,
+          alignItems: "start",
+          gridTemplateColumns: {
+            xs: "1fr",
+            sm: "4fr 5fr 3fr",
+          },
+        }}
+      >
+        <Box>
           <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
             Contacto
           </Typography>
@@ -34,9 +44,9 @@ const Footer = () => {
               kenzad187@gmail.com
             </Link>
           </Typography>
-        </Grid>
+        </Box>
 
-        <Grid item xs={12} sm={5}>
+        <Box>
           <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
             Distribuidor
           </Typography>
@@ -46,9 +56,9 @@ const Footer = () => {
             Contáctanos para conocer nuestras ofertas, precios y disponibilidad
             en tu zona.
           </Typography>
-        </Grid>
+        </Box>
 
-        <Grid item xs={12} sm={3}>
+        <Box>
           <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
             Síguenos
           </Typography>
@@ -70,8 +80,8 @@ const Footer = () => {
               reservados.
             </Typography>
           </Box>
-        </Grid>
-      </Grid>
+        </Box>
+      </Box>
     </Box>
   );
 };

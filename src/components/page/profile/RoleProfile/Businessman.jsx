@@ -62,16 +62,16 @@ const BusinessmanProfile = ({ user }) => {
         <Divider sx={{ mb: 2 }} />
 
         <Grid container spacing={2}>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             {/* Nombre público, Sobre mí (descriptions) y Nombre del negocio apilados */}
             <FieldRow label="Nombre público" value={user_display} />
             <FieldRow label="Descripción" value={descriptions} />
             <FieldRow label="Nombre del negocio" value={business_name} />
           </Grid>
 
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <FieldRow
                   label="Ofrece productos locales"
                   value={offers_local_products ? "Sí" : "No"}
