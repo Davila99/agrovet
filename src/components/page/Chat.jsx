@@ -289,9 +289,12 @@ export default function Chat() {
         // Surface server error body for easier debugging in browser console
         try {
           console.error("[Chat] createRoom failed", err);
-          if (err && err.body) console.error("[Chat] createRoom server body:", err.body);
+          if (err && err.body)
+            console.error("[Chat] createRoom server body:", err.body);
         } catch (ee) {}
-        setSendError("No se pudo crear la sala. Revisa la consola para más detalles.");
+        setSendError(
+          "No se pudo crear la sala. Revisa la consola para más detalles."
+        );
         throw err;
       }
       const room = res && (res.id ? res : Array.isArray(res) ? res[0] : null);
@@ -320,7 +323,10 @@ export default function Chat() {
         setViewMode("chats");
         // Load chat history
         try {
-          const history = await chatAPI.getLastMessages(room.id, 100)({ token });
+          const history = await chatAPI.getLastMessages(
+            room.id,
+            100
+          )({ token });
           setRooms((prev) =>
             prev.map((r) =>
               String(r.id) === String(room.id)
@@ -2250,209 +2256,51 @@ export default function Chat() {
                             left: fromMe ? "auto" : -36,
                             right: fromMe ? -36 : "auto",
                           }}
-                        >
-                          <IconButton
-                            size="small"
-                            className="reply-btn"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setReplyTo({
-                                id: m.id || m.client_msg_id,
-                                text: m.text || m.content || "",
-                                senderName: username || "",
-                              });
-                            }}
-                            sx={{ opacity: 0, transition: "opacity 0.12s" }}
-                            aria-label="responder"
-                          >
-                            <ReplyIcon fontSize="small" />
-                          </IconButton>
-                        </Box>
+                        ></Box>
                         <Paper
                           sx={{
-                            padding: "6px 12px",
-                            maxWidth: { xs: "76%", md: "54%" },
-                            width: "auto",
-                            display: "inline-block",
+                            p: "8px 14px",
+                            maxWidth: { xs: "80%", md: "60%" },
+                            display: "flex",
+                            flexDirection: "column",
                             alignSelf: fromMe ? "flex-end" : "flex-start",
                             position: "relative",
-                            bgcolor: fromMe ? "#CDE9FF" : "#FFFFFF",
-                            color: "#000",
-                            borderRadius: fromMe
-                              ? "18px 18px 4px 18px"
-                              : "18px 18px 18px 4px",
-                            boxShadow: fromMe
-                              ? "none"
-                              : "0 1px 0 rgba(0,0,0,0.06)",
+                            borderRadius: "16px",
+                            backgroundColor: fromMe
+                              ? "rgba(0, 136, 204, 0.12)"
+                              : "rgba(255, 255, 255, 0.8)",
+                            backdropFilter: "blur(6px)",
                             border: fromMe
-                              ? "1px solid rgba(0,0,0,0.04)"
-                              : "1px solid rgba(0,0,0,0.06)",
-                            overflow: "visible",
+                              ? "1px solid rgba(0, 136, 204, 0.3)"
+                              : "1px solid rgba(0,0,0,0.08)",
+                            boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
                           }}
                         >
-                          {!fromMe &&
-                            username &&
-                            Boolean(
-                              activeConv &&
-                                (activeConv.is_private ||
-                                  (Array.isArray(activeConv.participants) &&
-                                    activeConv.participants.length === 2))
-                            ) === false && (
-                              <Typography
-                                variant="caption"
-                                sx={{
-                                  display: "block",
-                                  fontWeight: 600,
-                                  mb: 0.3,
-                                  color: "text.primary",
-                                }}
-                              >
-                                {username}
-                              </Typography>
-                            )}
-                          <Box sx={{ position: "relative" }}>
-                            {replied && (
-                              <Box
-                                sx={{
-                                  mb: 0.5,
-                                  backgroundColor: fromMe
-                                    ? "rgba(12,66,120,0.03)"
-                                    : "rgba(0,0,0,0.03)",
-                                  borderLeft: "3px solid rgba(0,0,0,0.08)",
-                                  p: "6px 8px",
-                                  maxWidth: "100%",
-                                  overflow: "hidden",
-                                }}
-                              >
-                                <Typography
-                                  variant="caption"
-                                  sx={{
-                                    fontWeight: 700,
-                                    display: "block",
-                                    whiteSpace: "nowrap",
-                                    overflow: "hidden",
-                                    textOverflow: "ellipsis",
-                                  }}
-                                >
-                                  {rname}
-                                </Typography>
-                                <Typography
-                                  variant="body2"
-                                  sx={{
-                                    whiteSpace: "nowrap",
-                                    overflow: "hidden",
-                                    textOverflow: "ellipsis",
-                                    fontSize: 12,
-                                  }}
-                                >
-                                  {rtext}
-                                </Typography>
-                              </Box>
-                            )}
-                            <Typography
-                              variant="body2"
-                              sx={{
-                                display: "inline-block",
-                                whiteSpace: "pre-wrap",
-                                fontSize: 14,
-                                lineHeight: 1.2,
-                                wordBreak: "break-word",
-                                maxWidth: "100%",
-                                paddingRight: 30,
-                              }}
-                            >
-                              {m.text || m.content || ""}
-                            </Typography>
-                          </Box>
-                          {fromMe ? (
-                            <Box
-                              sx={{
-                                position: "absolute",
-                                right: -6,
-                                bottom: 6,
-                                width: 12,
-                                height: 12,
-                                transform: "rotate(45deg)",
-                                bgcolor: "#CDE9FF",
-                                borderRight: "1px solid rgba(0,0,0,0.04)",
-                                borderBottom: "1px solid rgba(0,0,0,0.04)",
-                              }}
-                            />
-                          ) : (
-                            <Box
-                              sx={{
-                                position: "absolute",
-                                left: -6,
-                                bottom: 6,
-                                width: 12,
-                                height: 12,
-                                transform: "rotate(45deg)",
-                                bgcolor: "#FFFFFF",
-                                borderLeft: "1px solid rgba(0,0,0,0.06)",
-                                borderBottom: "1px solid rgba(0,0,0,0.06)",
-                              }}
-                            />
-                          )}
-                          <Box
+                          <Typography
+                            variant="body2"
                             sx={{
-                              position: "absolute",
-                              right: 8,
-                              bottom: 6,
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 0.5,
+                              whiteSpace: "pre-line",
+                              wordBreak: "break-word",
+                              fontSize: 14,
+                              lineHeight: 1.5,
+                              color: fromMe ? "#004f80" : "#1e1e1e",
                             }}
                           >
-                            <Typography
-                              variant="caption"
-                              sx={{ opacity: 0.7, fontSize: 11 }}
-                            >
+                            {m.text || m.content || ""}
+                          </Typography>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "flex-end",
+                              gap: 0.4,
+                              mt: 0.3,
+                              opacity: 0.6,
+                            }}
+                          >
+                            <Typography variant="caption" sx={{ fontSize: 11 }}>
                               {formatTimestamp(m.timestamp)}
                             </Typography>
-                            {fromMe &&
-                              (() => {
-                                const myId = getCurrentUserId();
-                                const receipts = m.receipts || [];
-                                const other = receipts.find(
-                                  (r) =>
-                                    String(getReceiptUserId(r)) !== String(myId)
-                                );
-                                const subtle = { fontSize: 16, opacity: 1 };
-                                // Prefer aggregate message flags if present (persisted on server)
-                                const msgRead =
-                                  Boolean(m.read) || (other && other.read);
-                                const msgDelivered =
-                                  Boolean(m.delivered) ||
-                                  (other && other.delivered);
-                                if (msgRead) {
-                                  return (
-                                    <DoneAllIcon
-                                      fontSize="small"
-                                      sx={{ color: "#1976d2", ...subtle }}
-                                    />
-                                  );
-                                }
-                                if (msgDelivered) {
-                                  return (
-                                    <DoneAllIcon
-                                      fontSize="small"
-                                      sx={{
-                                        color: "rgba(0,0,0,0.45)",
-                                        ...subtle,
-                                      }}
-                                    />
-                                  );
-                                }
-                                return (
-                                  <DoneIcon
-                                    fontSize="small"
-                                    sx={{
-                                      color: "rgba(0,0,0,0.45)",
-                                      ...subtle,
-                                    }}
-                                  />
-                                );
-                              })()}
                           </Box>
                         </Paper>
                       </Box>,
