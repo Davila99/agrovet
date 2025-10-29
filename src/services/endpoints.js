@@ -259,4 +259,3 @@ export function connectPresence(token, handlers = {}) {
     isOpen: () => !!(ws && ws.readyState === WebSocket.OPEN),
   };
 }
-

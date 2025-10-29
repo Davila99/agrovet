@@ -44,23 +44,26 @@ const Dashboard = () => {
   };
 
   return (
-    <Box sx={{ display: "flex" }}>
+    <Box sx={{ display: "flex", }}>
       <CssBaseline />
       {/* AppBar superior */}
       <AppBar
         position="fixed"
         sx={{ bgcolor: "primary.main", boxShadow: 2 }}
-      ></AppBar>
+      />
+
+      {/* Toolbar spacer to offset the fixed AppBar */}
+      <Toolbar />
 
       {/* Contenido principal */}
       <Box
         component="main"
-        sx={{ flexGrow: 1, p: 1, minHeight: "100vh", bgcolor: "#f4f6f8" }}
+        sx={{ flexGrow: 1, p: 1, bgcolor: "#f4f6f8" }}
       >
         <Paper
           sx={{
-            borderRadius: 3,
-            height: { xs: 520, md: "calc(100vh - 150px)" },
+            // Use a responsive calc so the content is always visible below the AppBar
+            height: { xs: "calc(100vh - 112px)", md: "calc(100vh - 160px)" },
             boxShadow: 3,
             overflow: "hidden",
           }}
