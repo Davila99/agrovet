@@ -11,7 +11,7 @@ export const authAPI = {
   userById: (id, token) =>
     httpClient(`/auth/users/${id}/`, {
       method: "GET",
-      headers: token ? { Authorization: `Token ${token}` } : {},
+     
     }),
 
   updateUser: (id, data, token) =>
