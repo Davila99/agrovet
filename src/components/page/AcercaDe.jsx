@@ -11,10 +11,15 @@ import {
 } from "@mui/material";
 import { motion } from "framer-motion";
 
-const MotionBox = motion(Box);
-const MotionListItem = motion(ListItem);
-const MotionChip = motion(Chip);
-const MotionTypography = motion(Typography);
+// `motion()` está deprecado; usar motion.create() por compatibilidad con la nueva API
+const MotionBox = motion.create ? motion.create(Box) : motion(Box);
+const MotionListItem = motion.create
+  ? motion.create(ListItem)
+  : motion(ListItem);
+const MotionChip = motion.create ? motion.create(Chip) : motion(Chip);
+const MotionTypography = motion.create
+  ? motion.create(Typography)
+  : motion(Typography);
 
 const containerVariants = {
   hidden: { opacity: 0 },

@@ -16,6 +16,8 @@ import MapOutlinedIcon from "@mui/icons-material/MapOutlined";
 import LayersIcon from "@mui/icons-material/Layers";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import MyLocationIcon from "@mui/icons-material/MyLocation";
+import MapIcon from "@mui/icons-material/Map";
+import { motion, AnimatePresence } from "framer-motion";
 import fetchUsers from "../../../data/users";
 
 // 🌐 Fuentes de mapas base
@@ -96,6 +98,7 @@ const Mapa3DGratis = () => {
   const [zoom, setZoom] = useState(7);
   const [clickedOnce, setClickedOnce] = useState(false);
   const [locating, setLocating] = useState(false);
+  const [open, setOpen] = useState(false);
   const userMarkerRef = useRef(null);
 
   useEffect(() => {
@@ -349,10 +352,10 @@ const Mapa3DGratis = () => {
       <Paper
         elevation={3}
         sx={{
-          marginTop: 10,
           position: "absolute",
-          top: 12,
-          left: 12,
+          top: 90,
+          left: 10,
+
           p: 1,
           borderRadius: 2,
           bgcolor: "rgba(0,0,0,0.32)",
@@ -379,161 +382,128 @@ const Mapa3DGratis = () => {
 
       {/* Los controles nativos se muestran ahora en bottom-right; se eliminaron los iconos flotantes duplicados */}
 
-      {/* ── Panel inferior izquierdo: selector de tipo de mapa (minuta estilo Google Maps) ── */}
-      <Paper
-        elevation={3}
-        sx={{
-          position: "absolute",
-          bottom: 20,
-          left: 12,
-          p: 0.5,
-          borderRadius: 20,
-          bgcolor: "rgba(255,255,255,0.95)",
-          display: "flex",
-          alignItems: "center",
-          gap: 1,
-          boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
-          zIndex: 1200,
-        }}
-      >
-        <Typography
-          variant="body2"
-          sx={{
-            pl: 1,
-            pr: 0.5,
-            color: "text.secondary",
-            display: { xs: "none", sm: "inline-block" },
-          }}
-        >
-          <LayersIcon fontSize="small" />
-        </Typography>
-
-        <Select
-          size="small"
-          value={providerIdx}
-          onChange={(e) => setProviderIdx(Number(e.target.value))}
-          sx={{
-            minWidth: 180,
-            fontSize: "0.85rem",
-            borderRadius: 8,
-            bgcolor: "transparent",
-          }}
-        >
-          {BASE_PROVIDERS.map((p, idx) => (
-            <MenuItem key={p.id} value={idx}>
-              {p.name}
-            </MenuItem>
-          ))}
-        </Select>
-
-        <Stack direction="row" spacing={0.5} sx={{ pr: 0.5 }}>
-          <Tooltip title="Centrar mapa">
-            <IconButton
-              size="small"
-              onClick={() => {
-                setLocating(true);
-                try {
-                  mapRef.current?.flyTo({ center, zoom: 7, essential: true });
-                } catch (e) {}
-                setTimeout(() => setLocating(false), 900);
-              }}
-              sx={{ bgcolor: "rgba(0,0,0,0.06)", borderRadius: 1 }}
-            >
-              <MyLocationIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-
-          <Tooltip title="Limpiar marcadores">
-            <IconButton
-              size="small"
-              color="error"
-              onClick={handleClearMarkers}
-              sx={{ bgcolor: "rgba(0,0,0,0.06)", borderRadius: 1 }}
-            >
-              <RefreshIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-        </Stack>
-      </Paper>
-
       {/* ── Panel central inferior: información de la ubicación seleccionada ── */}
       <Paper
-        elevation={3}
         sx={{
           position: "absolute",
-          bottom: 20,
-          left: "50%",
-          transform: "translateX(-50%)",
-          p: 1,
-          borderRadius: 2,
-          bgcolor: "rgba(255,255,255,0.98)",
-          minWidth: 280,
-          boxShadow: "0 8px 28px rgba(0,0,0,0.14)",
-          zIndex: 1200,
+          bottom: 40,
+          left: 20,
+
+          bgcolor: "transparent",
         }}
       >
-        {lastClick ? (
-          <Box>
-            <Typography
-              variant="subtitle2"
-              sx={{ color: "#103E68", fontWeight: 700 }}
+        <Tooltip title="Cambiar tipo de mapa">
+          <Paper
+            onClick={() => setOpen(!open)}
+            elevation={5}
+            sx={{
+              p: 1,
+              width: 50,
+              height: 50,
+              borderRadius: "12px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              bgcolor: "white",
+              transition: "all 0.2s ease",
+              "&:hover": {
+                transform: "scale(1.06)",
+                boxShadow: "0 6px 16px rgba(0,0,0,0.25)",
+              },
+            }}
+          >
+            <MapIcon sx={{ color: "#000000ff" }} />
+          </Paper>
+        </Tooltip>
+
+        {/* Panel animado con las miniaturas */}
+        <AnimatePresence>
+          {open && (
+            <motion.div
+              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.95 }}
+              transition={{ duration: 0.25 }}
             >
-              Ubicación seleccionada
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{ color: "text.secondary", mt: 0.5 }}
-            >
-              Lat: {lastClick[1].toFixed(6)}
-            </Typography>
-            <Typography variant="body2" sx={{ color: "text.secondary" }}>
-              Lng: {lastClick[0].toFixed(6)}
-            </Typography>
-            <Box sx={{ mt: 1, display: "flex", gap: 1 }}>
-              <Button
-                size="small"
-                variant="contained"
-                onClick={() => userMarkerRef?.current?.togglePopup?.()}
-                sx={{ bgcolor: "#103E68" }}
-              >
-                Ver popup
-              </Button>
-              <Button
-                size="small"
-                variant="outlined"
-                color="error"
-                onClick={() => {
-                  try {
-                    if (userMarkerRef.current) {
-                      userMarkerRef.current.remove();
-                      userMarkerRef.current = null;
-                    }
-                    setClickedOnce(false);
-                    setLastClick(null);
-                  } catch (e) {}
+              <Paper
+                elevation={8}
+                sx={{
+                  mt: 1,
+                  p: 1,
+                  borderRadius: 2,
+                  bgcolor: "white",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
+                  backdropFilter: "blur(12px)",
+                  WebkitBackdropFilter: "blur(12px)",
+                  zIndex: 1200,
+                  display: "grid",
+                  gridTemplateColumns: "repeat(2, 1fr)",
+                  gap: 1,
+                  width: 220,
                 }}
               >
-                Eliminar marcador
-              </Button>
-            </Box>
-          </Box>
-        ) : (
-          <Box>
-            <Typography
-              variant="subtitle2"
-              sx={{ color: "#103E68", fontWeight: 700 }}
-            >
-              Ninguna ubicación seleccionada
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{ color: "text.secondary", mt: 0.5 }}
-            >
-              Haz click en el mapa para marcar una ubicación. Si ya has marcado,
-              vuelve a hacer click en otro punto para moverla.
-            </Typography>
-          </Box>
-        )}
+                {BASE_PROVIDERS.map((p, idx) => (
+                  <motion.div
+                    key={p.id}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => {
+                      setProviderIdx(idx);
+                      setOpen(false);
+                    }}
+                    style={{
+                      borderRadius: 8,
+                      overflow: "hidden",
+                      position: "relative",
+                      cursor: "pointer",
+                      boxShadow:
+                        idx === providerIdx
+                          ? "0 0 0 2px #1976d2 inset"
+                          : "0 0 0 1px rgba(0,0,0,0.15) inset",
+                      transition: "box-shadow 0.2s ease",
+                    }}
+                  >
+                    <img
+                      src={
+                        p.id.includes("esri")
+                          ? "https://ocdn.eu/pulscms-transforms/1/oH5k9kpTURBXy8wZTY1NDlmMDQzOTMwYzNlZDU5NTFhMGM0MWNmNTkwMS5qcGeSlQM1AM0DUM0B3ZMFzQFjzQGV3gACoTAFoTEA"
+                          : p.id.includes("osm")
+                          ? "https://b.thumbs.redditmedia.com/_-tFDewWnuXggz7RBtf-c9a69HtU2Bd64VLrU3jyOZo.jpg"
+                          : p.id.includes("dark")
+                          ? "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTraeOzakXtVUuTTmYjVdEU-sdbsvaPHltbT1mNc9i1u9F7ikyOk5gMc-o6_goOcTUkp48&usqp=CAU"
+                          : "https://www.shutterstock.com/image-vector/small-map-city-260nw-770438665.jpg"
+                      }
+                      alt={p.name}
+                      style={{
+                        width: "100%",
+                        height: 70,
+                        objectFit: "cover",
+                        filter: idx === providerIdx ? "none" : "grayscale(30%)",
+                      }}
+                    />
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        position: "absolute",
+                        bottom: 4,
+                        left: 4,
+                        px: 0.6,
+                        py: 0.2,
+                        bgcolor: "rgba(0,0,0,0.55)",
+                        color: "white",
+                        borderRadius: 1,
+                        fontSize: "0.7rem",
+                      }}
+                    >
+                      {p.name}
+                    </Typography>
+                  </motion.div>
+                ))}
+              </Paper>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </Paper>
     </Box>
   );
