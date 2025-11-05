@@ -31,8 +31,14 @@ const WelcomePage = () => {
           if (mounted) setIsLoggedIn(false);
           return;
         }
-        const token = String(raw).replace(/^Token\s*/i, "").replace(/^Bearer\s*/i, "").trim();
-        if (!token) { if (mounted) setIsLoggedIn(false); return; }
+        const token = String(raw)
+          .replace(/^Token\s*/i, "")
+          .replace(/^Bearer\s*/i, "")
+          .trim();
+        if (!token) {
+          if (mounted) setIsLoggedIn(false);
+          return;
+        }
         try {
           const profile = await getProfile(token);
           if (mounted && profile && profile.id) setIsLoggedIn(true);
@@ -45,7 +51,9 @@ const WelcomePage = () => {
       }
     };
     check();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   useEffect(() => {

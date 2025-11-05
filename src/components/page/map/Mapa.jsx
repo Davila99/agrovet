@@ -16,6 +16,7 @@ import MapOutlinedIcon from "@mui/icons-material/MapOutlined";
 import LayersIcon from "@mui/icons-material/Layers";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import MyLocationIcon from "@mui/icons-material/MyLocation";
+import fetchUsers from "../../../data/users";
 
 // 🌐 Fuentes de mapas base
 const BASE_PROVIDERS = [
@@ -93,6 +94,9 @@ const Mapa3DGratis = () => {
   const [markers, setMarkers] = useState([]);
   const [center, setCenter] = useState([-86.251389, 12.136389]); // Managua
   const [zoom, setZoom] = useState(7);
+  const [clickedOnce, setClickedOnce] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const userMarkerRef = useRef(null);
 
   useEffect(() => {
     if (!mapContainer.current) return;
@@ -127,8 +131,9 @@ const Mapa3DGratis = () => {
     mapRef.current = map;
 
     // Controles nativos
-    map.addControl(new maplibregl.NavigationControl(), "top-right");
-    map.addControl(new maplibregl.FullscreenControl(), "top-right");
+    // mover controles nativos a la esquina inferior derecha
+    map.addControl(new maplibregl.NavigationControl(), "bottom-right");
+    map.addControl(new maplibregl.FullscreenControl(), "bottom-right");
     map.addControl(
       new maplibregl.ScaleControl({ maxWidth: 80, unit: "metric" })
     );
@@ -137,26 +142,143 @@ const Mapa3DGratis = () => {
         positionOptions: { enableHighAccuracy: true },
         trackUserLocation: false,
       }),
-      "top-right"
+      "bottom-right"
     );
 
-    // 📍 Click: agrega marcador
+    // 📍 Click: agrega marcador (solo una vez). Ignora clicks sobre marcadores/popup
     const onClick = (ev) => {
+      try {
+        const orig = ev && ev.originalEvent && ev.originalEvent.target;
+        let el = orig;
+        while (el) {
+          if (
+            el.classList &&
+            (el.classList.contains("maplibregl-marker") ||
+              el.classList.contains("maplibregl-popup"))
+          ) {
+            // click sobre marcador/popup: ignorar
+            return;
+          }
+          el = el.parentElement;
+        }
+      } catch (e) {
+        // ignore
+      }
       const coords = [ev.lngLat.lng, ev.lngLat.lat];
       setLastClick(coords);
-      setMarkers((prev) => [...prev, coords]);
-      new maplibregl.Marker({ color: "#ff6600" })
-        .setLngLat(coords)
-        .setPopup(
-          new maplibregl.Popup().setHTML(
-            `<b>Marcador</b><br/>Lat: ${coords[1].toFixed(
-              5
-            )}, Lng: ${coords[0].toFixed(5)}`
+
+      // Si ya existe el marcador del usuario, moverlo en vez de crear uno nuevo
+      if (userMarkerRef.current) {
+        try {
+          userMarkerRef.current.setLngLat(coords);
+          const popup = userMarkerRef.current.getPopup();
+          if (popup)
+            popup.setText(
+              `Ubicación marcada — Lat: ${coords[1].toFixed(
+                5
+              )}, Lng: ${coords[0].toFixed(5)}`
+            );
+        } catch (e) {
+          console.warn("Error al mover user marker:", e);
+        }
+      } else {
+        // crear un pin estándar (color) y un popup simple — sin mailto
+        const marker = new maplibregl.Marker({ color: "#ff6600" })
+          .setLngLat(coords)
+          .setPopup(
+            new maplibregl.Popup({ offset: 12 }).setText(
+              `Ubicación marcada — Lat: ${coords[1].toFixed(
+                5
+              )}, Lng: ${coords[0].toFixed(5)}`
+            )
           )
-        )
-        .addTo(map);
+          .addTo(map);
+
+        userMarkerRef.current = marker;
+        setClickedOnce(true);
+      }
     };
     map.on("click", onClick);
+
+    // Cargar usuarios desde la API y renderizar marcadores con foto como icono
+    (async () => {
+      try {
+        const users = await fetchUsers();
+        if (Array.isArray(users) && users.length > 0) {
+          users.forEach((u) => {
+            const lat = parseFloat(u.latitude);
+            const lon = parseFloat(u.longitude);
+            if (!isFinite(lat) || !isFinite(lon)) return;
+
+            // crear elemento DOM para la imagen de perfil con fallback
+            const el = document.createElement("div");
+            el.className = "profile-marker";
+            el.style.width = "44px";
+            el.style.height = "44px";
+            el.style.borderRadius = "50%";
+            el.style.overflow = "hidden";
+            el.style.boxShadow = "0 4px 12px rgba(0,0,0,0.24)";
+            el.style.border = "2px solid white";
+            el.style.backgroundColor = "#f0f0f0";
+            el.style.display = "flex";
+            el.style.alignItems = "center";
+            el.style.justifyContent = "center";
+
+            const img = document.createElement("img");
+            img.src = u.profile_picture || "";
+            img.alt = u.full_name || "usuario";
+            img.style.width = "100%";
+            img.style.height = "100%";
+            img.style.objectFit = "cover";
+
+            // si la imagen falla (CORS o 404), usar un placeholder SVG con iniciales
+            img.onerror = () => {
+              // generar iniciales a partir del nombre
+              const name = (u.full_name || u.full_name || "?").trim();
+              const parts = name.split(/\s+/).filter(Boolean);
+              const initials =
+                (parts[0] ? parts[0][0] : "?") + (parts[1] ? parts[1][0] : "");
+              const bg = encodeURIComponent("#ffffff");
+              const fg = encodeURIComponent("#103E68");
+              const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><rect width='100%' height='100%' fill='${decodeURIComponent(
+                bg
+              )}'/><text x='50%' y='50%' dy='0.36em' text-anchor='middle' font-family='Arial, Helvetica, sans-serif' font-size='90' fill='${decodeURIComponent(
+                fg
+              )}'>${initials.toUpperCase()}</text></svg>`;
+              img.src =
+                "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+              img.style.objectFit = "cover";
+            };
+
+            el.appendChild(img);
+
+            const marker = new maplibregl.Marker({
+              element: el,
+              anchor: "center",
+            })
+              .setLngLat([lon, lat])
+              .setPopup(
+                new maplibregl.Popup({ offset: 12 }).setHTML(
+                  `<div style="background:#fff;color:#103E68;padding:8px;border-radius:6px;min-width:120px;box-shadow:0 6px 18px rgba(0,0,0,0.12)"><strong style=\"display:block;font-size:0.95rem;margin-bottom:4px;\">${(
+                    u.full_name || "Usuario"
+                  ).replace(
+                    /</g,
+                    "&lt;"
+                  )}</strong><span style=\"font-size:0.85rem;color:#445660\">${(
+                    u.role || ""
+                  ).replace(/</g, "&lt;")}</span></div>`
+                )
+              )
+              .addTo(map);
+
+            // guardar referencias para limpieza
+            setMarkers((prev) => [...prev, marker]);
+          });
+        }
+      } catch (e) {
+        console.warn("No se pudieron cargar usuarios para mapa:", e);
+      }
+    })();
 
     // Si las coords venían en la URL, agregar un marcador inicial
     if (centerFromParams) {
@@ -203,6 +325,14 @@ const Mapa3DGratis = () => {
     els.forEach((el) => el.remove());
     setMarkers([]);
     setLastClick(null);
+    // eliminar marcador de usuario si existe y permitir volver a marcar
+    try {
+      if (userMarkerRef.current) {
+        userMarkerRef.current.remove();
+        userMarkerRef.current = null;
+      }
+    } catch (e) {}
+    setClickedOnce(false);
   };
 
   return (
@@ -210,10 +340,7 @@ const Mapa3DGratis = () => {
       sx={{
         position: "relative",
         width: "100%",
-        height: "600px",
-        borderRadius: 2,
-        overflow: "hidden",
-        boxShadow: 4,
+        height: "100vh",
       }}
     >
       <Box ref={mapContainer} sx={{ width: "100%", height: "100%" }} />
@@ -222,6 +349,7 @@ const Mapa3DGratis = () => {
       <Paper
         elevation={3}
         sx={{
+          marginTop: 10,
           position: "absolute",
           top: 12,
           left: 12,
@@ -249,21 +377,23 @@ const Mapa3DGratis = () => {
         )}
       </Paper>
 
-      {/* 🧭 Panel inferior: selector de tipo de mapa y controles (estilo Google Maps) */}
+      {/* Los controles nativos se muestran ahora en bottom-right; se eliminaron los iconos flotantes duplicados */}
+
+      {/* ── Panel inferior izquierdo: selector de tipo de mapa (minuta estilo Google Maps) ── */}
       <Paper
         elevation={3}
         sx={{
           position: "absolute",
-          bottom: 28,
-          left: "50%",
-          transform: "translateX(-50%)",
-          p: 0.75,
+          bottom: 20,
+          left: 12,
+          p: 0.5,
           borderRadius: 20,
           bgcolor: "rgba(255,255,255,0.95)",
           display: "flex",
           alignItems: "center",
           gap: 1,
           boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+          zIndex: 1200,
         }}
       >
         <Typography
@@ -283,11 +413,10 @@ const Mapa3DGratis = () => {
           value={providerIdx}
           onChange={(e) => setProviderIdx(Number(e.target.value))}
           sx={{
-            minWidth: 220,
+            minWidth: 180,
             fontSize: "0.85rem",
             borderRadius: 8,
             bgcolor: "transparent",
-            backgroundColor: "rgba(184, 234, 253, 0.13)",
           }}
         >
           {BASE_PROVIDERS.map((p, idx) => (
@@ -301,9 +430,13 @@ const Mapa3DGratis = () => {
           <Tooltip title="Centrar mapa">
             <IconButton
               size="small"
-              onClick={() =>
-                mapRef.current?.flyTo({ center, zoom: 7, essential: true })
-              }
+              onClick={() => {
+                setLocating(true);
+                try {
+                  mapRef.current?.flyTo({ center, zoom: 7, essential: true });
+                } catch (e) {}
+                setTimeout(() => setLocating(false), 900);
+              }}
               sx={{ bgcolor: "rgba(0,0,0,0.06)", borderRadius: 1 }}
             >
               <MyLocationIcon fontSize="small" />
@@ -321,6 +454,86 @@ const Mapa3DGratis = () => {
             </IconButton>
           </Tooltip>
         </Stack>
+      </Paper>
+
+      {/* ── Panel central inferior: información de la ubicación seleccionada ── */}
+      <Paper
+        elevation={3}
+        sx={{
+          position: "absolute",
+          bottom: 20,
+          left: "50%",
+          transform: "translateX(-50%)",
+          p: 1,
+          borderRadius: 2,
+          bgcolor: "rgba(255,255,255,0.98)",
+          minWidth: 280,
+          boxShadow: "0 8px 28px rgba(0,0,0,0.14)",
+          zIndex: 1200,
+        }}
+      >
+        {lastClick ? (
+          <Box>
+            <Typography
+              variant="subtitle2"
+              sx={{ color: "#103E68", fontWeight: 700 }}
+            >
+              Ubicación seleccionada
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{ color: "text.secondary", mt: 0.5 }}
+            >
+              Lat: {lastClick[1].toFixed(6)}
+            </Typography>
+            <Typography variant="body2" sx={{ color: "text.secondary" }}>
+              Lng: {lastClick[0].toFixed(6)}
+            </Typography>
+            <Box sx={{ mt: 1, display: "flex", gap: 1 }}>
+              <Button
+                size="small"
+                variant="contained"
+                onClick={() => userMarkerRef?.current?.togglePopup?.()}
+                sx={{ bgcolor: "#103E68" }}
+              >
+                Ver popup
+              </Button>
+              <Button
+                size="small"
+                variant="outlined"
+                color="error"
+                onClick={() => {
+                  try {
+                    if (userMarkerRef.current) {
+                      userMarkerRef.current.remove();
+                      userMarkerRef.current = null;
+                    }
+                    setClickedOnce(false);
+                    setLastClick(null);
+                  } catch (e) {}
+                }}
+              >
+                Eliminar marcador
+              </Button>
+            </Box>
+          </Box>
+        ) : (
+          <Box>
+            <Typography
+              variant="subtitle2"
+              sx={{ color: "#103E68", fontWeight: 700 }}
+            >
+              Ninguna ubicación seleccionada
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{ color: "text.secondary", mt: 0.5 }}
+            >
+              Haz click en el mapa para marcar una ubicación. Si ya has marcado,
+              vuelve a hacer click en otro punto para moverla.
+            </Typography>
+          </Box>
+        )}
       </Paper>
     </Box>
   );

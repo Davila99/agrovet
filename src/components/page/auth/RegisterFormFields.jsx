@@ -186,6 +186,7 @@ const RegisterFormFields = ({ form, handleChange, step = 1 }) => {
             margin="normal"
             SelectProps={{ native: true }}
           >
+            <option value=""></option>
             <option value="consumer">Cliente</option>
             <option value="Specialist">Especialista</option>
             <option value="businessman">Aliado Comercial</option>

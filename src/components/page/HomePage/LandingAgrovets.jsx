@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Box, Typography, Divider, Button } from "@mui/material";
 import { motion } from "framer-motion";
 import ImgOne from "../../../assets/image/img1.webp";
@@ -10,11 +10,78 @@ const fadeInUp = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
 };
 
+// simple easing
+const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+
+// hook de conteo
+function useCountUp(end, { start = false, duration = 1.2, decimals = 0 } = {}) {
+  const [value, setValue] = useState(0);
+  const rafRef = useRef(null);
+  const startTimeRef = useRef(null);
+
+  useEffect(() => {
+    if (!start) {
+      // reset to 0 when not started (optional)
+      setValue(0);
+      return;
+    }
+
+    startTimeRef.current = null;
+    const from = 0;
+    const delta = end - from;
+
+    function tick(ts) {
+      if (!startTimeRef.current) startTimeRef.current = ts;
+      const elapsed = ts - startTimeRef.current;
+      const progress = Math.min(elapsed / (duration * 1000), 1);
+      const eased = easeOutCubic(progress);
+      const current = from + delta * eased;
+      setValue(Number(current.toFixed(decimals)));
+
+      if (progress < 1) {
+        rafRef.current = requestAnimationFrame(tick);
+      }
+    }
+
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [start, end, duration, decimals]);
+
+  return value;
+}
+
+const formatNumber = (num, decimals = 0) =>
+  new Intl.NumberFormat("es-ES", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(num);
+
 const LandingAgrovetsAnim = () => {
+  // control para iniciar conteos cuando el bloque de estadísticas entra en viewport
+  const [startStats, setStartStats] = useState(false);
+
+  // valores animados
+  const valExports = useCountUp(2014.6, {
+    start: startStats,
+    duration: 1.4,
+    decimals: 1,
+  });
+  const valVariation = useCountUp(-4.5, {
+    start: startStats,
+    duration: 1.2,
+    decimals: 1,
+  });
+  const valParticipation = useCountUp(2.4, {
+    start: startStats,
+    duration: 1.2,
+    decimals: 1,
+  });
+
   return (
     <Box
       sx={{
-        maxWidth: "1200px",
         mx: "auto",
         px: { xs: 3, md: 2 },
         color: "#000",
@@ -107,77 +174,84 @@ const LandingAgrovetsAnim = () => {
             ilustran el panorama reciente:
           </Typography>
 
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: { xs: "column", sm: "row" },
-              gap: 2,
-              mb: 3,
-            }}
+          {/* Aquí activamos conteo cuando este bloque entra en viewport */}
+          <motion.div
+            onViewportEnter={() => setStartStats(true)}
+            viewport={{ once: true }}
           >
             <Box
               sx={{
-                flex: 1,
-                bgcolor: "#F6FBF2",
-                borderRadius: 2,
-                p: 2,
-                boxShadow: "0 6px 16px rgba(16,62,104,0.06)",
+                display: "flex",
+                flexDirection: { xs: "column", sm: "row" },
+                gap: 2,
+                mb: 3,
               }}
             >
-              <Typography
-                variant="h5"
-                fontWeight="bold"
-                sx={{ color: "#103E68" }}
+              <Box
+                sx={{
+                  flex: 1,
+                  bgcolor: "#F6FBF2",
+                  borderRadius: 2,
+                  p: 2,
+                  boxShadow: "0 6px 16px rgba(16,62,104,0.06)",
+                }}
               >
-                2,014.6M $
-              </Typography>
-              <Typography variant="body2" sx={{ color: "#445660" }}>
-                Valor exportaciones (1er trim. 2023)
-              </Typography>
-            </Box>
+                <Typography
+                  variant="h5"
+                  fontWeight="bold"
+                  sx={{ color: "#103E68" }}
+                >
+                  {formatNumber(valExports, 1)}M $
+                </Typography>
+                <Typography variant="body2" sx={{ color: "#445660" }}>
+                  Valor exportaciones (1er trim. 2023)
+                </Typography>
+              </Box>
 
-            <Box
-              sx={{
-                flex: 1,
-                bgcolor: "#FFF9EF",
-                borderRadius: 2,
-                p: 2,
-                boxShadow: "0 6px 16px rgba(53,114,43,0.06)",
-              }}
-            >
-              <Typography
-                variant="h5"
-                fontWeight="bold"
-                sx={{ color: "#35722b" }}
+              <Box
+                sx={{
+                  flex: 1,
+                  bgcolor: "#FFF9EF",
+                  borderRadius: 2,
+                  p: 2,
+                  boxShadow: "0 6px 16px rgba(53,114,43,0.06)",
+                }}
               >
-                -4.5%
-              </Typography>
-              <Typography variant="body2" sx={{ color: "#445660" }}>
-                Variación anual del sector
-              </Typography>
-            </Box>
+                <Typography
+                  variant="h5"
+                  fontWeight="bold"
+                  sx={{ color: "#35722b" }}
+                >
+                  {valVariation < 0 ? "" : "+"}
+                  {formatNumber(valVariation, 1)}%
+                </Typography>
+                <Typography variant="body2" sx={{ color: "#445660" }}>
+                  Variación anual del sector
+                </Typography>
+              </Box>
 
-            <Box
-              sx={{
-                flex: 1,
-                bgcolor: "#F0F9FF",
-                borderRadius: 2,
-                p: 2,
-                boxShadow: "0 6px 16px rgba(16,62,104,0.04)",
-              }}
-            >
-              <Typography
-                variant="h5"
-                fontWeight="bold"
-                sx={{ color: "#103E68" }}
+              <Box
+                sx={{
+                  flex: 1,
+                  bgcolor: "#F0F9FF",
+                  borderRadius: 2,
+                  p: 2,
+                  boxShadow: "0 6px 16px rgba(16,62,104,0.04)",
+                }}
               >
-                2.4%
-              </Typography>
-              <Typography variant="body2" sx={{ color: "#445660" }}>
-                Participación agropecuaria en exportaciones
-              </Typography>
+                <Typography
+                  variant="h5"
+                  fontWeight="bold"
+                  sx={{ color: "#103E68" }}
+                >
+                  {formatNumber(valParticipation, 1)}%
+                </Typography>
+                <Typography variant="body2" sx={{ color: "#445660" }}>
+                  Participación agropecuaria en exportaciones
+                </Typography>
+              </Box>
             </Box>
-          </Box>
+          </motion.div>
 
           <Box
             component="img"

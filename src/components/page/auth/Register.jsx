@@ -128,12 +128,7 @@ const RegisterPage = () => {
 
   const validateStep = (currentStep) => {
     if (currentStep === 1) {
-      if (
-        !form.full_name ||
-        !form.last_name ||
-        !form.phone_number ||
-        !form.profile_picture
-      ) {
+      if (!form.full_name || !form.last_name || !form.phone_number) {
         setError(
           "Completa los campos básicos: nombre, apellido, teléfono y foto"
         );
