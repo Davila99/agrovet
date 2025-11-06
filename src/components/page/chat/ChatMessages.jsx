@@ -49,16 +49,12 @@ export default function ChatMessages({
     >
       {(activeConv?.messages || [])
         .slice()
-        .sort(
-          (a, b) =>
-            new Date(a.timestamp || 0) - new Date(b.timestamp || 0)
-        )
+        .sort((a, b) => new Date(a.timestamp || 0) - new Date(b.timestamp || 0))
         .map((m) => {
-          const fromMe =
-            String(m.sender_id) === String(userId) || m.fromMe;
+          const fromMe = String(m.sender_id) === String(userId) || m.fromMe;
           return (
             <Box
-              key={m.id}
+              key={m.uid} // 🔹 Usamos UID único
               data-msg-id={m.id}
               data-fromme={fromMe}
               sx={{

@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { chatServiceFactory } from "../../../services/endpoints";
+import { normalizeStoredToken } from "./chatUtils";
 
 export default function useChatSocket({
   activeId,
@@ -14,10 +15,17 @@ export default function useChatSocket({
     if (String(activeId) === "bot-chat") return;
 
     const svc = chatServiceFactory();
-    const token = localStorage.getItem("token");
+    const rawStored = localStorage.getItem("token");
+    const token = normalizeStoredToken(rawStored);
+    try {
+      console.debug('[useChatSocket] connecting', { activeId, rawTokenLength: rawStored ? String(rawStored).length : 0, rawTokenMasked: rawStored ? String(rawStored).slice(0,8) + '...' : null, tokenMasked: token ? String(token).slice(0,8) + '...' : null });
+    } catch (e) {}
 
-    svc.connect(activeId, token, {
-      onOpen: () => console.debug("[Chat] WS open"),
+    try {
+      svc.connect(activeId, token, {
+      onOpen: () => {
+        console.debug("[Chat] WS open", { activeId });
+      },
       onMessage: (ev) => {
         try {
           const raw = typeof ev === "string" ? ev : ev.data;
@@ -59,9 +67,16 @@ export default function useChatSocket({
           console.error("[Chat WS] parse error", e);
         }
       },
-      onClose: () => console.debug("[Chat] WS closed"),
-      onError: (e) => console.debug("[Chat] WS error", e),
+      onClose: (ev) => {
+        try { console.debug('[Chat] WS closed', { activeId, code: ev && ev.code, reason: ev && ev.reason, wasClean: ev && ev.wasClean }); } catch(e){}
+      },
+      onError: (e) => {
+        try { console.error('[Chat] WS error', { activeId, errorEvent: e }); } catch(err){}
+      },
     });
+    } catch (outer) {
+      console.error('[useChatSocket] svc.connect threw', outer, { activeId });
+    }
 
     return () => {
       try {

@@ -47,7 +47,7 @@ export const resolveAvatar = (src) => {
   }
 };
 
-// ✅ Fusiona rooms existentes con nuevas actualizaciones
+// 🔹 mergeRooms con UID único para cada mensaje
 export function mergeRooms(existing, incoming) {
   try {
     const byId = new Map();
@@ -93,142 +93,72 @@ export function mergeRooms(existing, incoming) {
             best = m;
           }
         }
-        return best?.content || best?.text || best?.message || "";
+        return best?.text || best?.content || best?.message || "";
       } catch {
         return "";
       }
     };
+
+    const normalizeMessages = (msgs) =>
+      (msgs || []).map((m, idx) => {
+        const rawSender = m.sender_id || m.sender || m.senderId;
+        const sender_id =
+          rawSender && typeof rawSender === "object"
+            ? rawSender.id || rawSender.user_id || rawSender.pk
+            : rawSender;
+        const timestamp = m.timestamp || m.created_at || new Date().toISOString();
+        return {
+          id: m.id,
+          uid: `${m.id}-${timestamp}-${idx}`, // 🔹 UID único para React
+          sender_id,
+          text: m.text || m.content || m.message || "",
+          timestamp,
+          receipts: m.receipts || [],
+          delivered: Boolean(m.delivered),
+          delivered_at: m.delivered_at || null,
+          read: Boolean(m.read),
+          read_at: m.read_at || null,
+          fromMe:
+            Boolean(m.fromMe === true) ||
+            String(sender_id) === String(localStorage.getItem("userId")),
+        };
+      });
 
     for (const r of incoming || []) {
       const rid = String(r.id);
       if (byId.has(rid)) {
         const cur = byId.get(rid);
         const curMsgs = cur.messages || [];
-        const incomingMsgs = (r.messages || []).map((m) => {
-          const rawSender = m.sender_id || m.sender || m.senderId;
-          const sender_id =
-            rawSender && typeof rawSender === "object"
-              ? rawSender.id || rawSender.user_id || rawSender.pk
-              : rawSender;
-          const text = m.text || m.content || m.message || "";
-          const timestamp = m.timestamp || m.created_at;
-          return {
-            id: m.id,
-            sender_id,
-            text,
-            timestamp,
-            receipts: m.receipts || [],
-            delivered: Boolean(m.delivered),
-            delivered_at: m.delivered_at || null,
-            read: Boolean(m.read),
-            read_at: m.read_at || null,
-            fromMe:
-              Boolean(m.fromMe === true) ||
-              String(sender_id) === String(localStorage.getItem("userId")),
-          };
-        });
+        const incomingMsgs = normalizeMessages(r.messages);
 
-        const existingById = new Map(
-          curMsgs.map((m) => [String(m.id), { ...m }])
-        );
+        const existingByUid = new Map(curMsgs.map((m) => [m.uid, { ...m }]));
         for (const im of incomingMsgs) {
-          const key = String(im.id);
-          if (existingById.has(key)) {
-            const ex = existingById.get(key);
-            existingById.set(key, { ...ex, ...im });
+          if (existingByUid.has(im.uid)) {
+            const ex = existingByUid.get(im.uid);
+            existingByUid.set(im.uid, { ...ex, ...im });
           } else {
-            existingById.set(key, im);
+            existingByUid.set(im.uid, im);
           }
         }
-        const combined = Array.from(existingById.values());
+
+        const combined = Array.from(existingByUid.values());
         byId.set(rid, {
           ...cur,
           messages: combined,
           lastMessage: getLatestMsgContent(combined) || cur.lastMessage,
         });
       } else {
-        const k = participantsKey(r);
-        if (k && privateIndex.has(k)) {
-          const existingId = privateIndex.get(k);
-          const cur = byId.get(existingId) || {
-            id: existingId,
-            messages: [],
-          };
-          const curMsgs = cur.messages || [];
-          const incomingMsgs = (r.messages || []).map((m) => {
-            const rawSender = m.sender_id || m.sender || m.senderId;
-            const sender_id =
-              rawSender && typeof rawSender === "object"
-                ? rawSender.id || rawSender.user_id || rawSender.pk
-                : rawSender;
-            return {
-              id: m.id,
-              sender_id,
-              text: m.text || m.content || m.message || "",
-              timestamp: m.timestamp || m.created_at,
-              receipts: m.receipts || [],
-              delivered: Boolean(m.delivered),
-              delivered_at: m.delivered_at || null,
-              read: Boolean(m.read),
-              read_at: m.read_at || null,
-              fromMe:
-                Boolean(m.fromMe === true) ||
-                String(sender_id) === String(localStorage.getItem("userId")),
-            };
-          });
-          const existingById = new Map(
-            curMsgs.map((m) => [String(m.id), { ...m }])
-          );
-          for (const im of incomingMsgs) {
-            const key = String(im.id);
-            if (existingById.has(key)) {
-              const ex = existingById.get(key);
-              existingById.set(key, { ...ex, ...im });
-            } else {
-              existingById.set(key, im);
-            }
-          }
-          const combined = Array.from(existingById.values());
-          byId.set(existingId, {
-            ...cur,
-            messages: combined,
-            lastMessage: getLatestMsgContent(combined) || cur.lastMessage,
-          });
-        } else {
-          const partsNew = r.participants || r.participants_list || [];
-          const dispNameNew =
-            r.name || r.other_participant || `Room ${rid}`;
-          const msgsNew = (r.messages || []).map((m) => {
-            const rawSender = m.sender_id || m.sender || m.senderId;
-            const sender_id =
-              rawSender && typeof rawSender === "object"
-                ? rawSender.id || rawSender.user_id || rawSender.pk
-                : rawSender;
-            return {
-              id: m.id,
-              sender_id,
-              text: m.text || m.content || m.message || "",
-              timestamp: m.timestamp || m.created_at,
-              receipts: m.receipts || [],
-              delivered: Boolean(m.delivered),
-              delivered_at: m.delivered_at || null,
-              read: Boolean(m.read),
-              read_at: m.read_at || null,
-              fromMe:
-                Boolean(m.fromMe === true) ||
-                String(sender_id) === String(localStorage.getItem("userId")),
-            };
-          });
-          byId.set(rid, {
-            id: rid,
-            name: dispNameNew,
-            avatar: r.avatar || "",
-            messages: msgsNew,
-            participants: partsNew,
-            lastMessage: getLatestMsgContent(msgsNew) || "",
-          });
-          if (k) privateIndex.set(k, rid);
-        }
+        const partsNew = r.participants || r.participants_list || [];
+        const dispNameNew = r.name || r.other_participant || `Room ${rid}`;
+        const msgsNew = normalizeMessages(r.messages);
+        byId.set(rid, {
+          id: rid,
+          name: dispNameNew,
+          avatar: r.avatar || "",
+          messages: msgsNew,
+          participants: partsNew,
+          lastMessage: getLatestMsgContent(msgsNew) || "",
+        });
       }
     }
 
@@ -236,18 +166,14 @@ export function mergeRooms(existing, incoming) {
       ...r,
       __last_ts: (() => {
         try {
-          if (r && r.last_activity)
-            return new Date(r.last_activity).getTime();
+          if (r && r.last_activity) return new Date(r.last_activity).getTime();
           const msgs = r.messages || [];
           let max = 0;
           for (const m of msgs) {
-            const t =
-              (m && (m.timestamp || m.created_at || m.ts || m.time)) ||
-              null;
+            const t = (m && (m.timestamp || m.created_at || m.ts || m.time)) || null;
             if (!t) continue;
             const d = new Date(t);
-            if (!Number.isNaN(d.getTime()) && d.getTime() > max)
-              max = d.getTime();
+            if (!Number.isNaN(d.getTime()) && d.getTime() > max) max = d.getTime();
           }
           return max || 0;
         } catch {
@@ -259,6 +185,7 @@ export function mergeRooms(existing, incoming) {
     arr.sort((a, b) => b.__last_ts - a.__last_ts);
     return arr;
   } catch (e) {
+    console.error("mergeRooms error:", e);
     return (existing || []).concat(incoming || []);
   }
 }

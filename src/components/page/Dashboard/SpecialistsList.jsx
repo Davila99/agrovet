@@ -23,27 +23,47 @@ const SpecialistsList = ({ onSelectSpecialist, searchQuery }) => {
 
   useEffect(() => {
     let mounted = true;
+
+    const fetchAllPages = async (url, acc = []) => {
+      // Maneja paginación automática del DRF
+      const data = await httpClient(url, { method: "GET" });
+      const results = Array.isArray(data) ? data : data.results || [];
+      const combined = [...acc, ...results];
+      if (data.next) {
+        return fetchAllPages(data.next, combined);
+      }
+      return combined;
+    };
+
     const load = async () => {
       try {
         setLoading(true);
-        const data = await httpClient("/auth/users/", { method: "GET" });
+        const list = await fetchAllPages("/auth/users/");
+
         if (!mounted) return;
-        const list = Array.isArray(data) ? data : data.results || [];
+        try {
+          console.debug('[SpecialistsList] fetched users', { total: Array.isArray(list) ? list.length : (list && list.count), sample: (Array.isArray(list) ? list.slice(0,5) : (list.results||[]).slice(0,5)) });
+        } catch (e) {}
+
         const currentId = localStorage.getItem("userId");
 
-        const specialists = list.filter(
-          (u) =>
-            (u.role ||
-              u.user_role ||
-              u.is_specialist ||
-              u.specialist_profile) &&
-            (String(u.role).toLowerCase() === "specialist" ||
-              u.specialist_profile)
-        );
+        const specialists = list.filter((u) => {
+          const role = String(u.role || u.user_role || "").toLowerCase();
+          return (
+            role.includes("specialist") ||
+            u.is_specialist === true ||
+            !!u.specialist_profile
+          );
+        });
+
+        try {
+          console.debug('[SpecialistsList] specialists after filter', { count: specialists.length, sample: specialists.slice(0,5) });
+        } catch (e) {}
 
         const filtered = specialists.filter(
           (u) => String(u.id) !== String(currentId)
         );
+
         setUsers(filtered);
       } catch (e) {
         setError(e.message || String(e));
@@ -51,13 +71,15 @@ const SpecialistsList = ({ onSelectSpecialist, searchQuery }) => {
         if (mounted) setLoading(false);
       }
     };
+
     load();
+
     return () => {
       mounted = false;
     };
   }, []);
 
-  // Estados de carga y error
+  // 🌀 Estado de carga
   if (loading)
     return (
       <Box
@@ -76,6 +98,7 @@ const SpecialistsList = ({ onSelectSpecialist, searchQuery }) => {
       </Box>
     );
 
+  // ⚠️ Estado de error
   if (error)
     return (
       <Box
@@ -93,29 +116,27 @@ const SpecialistsList = ({ onSelectSpecialist, searchQuery }) => {
       </Box>
     );
 
-  // Contenedor con scroll vertical
+  // ✅ Listado con scroll
   return (
     <Box
       sx={{
         width: "100%",
-        height: "100vh", // 👈 altura fija del panel
+        height: "100vh",
         display: "flex",
         flexDirection: "column",
-        backgroundColor: "background",
-        paddingBottom: 5,
+        backgroundColor: background,
         borderRight: "1px solid #c8e6c9",
       }}
     >
       <Box
         sx={{
           flex: 1,
-          overflowY: "auto", // 👈 activa scroll vertical
+          overflowY: "auto",
           overflowX: "hidden",
           p: 1.5,
+          pb: 8, // ✅ espacio extra al final para que el último card no se corte
           scrollBehavior: "smooth",
-          "&::-webkit-scrollbar": {
-            width: "8px",
-          },
+          "&::-webkit-scrollbar": { width: "8px" },
           "&::-webkit-scrollbar-thumb": {
             backgroundColor: "#a5d6a7",
             borderRadius: "4px",
@@ -127,9 +148,7 @@ const SpecialistsList = ({ onSelectSpecialist, searchQuery }) => {
       >
         {users
           .filter((u) => {
-            const q = String(searchQuery || "")
-              .trim()
-              .toLowerCase();
+            const q = String(searchQuery || "").trim().toLowerCase();
             if (!q) return true;
             const name = (u.full_name || u.username || "").toLowerCase();
             const prof = (u.specialist_profile?.profession || "").toLowerCase();
@@ -154,7 +173,6 @@ const SpecialistsList = ({ onSelectSpecialist, searchQuery }) => {
                   p: 1.2,
                   cursor: "pointer",
                   width: "100%",
-                  marginBottom: 1,
                   boxShadow: "0 2px 8px rgba(46,125,50,0.1)",
                   transition: "all 0.2s ease-in-out",
                   "&:hover": {
