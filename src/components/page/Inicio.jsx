@@ -3,6 +3,7 @@ import { Container, Typography, Button, Box, CardMedia } from "@mui/material";
 import { motion } from "framer-motion";
 import { getProfile } from "../../services/endpoints";
 import { useNavigate } from "react-router-dom";
+import Footer from "./Footer";
 
 import banner1 from "../../assets/image/banner1.webp";
 import banner2 from "../../assets/image/banner2.webp";
@@ -307,6 +308,7 @@ const WelcomePage = () => {
           </Container>
         </Box>
       </motion.div>
+      <Footer />
     </Box>
   );
 };

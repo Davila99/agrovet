@@ -10,7 +10,7 @@ import LoginPage from "./components/page/auth/Login.jsx";
 import RegisterPage from "./components/page/auth/Register.jsx";
 import ResetByPhone from "./components/page/auth/ResetByPhone";
 import NicaraguaMap from "./components/page/map/Mapa.jsx";
-import Footer from "./components/page/Fotter.jsx";
+
 import Perfil from "./components/page/profile/Perfil.jsx";
 import EditUser from "./components/page/profile/EditUser.jsx";
 import ProtectedRoute from "./middleware/ProtectedRoute.jsx";
@@ -57,7 +57,6 @@ function App() {
           />
           <Route path="/chat" element={<ChatPage />} />
         </Routes>
-        <Footer />
       </Router>
     </ThemeProvider>
   );
