@@ -146,7 +146,26 @@ export default function ChatList({
 
       {viewMode === "specialists" && (
         <SpecialistsList
-          onSelectSpecialist={openOneToOne}
+          onSelectSpecialist={(u) => {
+            try {
+              const p = openOneToOne(u);
+              if (p && p.then) {
+                p.then((room) => {
+                  if (room && room.id) {
+                    // switch to chats view and select the newly opened room
+                    setViewMode("chats");
+                    onSelectChat(String(room.id));
+                  } else {
+                    // fallback: do nothing (SpecialistsList will navigate if no handler)
+                  }
+                }).catch((err) => {
+                  console.warn('openOneToOne failed in ChatList wrapper', err);
+                });
+              }
+            } catch (e) {
+              console.warn('openOneToOne wrapper error', e);
+            }
+          }}
           searchQuery={specialistSearch}
         />
       )}
