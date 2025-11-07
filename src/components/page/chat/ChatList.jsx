@@ -39,6 +39,9 @@ export default function ChatList({
         borderRight: { md: "1px solid rgba(0,0,0,0.08)" },
         bgcolor: "background.paper",
         display: { xs: activeId && !isMd ? "none" : "block" },
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
       }}
     >
       <Box sx={{ p: 2 }}>
@@ -101,7 +104,7 @@ export default function ChatList({
       <Divider />
 
       {viewMode === "chats" && (
-        <List>
+        <List sx={{ flex: 1, overflowY: "auto" }}>
           {rooms
             .slice()
             .sort(

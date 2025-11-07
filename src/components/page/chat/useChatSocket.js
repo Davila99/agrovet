@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { chatServiceFactory } from "../../../services/endpoints";
-import { normalizeStoredToken } from "./chatUtils";
+import { normalizeStoredToken, mergeRooms } from "./chatUtils";
+import { playNotifySound } from "../../../services/sound";
 
 export default function useChatSocket({
   activeId,
@@ -46,21 +47,58 @@ export default function useChatSocket({
               receipts: d.receipts || [],
             };
 
+            // Play notification sound when a message arrives and either
+            // - the tab/window is not focused, or
+            // - the active chat isn't the room for this message
+            try {
+              const incomingRoom = d.room_id || d.room || null;
+              const focused = typeof document !== 'undefined' ? document.hasFocus && document.hasFocus() : true;
+              const notFocused = typeof document !== 'undefined' ? document.hidden || !focused : false;
+              const isDifferentRoom = incomingRoom && String(incomingRoom) !== String(activeId);
+              if (!msg.fromMe && (notFocused || isDifferentRoom)) {
+                playNotifySound();
+              }
+            } catch (e) {}
+
             setRooms((prev) => {
-              const idx = prev.findIndex((r) => String(r.id) === String(activeId));
-              if (idx === -1) return prev;
-              const copy = [...prev];
-              const room = copy[idx] || { messages: [] };
+              try {
+                const idx = prev.findIndex((r) => String(r.id) === String(activeId));
+                if (idx === -1) return prev;
+                const copy = prev.slice();
+                const room = { ...(copy[idx] || {}) };
+                const msgs = Array.isArray(room.messages) ? room.messages.slice() : [];
 
-              // Defensive: ensure messages array
-              const msgs = Array.isArray(room.messages) ? room.messages : [];
+                // If server message already present by id, do nothing
+                if (msgs.some((m) => String(m.id) === String(msg.id))) return prev;
 
-              // Avoid inserting duplicate messages (same id)
-              const exists = msgs.some((m) => String(m.id) === String(msg.id));
-              if (exists) return prev;
+                // Try to find an optimistic message that matches (fromMe and same text)
+                const optIdx = msgs.findIndex(
+                  (m) => String(m.id).startsWith("tmp_") && String(m.sender_id) === String(msg.sender_id) && String((m.text||"").trim()) === String((msg.text||"").trim())
+                );
 
-              copy[idx] = { ...room, messages: [...msgs, msg] };
-              return copy;
+                if (optIdx !== -1) {
+                  // Replace optimistic message with server message
+                  msgs[optIdx] = msg;
+                } else {
+                  msgs.push(msg);
+                }
+
+                room.messages = msgs;
+                room.lastMessage = msg.text || room.lastMessage;
+                room.last_activity = msg.timestamp || room.last_activity;
+                copy[idx] = room;
+
+                // Resort rooms by last_activity / latest message timestamp
+                const sorted = copy.slice().sort((a, b) => {
+                  const ta = new Date(a.last_activity || (a.messages && a.messages.length ? a.messages[a.messages.length - 1].timestamp : 0)).getTime() || 0;
+                  const tb = new Date(b.last_activity || (b.messages && b.messages.length ? b.messages[b.messages.length - 1].timestamp : 0)).getTime() || 0;
+                  return tb - ta;
+                });
+
+                return sorted;
+              } catch (e) {
+                return prev;
+              }
             });
           }
         } catch (e) {

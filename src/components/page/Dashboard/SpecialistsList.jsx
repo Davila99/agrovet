@@ -47,22 +47,31 @@ const SpecialistsList = ({ onSelectSpecialist, searchQuery }) => {
 
         const currentId = localStorage.getItem("userId");
 
-        const specialists = list.filter((u) => {
-          const role = String(u.role || u.user_role || "").toLowerCase();
-          return (
-            role.includes("specialist") ||
-            u.is_specialist === true ||
-            !!u.specialist_profile
-          );
-        });
+        // Helper: normalize role and decide if a user should be considered a specialist.
+        const normalizeRole = (r) => String(r || "").toLowerCase();
+        const isSpecialistUser = (u) => {
+          const role = normalizeRole(u.role || u.user_role);
+          // Accept English and Spanish labels commonly used in the project
+          const roleMatch = role && (role.includes("specialist") || role.includes("especialista") || role.includes("especialist"));
+          const flag = u.is_specialist === true;
+          const hasProfile = Boolean(u.specialist_profile);
+          return roleMatch || flag || hasProfile;
+        };
+
+        const specialists = list.filter((u) => isSpecialistUser(u));
+        console.log("🧠 Especialistas candidatas:", specialists.length);
 
         try {
           console.debug('[SpecialistsList] specialists after filter', { count: specialists.length, sample: specialists.slice(0,5) });
         } catch (e) {}
 
-        const filtered = specialists.filter(
-          (u) => String(u.id) !== String(currentId)
-        );
+        // Identify excluded users (for debugging) and reasons
+        try {
+          const excluded = (Array.isArray(list) ? list : (list.results || [])).filter((u) => !isSpecialistUser(u));
+          console.debug('[SpecialistsList] excluded sample (up to 10)', excluded.slice(0,10).map(u => ({ id: u.id, name: u.full_name || u.username, role: u.role, has_profile: !!u.specialist_profile, is_specialist: u.is_specialist })));
+        } catch (e) {}
+
+        const filtered = specialists.filter((u) => String(u.id) !== String(currentId));
 
         setUsers(filtered);
       } catch (e) {
@@ -91,7 +100,7 @@ const SpecialistsList = ({ onSelectSpecialist, searchQuery }) => {
           alignItems: "center",
           backgroundColor: background,
           borderRight: "1px solid #c8e6c9",
-          height: "100vh",
+          height: "100%",
         }}
       >
         <CircularProgress size={28} />
@@ -107,7 +116,7 @@ const SpecialistsList = ({ onSelectSpecialist, searchQuery }) => {
           p: 2,
           backgroundColor: background,
           borderRight: "1px solid #c8e6c9",
-          height: "100vh",
+          height: "100%",
         }}
       >
         <Typography color="error">
@@ -121,7 +130,7 @@ const SpecialistsList = ({ onSelectSpecialist, searchQuery }) => {
     <Box
       sx={{
         width: "100%",
-        height: "100vh",
+        height: "100%",
         display: "flex",
         flexDirection: "column",
         backgroundColor: background,

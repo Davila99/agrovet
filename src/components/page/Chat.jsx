@@ -12,6 +12,7 @@ import {
   mergeRooms,
 } from "./chat/index.js";
 import { chatAPI, connectPresence, getProfile } from "../../services/endpoints";
+import { playSendSound } from "../../services/sound";
 
 export default function Chat() {
   const isMd = useMediaQuery("(min-width:900px)");
@@ -77,6 +78,8 @@ export default function Chat() {
           : r
       )
     );
+    // play send/writing sound for immediate feedback
+    try { playSendSound(); } catch (e) {}
     setText("");
 
     // send to server in background, try to reconcile optimistic msg with server response
@@ -85,7 +88,7 @@ export default function Chat() {
         const token = normalizeStoredToken(localStorage.getItem("token"));
         const res = await chatAPI.sendMessage(activeId, text)({ token });
 
-        // If server returned the created message, replace the optimistic one
+        // If server returned the created message, replace the optimistic one or dedupe
         if (res && (res.id || res.pk)) {
           const serverMsg = {
             id: res.id || res.pk,
@@ -94,22 +97,44 @@ export default function Chat() {
             sender_id: res.sender_id || (res.sender && (res.sender.id || res.sender.user_id)) || getCurrentUserId(),
             receipts: res.receipts || [],
           };
-          setRooms((prev) =>
-            prev.map((r) => {
-              if (String(r.id) !== String(activeId)) return r;
-              const msgs = Array.isArray(r.messages) ? r.messages.slice() : [];
-              let replaced = false;
-              const newMsgs = msgs.map((m) => {
-                if (String(m.id) === String(tempId)) {
-                  replaced = true;
-                  return serverMsg;
-                }
-                return m;
+          setRooms((prev) => {
+            try {
+              const copy = prev.slice();
+              const idx = copy.findIndex((r) => String(r.id) === String(activeId));
+              if (idx === -1) return prev;
+              const room = { ...(copy[idx] || {}) };
+              const msgs = Array.isArray(room.messages) ? room.messages.slice() : [];
+
+              // If server message already present, just remove optimistic temp if exists
+              const already = msgs.some((m) => String(m.id) === String(serverMsg.id));
+              const tempIdx = msgs.findIndex((m) => String(m.id) === String(tempId));
+              if (already) {
+                if (tempIdx !== -1) msgs.splice(tempIdx, 1);
+              } else if (tempIdx !== -1) {
+                // replace temp
+                msgs[tempIdx] = serverMsg;
+              } else {
+                msgs.push(serverMsg);
+              }
+
+              room.messages = msgs;
+              room.lastMessage = serverMsg.text || room.lastMessage;
+              room.last_activity = serverMsg.timestamp || room.last_activity;
+              copy[idx] = room;
+
+              // resort
+              const sorted = copy.slice().sort((a, b) => {
+                const ta = new Date(a.last_activity || (a.messages && a.messages.length ? a.messages[a.messages.length - 1].timestamp : 0)).getTime() || 0;
+                const tb = new Date(b.last_activity || (b.messages && b.messages.length ? b.messages[b.messages.length - 1].timestamp : 0)).getTime() || 0;
+                return tb - ta;
               });
-              if (!replaced) newMsgs.push(serverMsg);
-              return { ...r, messages: newMsgs };
-            })
-          );
+
+              return sorted;
+            } catch (e) {
+              console.warn('reply reconciliation failed', e);
+              return prev;
+            }
+          });
         }
       } catch (e) {
         console.warn("sendMessage failed", e);

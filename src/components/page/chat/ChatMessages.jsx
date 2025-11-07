@@ -11,9 +11,15 @@ export default function ChatMessages({
   const userId = getCurrentUserId();
 
   useEffect(() => {
+    // Scroll to bottom when messages change. Use a short timeout to let React render
+    // and then jump to the end to avoid layout shift from smooth scrolling.
     setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, 100);
+      try {
+        messagesEndRef.current?.scrollIntoView({ behavior: "auto", block: "end" });
+      } catch (e) {
+        // ignore
+      }
+    }, 50);
   }, [activeConv?.messages?.length]);
 
   if (!activeConv) {
@@ -50,11 +56,12 @@ export default function ChatMessages({
       {(activeConv?.messages || [])
         .slice()
         .sort((a, b) => new Date(a.timestamp || 0) - new Date(b.timestamp || 0))
-        .map((m) => {
+        .map((m, i) => {
           const fromMe = String(m.sender_id) === String(userId) || m.fromMe;
+          const key = String(m.id || m.uid || `${m.timestamp || ''}_${i}`);
           return (
             <Box
-              key={m.uid} // 🔹 Usamos UID único
+              key={key}
               data-msg-id={m.id}
               data-fromme={fromMe}
               sx={{

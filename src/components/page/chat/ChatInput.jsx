@@ -15,6 +15,7 @@ export default function ChatInput({
         p: 1.5,
         borderTop: "1px solid rgba(0,0,0,0.08)",
         backgroundColor: "background.paper",
+        flexShrink: 0,
       }}
     >
       <TextField
