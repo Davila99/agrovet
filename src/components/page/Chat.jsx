@@ -7,18 +7,15 @@ import {
   ChatInput,
   useChatRooms,
   useChatSocket,
-  resolveAvatar,
-  normalizeStoredToken,
   mergeRooms,
 } from "./chat/index.js";
-import { chatAPI, connectPresence, getProfile } from "../../services/endpoints";
-import { playSendSound } from "../../services/sound";
+import AttachmentPreview from "./chat/AttachmentPreview";
+import useChatController from "./chat/useChatController";
 
 export default function Chat() {
   const isMd = useMediaQuery("(min-width:900px)");
   const [activeId, setActiveId] = useState(null);
   const [viewMode, setViewMode] = useState("chats");
-  const [text, setText] = useState("");
   const messagesEndRef = useRef(null);
 
   const [specialistSearch, setSpecialistSearch] = useState("");
@@ -56,108 +53,18 @@ export default function Chat() {
     getCurrentUserId,
   });
 
-  // ChatList receives openOneToOne to open chats from specialists list
-
-  const handleSend = async () => {
-    if (!text.trim() || !activeId) return;
-    // optimistic message (temporary id)
-    const tempId = "tmp_" + Date.now();
-    const msg = {
-      id: tempId,
-      text,
-      fromMe: true,
-      timestamp: new Date().toISOString(),
-      sender_id: getCurrentUserId(),
-    };
-
-    // optimistic UI update
-    setRooms((prev) =>
-      prev.map((r) =>
-        String(r.id) === String(activeId)
-          ? { ...r, messages: [...(r.messages || []), msg] }
-          : r
-      )
-    );
-    // play send/writing sound for immediate feedback
-    try { playSendSound(); } catch (e) {}
-    setText("");
-
-    // send to server in background, try to reconcile optimistic msg with server response
-    (async () => {
-      try {
-        const token = normalizeStoredToken(localStorage.getItem("token"));
-        const res = await chatAPI.sendMessage(activeId, text)({ token });
-
-        // If server returned the created message, replace the optimistic one or dedupe
-        if (res && (res.id || res.pk)) {
-          const serverMsg = {
-            id: res.id || res.pk,
-            text: res.content || res.message || res.text || text,
-            timestamp: res.timestamp || res.created_at || new Date().toISOString(),
-            sender_id: res.sender_id || (res.sender && (res.sender.id || res.sender.user_id)) || getCurrentUserId(),
-            receipts: res.receipts || [],
-          };
-          setRooms((prev) => {
-            try {
-              const copy = prev.slice();
-              const idx = copy.findIndex((r) => String(r.id) === String(activeId));
-              if (idx === -1) return prev;
-              const room = { ...(copy[idx] || {}) };
-              const msgs = Array.isArray(room.messages) ? room.messages.slice() : [];
-
-              // If server message already present, just remove optimistic temp if exists
-              const already = msgs.some((m) => String(m.id) === String(serverMsg.id));
-              const tempIdx = msgs.findIndex((m) => String(m.id) === String(tempId));
-              if (already) {
-                if (tempIdx !== -1) msgs.splice(tempIdx, 1);
-              } else if (tempIdx !== -1) {
-                // replace temp
-                msgs[tempIdx] = serverMsg;
-              } else {
-                msgs.push(serverMsg);
-              }
-
-              room.messages = msgs;
-              room.lastMessage = serverMsg.text || room.lastMessage;
-              room.last_activity = serverMsg.timestamp || room.last_activity;
-              copy[idx] = room;
-
-              // resort
-              const sorted = copy.slice().sort((a, b) => {
-                const ta = new Date(a.last_activity || (a.messages && a.messages.length ? a.messages[a.messages.length - 1].timestamp : 0)).getTime() || 0;
-                const tb = new Date(b.last_activity || (b.messages && b.messages.length ? b.messages[b.messages.length - 1].timestamp : 0)).getTime() || 0;
-                return tb - ta;
-              });
-
-              return sorted;
-            } catch (e) {
-              console.warn('reply reconciliation failed', e);
-              return prev;
-            }
-          });
-        }
-      } catch (e) {
-        console.warn("sendMessage failed", e);
-        // mark optimistic message as errored so UI can show retry affordance
-        setRooms((prev) =>
-          prev.map((r) => {
-            if (String(r.id) !== String(activeId)) return r;
-            const msgs = (r.messages || []).map((m) =>
-              String(m.id) === String(tempId) ? { ...m, sendError: true } : m
-            );
-            return { ...r, messages: msgs };
-          })
-        );
-      }
-    })();
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
+  // Local controller for send/attach/etc
+  const {
+    text,
+    setText,
+    sendingText,
+    pendingAttachment,
+    handleSend,
+    handleAttach,
+    cancelPendingAttachment,
+    confirmSendAttachment,
+    handleKeyDown,
+  } = useChatController({ activeId, setRooms, getCurrentUserId });
 
   const goBackToList = () => setActiveId(null);
 
@@ -195,12 +102,24 @@ export default function Chat() {
           messagesEndRef={messagesEndRef}
           getCurrentUserId={getCurrentUserId}
         />
+
+        {/* If there's a pending attachment, show a compact preview above the input box */}
+        {pendingAttachment && (
+          <Box sx={{ p: 1, borderTop: '1px solid rgba(0,0,0,0.04)', bgcolor: 'background.default' }}>
+            <AttachmentPreview pending={pendingAttachment} onConfirm={confirmSendAttachment} onCancel={cancelPendingAttachment} />
+          </Box>
+        )}
         {activeId && (
           <ChatInput
             text={text}
             setText={setText}
             handleSend={handleSend}
             handleKeyDown={handleKeyDown}
+            onAttach={handleAttach}
+            pendingAttachment={pendingAttachment}
+            onCancelAttachment={cancelPendingAttachment}
+            onConfirmAttachment={confirmSendAttachment}
+            sending={sendingText}
           />
         )}
       </Box>

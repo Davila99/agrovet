@@ -8,7 +8,7 @@ import {
   Avatar,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import { resolveAvatar } from "./chatUtils";
+import { resolveAvatar, cleanName } from "./chatUtils";
 
 export default function ChatHeader({
   activeConv,
@@ -32,7 +32,7 @@ export default function ChatHeader({
               <ArrowBackIcon />
             </IconButton>
             <Box sx={{ display: "flex", flexDirection: "column" }}>
-              <Typography variant="subtitle1">{activeConv.name}</Typography>
+              <Typography variant="subtitle1">{cleanName(activeConv.name)}</Typography>
               <Typography variant="caption" color="text.secondary">
                 WS: {wsStatus}
                 {sendError ? ` • err: ${sendError}` : ""}
@@ -62,7 +62,7 @@ export default function ChatHeader({
             alt={activeConv?.name}
           />
           <Box>
-            <Typography variant="subtitle1">{activeConv.name}</Typography>
+            <Typography variant="subtitle1">{cleanName(activeConv.name)}</Typography>
             <Typography variant="caption" color="text.secondary">
               WS: {wsStatus}
             </Typography>

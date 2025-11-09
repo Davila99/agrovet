@@ -1,0 +1,446 @@
+import { authHeaders } from "./utils";
+import httpClient from "../httpClient";
+
+export const chatAPI = {
+  createRoom:
+    (participants = [], isPrivate = false) =>
+    ({ token } = {}) => {
+      console.log("[chatAPI.createRoom] llamada", { participants, isPrivate, token });
+      if (isPrivate && Array.isArray(participants) && participants.length === 2) {
+        return httpClient("/chat/rooms/get_or_create_private/", {
+          method: "POST",
+          headers: authHeaders(token),
+          body: { participants_ids: participants },
+        });
+      }
+      return httpClient("/chat/rooms/", {
+        method: "POST",
+        headers: authHeaders(token),
+        body: { participants_ids: participants, is_private: !!isPrivate },
+      });
+    },
+
+  listRooms: ({ token } = {}) => {
+    console.log("[chatAPI.listRooms] con token:", token);
+    return httpClient("/chat/rooms/", {
+      method: "GET",
+      headers: authHeaders(token),
+    });
+  },
+
+  sendMessage: (room, content, opts = {}) => ({ token } = {}) => {
+    const media_id = opts.media_id;
+    const client_msg_id = opts.client_msg_id;
+    console.log("[chatAPI.sendMessage]", { room, content, media_id, token });
+    const body = { room, content };
+    if (media_id) body.media = media_id;
+    if (client_msg_id) body.client_msg_id = client_msg_id;
+    return httpClient("/chat/messages/", {
+      method: "POST",
+      headers: authHeaders(token),
+      body,
+    });
+  },
+
+  getLastMessages:
+    (room, limit = 50) =>
+    ({ token } = {}) => {
+      console.log("[chatAPI.getLastMessages]", { room, limit, token });
+      return httpClient(
+        `/chat/messages/last_messages/?room=${encodeURIComponent(room)}&limit=${encodeURIComponent(limit)}`,
+        {
+          method: "GET",
+          headers: authHeaders(token),
+        }
+      );
+    },
+};
+
+const resolveWsBase = () => {
+  if (typeof window === "undefined") return null;
+
+  const apiBase =
+    typeof window !== "undefined" && window.__AGROVET_API_BASE
+      ? String(window.__AGROVET_API_BASE).replace(/\/$/, "")
+      : null;
+
+  if (apiBase) {
+    try {
+      return new URL(apiBase).origin;
+    } catch (e) {
+      console.warn("[resolveWsBase] Error parseando apiBase:", e);
+      return apiBase;
+    }
+  }
+
+  const host = window.location.hostname;
+  if (host === "localhost" || host === "127.0.0.1") return `${location.protocol}//127.0.0.1:8000`;
+
+  return `${location.protocol}//${location.hostname}`;
+};
+
+export function chatServiceFactory() {
+  let ws = null;
+  let opened = false;
+  let _currentRoom = null;
+
+  const connect = (room, token, handlers = {}) => {
+    try {
+      const base = resolveWsBase();
+      const proto = base && String(base).startsWith("https") ? "wss" : "ws";
+      const host = base ? new URL(base).host : `${location.hostname}:${location.port || 80}`;
+      const q = token ? `?token=${encodeURIComponent(token)}` : "";
+      const url = `${proto}://${host}/ws/chat/${encodeURIComponent(room)}/${q}`;
+
+      // Prevent opening duplicate WS connections for the same room
+      if (ws && opened && _currentRoom && String(_currentRoom) === String(room)) {
+        console.log('[chatService] connect called but WS already open for room', room);
+        return;
+      }
+      // If there's an existing connection for a different room, close it first
+      if (ws && opened && _currentRoom && String(_currentRoom) !== String(room)) {
+        try { ws.close(); } catch (e) {}
+        ws = null;
+        opened = false;
+      }
+
+      console.groupCollapsed("🔌 [chatService.connect]");
+      console.log("URL:", url);
+      console.log("Room:", room);
+      console.log("Token:", token);
+      console.log("Handlers:", handlers);
+      console.groupEnd();
+
+      ws = new WebSocket(url);
+  _currentRoom = room;
+
+      ws.onopen = (ev) => {
+        opened = true;
+        console.log("[chatService] ✅ Conectado al WS:", url);
+        handlers.onOpen && handlers.onOpen(ev);
+        try { window._agrovet_chat_service = { send, disconnect }; } catch (e) {}
+      };
+
+      ws.onmessage = (ev) => {
+        try {
+          const raw = ev.data;
+          const dType = typeof raw;
+          const dLen = dType === 'string' ? raw.length : null;
+          // High-level arrival log
+          console.log("[chatService] 📩 Mensaje recibido (ws.onmessage)", { type: dType, length: dLen });
+
+          let parsed = null;
+          try {
+            parsed = JSON.parse(raw);
+          } catch (e) {
+            // not JSON - leave parsed null
+          }
+
+          if (parsed) {
+            // Exact logs requested by the user for traceability
+            try {
+              console.log('[WS] 📩 Recibido:', parsed.type, parsed);
+            } catch (e) {}
+
+            if (parsed.type === 'message_update') {
+              try { console.log('[WS] 🔄 Mensaje update ID:', parsed.message && parsed.message.id); } catch (e) {}
+              try { console.log('[WS] Receipts recibidos:', parsed.message && parsed.message.receipts); } catch (e) {}
+              try {
+                if (window._agrovet_chat_store && typeof window._agrovet_chat_store.updateMessage === 'function') {
+                  window._agrovet_chat_store.updateMessage(parsed.message);
+                }
+              } catch (e) { console.warn('[chatService] _agrovet_chat_store.updateMessage failed', e); }
+            } else if (parsed.type === 'chat_message' || parsed.type === 'chat.message' || parsed.type === 'message') {
+              try {
+                // If parsed.message is an object, use it; otherwise use the full parsed payload
+                // so that top-level keys like room_id are preserved.
+                const incoming = (parsed.message && typeof parsed.message === 'object') ? parsed.message : parsed;
+                incoming.room = incoming.room || incoming.room_id || parsed.room || parsed.room_id || null;
+                try { console.log('[WS] 💬 Nuevo mensaje recibido para room:', incoming.room, incoming); } catch (e) {}
+                if (window._agrovet_chat_store && typeof window._agrovet_chat_store.addIncomingMessage === 'function') {
+                  window._agrovet_chat_store.addIncomingMessage(incoming);
+                }
+              } catch (e) { console.warn('[chatService] _agrovet_chat_store.addIncomingMessage failed', e); }
+            }
+
+            console.debug('[chatService] parsed message', parsed);
+            handlers.onMessage && handlers.onMessage(parsed);
+          } else {
+            // Non-JSON payload: forward raw event
+            handlers.onMessage && handlers.onMessage(ev);
+          }
+        } catch (e) {
+          console.error('[chatService] onmessage error', e);
+        }
+      };
+
+      ws.onclose = (ev) => {
+        opened = false;
+        console.warn("[chatService] ❌ WS cerrado:", ev);
+        handlers.onClose && handlers.onClose(ev);
+      };
+
+      ws.onerror = (ev) => {
+        console.error("[chatService] ⚠️ Error en WS:", ev);
+        handlers.onError && handlers.onError(ev);
+      };
+    } catch (e) {
+      console.error("[chatService.connect] Exception:", e);
+      handlers.onError && handlers.onError(e);
+    }
+  };
+
+  const disconnect = () => {
+    if (ws) {
+      console.log("[chatService] 🔌 Desconectando WS");
+      ws.close();
+      ws = null;
+      _currentRoom = null;
+      opened = false;
+      try { if (window._agrovet_chat_service && window._agrovet_chat_service.disconnect === disconnect) delete window._agrovet_chat_service; } catch (e) {}
+    }
+  };
+
+  // expose internal state for debugging
+  const _internal = () => ({ ws, opened, _currentRoom });
+
+  const send = (msg) => {
+    try {
+      if (!ws) return;
+      const payload = typeof msg === "string" ? msg : JSON.stringify(msg);
+      console.log("[chatService] 🚀 Enviando mensaje:", payload);
+      ws.send(payload);
+    } catch (e) {
+      console.error("[chatService] Error enviando mensaje:", e);
+    }
+  };
+
+  return { connect, disconnect, send };
+}
+
+export function connectPresence(token, handlers = {}) {
+  let ws = null;
+  try {
+    const base = resolveWsBase();
+    const proto = base && String(base).startsWith("https") ? "wss" : "ws";
+    const host = base ? new URL(base).host : `${location.hostname}:${location.port || 80}`;
+    const q = token ? `?token=${encodeURIComponent(token)}` : "";
+    const url = `${proto}://${host}/ws/presence/${q}`;
+
+    console.log("[connectPresence] Conectando a:", url, "con token:", token);
+
+    ws = new WebSocket(url);
+
+    ws.onopen = (ev) => {
+      console.log("[Presence] ✅ WS abierto");
+      handlers.onOpen && handlers.onOpen(ev);
+    };
+    ws.onmessage = (ev) => {
+      console.log("[Presence] 📥 Mensaje:", ev.data);
+      handlers.onMessage && handlers.onMessage(ev);
+    };
+    ws.onclose = (ev) => {
+      console.warn("[Presence] ❌ WS cerrado:", ev);
+      handlers.onClose && handlers.onClose(ev);
+    };
+    ws.onerror = (ev) => {
+      console.error("[Presence] ⚠️ WS error:", ev);
+      handlers.onError && handlers.onError(ev);
+    };
+  } catch (e) {
+    console.error("[connectPresence] Exception:", e);
+    handlers.onError && handlers.onError(e);
+  }
+
+  return {
+    disconnect: () => {
+      console.log("[Presence] 🔌 Cerrando WS");
+      try {
+        if (ws) ws.close();
+      } catch (e) {
+        console.error("[Presence] Error al cerrar:", e);
+      }
+    },
+    send: (m) => {
+      try {
+        if (!ws) return;
+        const payload = typeof m === "string" ? m : JSON.stringify(m);
+        console.log("[Presence] 🚀 Enviando:", payload);
+        ws.send(payload);
+      } catch (e) {
+        console.error("[Presence] Error enviando:", e);
+      }
+    },
+  };
+}
+
+// Lightweight global debug store to help trace incoming message updates and
+// allow quick subscription from components during debugging.
+if (typeof window !== 'undefined' && !window._agrovet_chat_store) {
+  window._agrovet_chat_store = (function createDebugStore() {
+    const callbacks = new Set();
+    // internal map: roomId -> Map(messageId -> message)
+    const rooms = new Map();
+
+    function ensureRoomMap(roomId) {
+      if (!rooms.has(String(roomId))) rooms.set(String(roomId), new Map());
+      return rooms.get(String(roomId));
+    }
+
+    return {
+      // Update or add a message in internal store and notify subscribers
+      // updateMessage accepts either a message object OR (messageId, receipts, roomId)
+      updateMessage(msgOrId, receiptsArg, roomIdArg) {
+        try {
+          let msg = null;
+          if (msgOrId && typeof msgOrId === 'object') {
+            msg = msgOrId;
+          } else {
+            // called as updateMessage(mid, receipts, roomId)
+            msg = { id: msgOrId, receipts: receiptsArg, room: roomIdArg };
+          }
+
+          const mid = msg && (msg.id || msg.message_id);
+          const roomId = msg && (msg.room || msg.room_id || msg.roomId) || (typeof window !== 'undefined' && window.__AGROVET_ACTIVE_ROOM) || null;
+          console.log('[STORE] 🧩 updateMessage() llamado con:', { mid, roomId, receipts: msg && msg.receipts });
+
+          if (!mid) {
+            console.warn('[STORE] 🧩 updateMessage sin message id, ignorando', msg);
+            return;
+          }
+
+          if (!roomId) {
+            // If no roomId provided, attempt to locate the message across
+            // existing rooms by scanning the internal maps. This helps when
+            // some producers send receipts without a room hint.
+            try {
+              for (const [rid, map] of rooms.entries()) {
+                if (map && typeof map.has === 'function' && map.has(String(mid))) {
+                  const existingFound = map.get(String(mid)) || {};
+                  const nextFound = { ...existingFound, ...(msg || {}) };
+                  if (Array.isArray(msg.receipts) && msg.receipts.length) nextFound.receipts = msg.receipts;
+                  map.set(String(mid), nextFound);
+                  // notify subscribers about the located update
+                  callbacks.forEach((cb) => {
+                    try { cb({ type: 'updateMessage', message: nextFound }); } catch (e) { console.warn('[STORE] subscriber cb failed', e); }
+                  });
+                  console.log('[STORE] 🔎 updateMessage: located message in room', rid, 'and updated receipts for', mid);
+                  return;
+                }
+              }
+            } catch (e) {
+              console.warn('[STORE] scan-for-mid failed', e);
+            }
+            console.warn('[STORE] ⚠️ updateMessage sin roomId y no localizado, ignorando', msg);
+            return;
+          }
+
+          const target = String(roomId);
+          const rm = ensureRoomMap(target);
+          const existing = rm.get(String(mid)) || {};
+          const next = { ...existing, ...(msg || {}) };
+
+          // prefer incoming receipts when present
+          if (Array.isArray(msg.receipts) && msg.receipts.length) {
+            next.receipts = msg.receipts;
+            // derive simple status from receipts
+            try {
+              const receipts = msg.receipts || [];
+              // exclude current user's own receipt when deriving overall status
+              let currentUserId = null;
+              try { currentUserId = (typeof window !== 'undefined' && localStorage.getItem('userId')) ? String(localStorage.getItem('userId')) : null; } catch (e) { currentUserId = null; }
+              const filtered = receipts.filter(r => !(r && currentUserId && String(r.user_id) === String(currentUserId)));
+              const anyRead = filtered.some(r => r && (r.read === true || r.read === 'true'));
+              const allDelivered = filtered.length && filtered.every(r => r && (r.delivered === true || r.delivered === 'true'));
+              if (anyRead) next.status = 'read';
+              else if (allDelivered) next.status = 'delivered';
+              else next.status = 'sent';
+              console.log('[STORE] 🔄 updateMessage estado determinado para', mid, '=>', next.status);
+            } catch (e) {
+              console.warn('[STORE] error deriving status from receipts', e);
+            }
+          }
+
+          // deduplicate: if receipts unchanged, skip notifying subscribers
+          try {
+            const prevReceipts = existing && Array.isArray(existing.receipts) ? JSON.stringify(existing.receipts) : null;
+            const newReceipts = next && Array.isArray(next.receipts) ? JSON.stringify(next.receipts) : null;
+            if (prevReceipts !== null && newReceipts !== null && prevReceipts === newReceipts) {
+              console.debug('[STORE] updateMessage: receipts identical, skipping notify for', mid);
+              // persist updated object anyway
+              rm.set(String(mid), next);
+              return;
+            }
+          } catch (e) {
+            // ignore comparison errors and continue
+          }
+
+          rm.set(String(mid), next);
+
+          // notify subscribers
+          callbacks.forEach((cb) => {
+            try { cb({ type: 'updateMessage', message: next }); } catch (e) { console.warn('[STORE] subscriber cb failed', e); }
+          });
+          console.log('[STORE] 🟢 updateMessage processed for', mid);
+        } catch (e) {
+          console.error('[STORE] updateMessage error', e);
+        }
+      },
+
+      // Add incoming message and notify subscribers; do not mutate external state here
+      addIncomingMessage(msg) {
+        try {
+          const mid = msg && (msg.id || msg.message_id) || ('tmp_' + Date.now());
+            // try multiple keys and a global active room fallback
+            let roomId = (msg && (msg.room || msg.room_id || msg.roomId)) || (typeof window !== 'undefined' && window.__AGROVET_ACTIVE_ROOM) || null;
+            console.log('[STORE] ➕ addIncomingMessage recibido:', mid, '-> roomCandidate:', roomId);
+            if (!roomId) {
+              // Defensive fallback: create a placeholder room id so the message is
+              // not dropped silently. This makes the message visible immediately
+              // in the UI; the room can be reconciled later when the server
+              // provides the real room_id. Log prominently to help debugging.
+              roomId = 'unknown_room_' + (msg && (msg.room || msg.room_id || msg.roomId) ? String(msg.room || msg.room_id || msg.roomId) : String(mid));
+              try {
+                console.warn('[STORE] ⚠️ addIncomingMessage: missing roomId, using placeholder', roomId, msg);
+              } catch (e) {}
+              // ensure message carries the fallback room so subscribers can locate it
+              try { msg.room = msg.room || msg.room_id || roomId; } catch (e) {}
+            }
+
+          const rm = ensureRoomMap(String(roomId));
+          rm.set(String(mid), msg);
+          // notify subscribers
+          callbacks.forEach((cb) => {
+            try { cb({ type: 'addIncomingMessage', message: msg }); } catch (e) { console.warn('[STORE] subscriber cb failed', e); }
+          });
+          try {
+            console.log('[STORE] ✅ Total mensajes (room ' + roomId + '):', rm.size);
+          } catch (e) {}
+        } catch (e) {
+          console.error('[STORE] addIncomingMessage error', e);
+        }
+      },
+
+      // Subscribe to store updates. Callback receives objects like {type, message}
+      subscribe(fn) {
+        if (typeof fn === 'function') callbacks.add(fn);
+        return () => callbacks.delete(fn);
+      },
+
+      unsubscribe(fn) {
+        callbacks.delete(fn);
+      },
+
+      // For debugging: read a snapshot of messages for a room
+      dumpRoom(roomId) {
+        try {
+          const rm = rooms.get(String(roomId));
+          if (!rm) return [];
+          return Array.from(rm.values());
+        } catch (e) { return []; }
+      }
+    };
+  })();
+  console.debug('[STORE] _agrovet_chat_store debug helper installed');
+}
+
