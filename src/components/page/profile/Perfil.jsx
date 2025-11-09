@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Box, Paper, CircularProgress, Alert } from "@mui/material";
 import { getProfile, authAPI } from "../../../services/endpoints";
+import { normalizeStoredToken } from "../chat/chatUtils";
 import { useLocation } from "react-router-dom";
 import PerfilHeader from "./PerfilHeader";
 import PerfilForm from "./PerfilForm";
@@ -20,7 +21,7 @@ const Perfil = () => {
     const fetchProfile = async () => {
       setLoading(true);
       try {
-        const token = localStorage.getItem("token");
+  const token = normalizeStoredToken(localStorage.getItem("token"));
         // Comprobar si se pasó userId por query param para ver un perfil (visita)
         const params = new URLSearchParams(location.search);
         const requestedId = params.get("userId");
@@ -35,12 +36,12 @@ const Perfil = () => {
             res = await authAPI.userById(requestedId, token);
           } catch (e) {
             // si falla, intentar usar getProfile como fallback
-            res = await getProfile(localStorage.getItem("userId"), token);
+            res = await getProfile(token);
           }
         } else {
           const userId = localStorage.getItem("userId");
           if (!userId) throw new Error("No se encontró el ID del usuario");
-          res = await getProfile(userId, token);
+          res = await getProfile(token);
           setIsOwnProfile(true);
         }
         setUser(res);

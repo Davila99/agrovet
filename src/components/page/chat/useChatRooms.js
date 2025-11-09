@@ -95,6 +95,8 @@ export default function useChatRooms(mergeRooms, activeId) {
           id: m.id,
           sender_id: m.sender_id || (m.sender && (m.sender.id || m.sender.user_id)) || m.senderId,
           text: m.text || m.content || m.message || "",
+          media_id: m.media || (m.media_id || null),
+          media_url: m.media_url || m.url || null,
           timestamp: m.timestamp || m.created_at,
           receipts: m.receipts || [],
         }));

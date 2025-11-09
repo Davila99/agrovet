@@ -23,27 +23,56 @@ const SpecialistsList = ({ onSelectSpecialist, searchQuery }) => {
 
   useEffect(() => {
     let mounted = true;
+
+    const fetchAllPages = async (url, acc = []) => {
+      // Maneja paginación automática del DRF
+      const data = await httpClient(url, { method: "GET" });
+      const results = Array.isArray(data) ? data : data.results || [];
+      const combined = [...acc, ...results];
+      if (data.next) {
+        return fetchAllPages(data.next, combined);
+      }
+      return combined;
+    };
+
     const load = async () => {
       try {
         setLoading(true);
-        const data = await httpClient("/auth/users/", { method: "GET" });
+        const list = await fetchAllPages("/auth/users/");
+
         if (!mounted) return;
-        const list = Array.isArray(data) ? data : data.results || [];
+        try {
+          console.debug('[SpecialistsList] fetched users', { total: Array.isArray(list) ? list.length : (list && list.count), sample: (Array.isArray(list) ? list.slice(0,5) : (list.results||[]).slice(0,5)) });
+        } catch (e) {}
+
         const currentId = localStorage.getItem("userId");
 
-        const specialists = list.filter(
-          (u) =>
-            (u.role ||
-              u.user_role ||
-              u.is_specialist ||
-              u.specialist_profile) &&
-            (String(u.role).toLowerCase() === "specialist" ||
-              u.specialist_profile)
-        );
+        // Helper: normalize role and decide if a user should be considered a specialist.
+        const normalizeRole = (r) => String(r || "").toLowerCase();
+        const isSpecialistUser = (u) => {
+          const role = normalizeRole(u.role || u.user_role);
+          // Accept English and Spanish labels commonly used in the project
+          const roleMatch = role && (role.includes("specialist") || role.includes("especialista") || role.includes("especialist"));
+          const flag = u.is_specialist === true;
+          const hasProfile = Boolean(u.specialist_profile);
+          return roleMatch || flag || hasProfile;
+        };
 
-        const filtered = specialists.filter(
-          (u) => String(u.id) !== String(currentId)
-        );
+        const specialists = list.filter((u) => isSpecialistUser(u));
+        console.log("🧠 Especialistas candidatas:", specialists.length);
+
+        try {
+          console.debug('[SpecialistsList] specialists after filter', { count: specialists.length, sample: specialists.slice(0,5) });
+        } catch (e) {}
+
+        // Identify excluded users (for debugging) and reasons
+        try {
+          const excluded = (Array.isArray(list) ? list : (list.results || [])).filter((u) => !isSpecialistUser(u));
+          console.debug('[SpecialistsList] excluded sample (up to 10)', excluded.slice(0,10).map(u => ({ id: u.id, name: u.full_name || u.username, role: u.role, has_profile: !!u.specialist_profile, is_specialist: u.is_specialist })));
+        } catch (e) {}
+
+        const filtered = specialists.filter((u) => String(u.id) !== String(currentId));
+
         setUsers(filtered);
       } catch (e) {
         setError(e.message || String(e));
@@ -51,13 +80,15 @@ const SpecialistsList = ({ onSelectSpecialist, searchQuery }) => {
         if (mounted) setLoading(false);
       }
     };
+
     load();
+
     return () => {
       mounted = false;
     };
   }, []);
 
-  // Estados de carga y error
+  // 🌀 Estado de carga
   if (loading)
     return (
       <Box
@@ -69,13 +100,14 @@ const SpecialistsList = ({ onSelectSpecialist, searchQuery }) => {
           alignItems: "center",
           backgroundColor: background,
           borderRight: "1px solid #c8e6c9",
-          height: "100vh",
+          height: "100%",
         }}
       >
         <CircularProgress size={28} />
       </Box>
     );
 
+  // ⚠️ Estado de error
   if (error)
     return (
       <Box
@@ -84,7 +116,7 @@ const SpecialistsList = ({ onSelectSpecialist, searchQuery }) => {
           p: 2,
           backgroundColor: background,
           borderRight: "1px solid #c8e6c9",
-          height: "100vh",
+          height: "100%",
         }}
       >
         <Typography color="error">
@@ -93,29 +125,27 @@ const SpecialistsList = ({ onSelectSpecialist, searchQuery }) => {
       </Box>
     );
 
-  // Contenedor con scroll vertical
+  // ✅ Listado con scroll
   return (
     <Box
       sx={{
         width: "100%",
-        height: "100vh", // 👈 altura fija del panel
+        height: "100%",
         display: "flex",
         flexDirection: "column",
-        backgroundColor: "background",
-        paddingBottom: 5,
+        backgroundColor: background,
         borderRight: "1px solid #c8e6c9",
       }}
     >
       <Box
         sx={{
           flex: 1,
-          overflowY: "auto", // 👈 activa scroll vertical
+          overflowY: "auto",
           overflowX: "hidden",
           p: 1.5,
+          pb: 8, // ✅ espacio extra al final para que el último card no se corte
           scrollBehavior: "smooth",
-          "&::-webkit-scrollbar": {
-            width: "8px",
-          },
+          "&::-webkit-scrollbar": { width: "8px" },
           "&::-webkit-scrollbar-thumb": {
             backgroundColor: "#a5d6a7",
             borderRadius: "4px",
@@ -127,9 +157,7 @@ const SpecialistsList = ({ onSelectSpecialist, searchQuery }) => {
       >
         {users
           .filter((u) => {
-            const q = String(searchQuery || "")
-              .trim()
-              .toLowerCase();
+            const q = String(searchQuery || "").trim().toLowerCase();
             if (!q) return true;
             const name = (u.full_name || u.username || "").toLowerCase();
             const prof = (u.specialist_profile?.profession || "").toLowerCase();
@@ -154,7 +182,6 @@ const SpecialistsList = ({ onSelectSpecialist, searchQuery }) => {
                   p: 1.2,
                   cursor: "pointer",
                   width: "100%",
-                  marginBottom: 1,
                   boxShadow: "0 2px 8px rgba(46,125,50,0.1)",
                   transition: "all 0.2s ease-in-out",
                   "&:hover": {

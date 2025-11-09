@@ -23,3 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 src/services/httpClient.js
+src/services/endpoints.js
+src/services/httpClient.js
+src/services/httpClient.js
+src/services/httpClient.js

@@ -16,7 +16,7 @@ import {
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import SpecialistsList from "../Dashboard/SpecialistsList";
-import { resolveAvatar } from "./chatUtils";
+import { resolveAvatar, cleanName } from "./chatUtils";
 
 export default function ChatList({
   rooms,
@@ -38,7 +38,11 @@ export default function ChatList({
         width: { xs: "100%", md: 420 },
         borderRight: { md: "1px solid rgba(0,0,0,0.08)" },
         bgcolor: "background.paper",
-        display: { xs: activeId && !isMd ? "none" : "block" },
+        // responsive display: hide on xs when a chat is active (narrow layout),
+        // otherwise show as block on xs and as flex on md+.
+        display: { xs: activeId && !isMd ? "none" : "block", md: "flex" },
+        height: "100%",
+        flexDirection: "column",
       }}
     >
       <Box sx={{ p: 2 }}>
@@ -101,7 +105,7 @@ export default function ChatList({
       <Divider />
 
       {viewMode === "chats" && (
-        <List>
+        <List sx={{ flex: 1, overflowY: "auto" }}>
           {rooms
             .slice()
             .sort(
@@ -123,7 +127,7 @@ export default function ChatList({
                     </Avatar>
                   </ListItemAvatar>
                   <ListItemText
-                    primary={c.name}
+                    primary={cleanName(c.name)}
                     secondary={
                       <Typography
                         variant="body2"

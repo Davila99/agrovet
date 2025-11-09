@@ -7,17 +7,15 @@ import {
   ChatInput,
   useChatRooms,
   useChatSocket,
-  resolveAvatar,
-  normalizeStoredToken,
   mergeRooms,
 } from "./chat/index.js";
-import { chatAPI, connectPresence, getProfile } from "../../services/endpoints";
+import AttachmentPreview from "./chat/AttachmentPreview";
+import useChatController from "./chat/useChatController";
 
 export default function Chat() {
   const isMd = useMediaQuery("(min-width:900px)");
   const [activeId, setActiveId] = useState(null);
   const [viewMode, setViewMode] = useState("chats");
-  const [text, setText] = useState("");
   const messagesEndRef = useRef(null);
 
   const [specialistSearch, setSpecialistSearch] = useState("");
@@ -55,84 +53,18 @@ export default function Chat() {
     getCurrentUserId,
   });
 
-  // ChatList receives openOneToOne to open chats from specialists list
-
-  const handleSend = async () => {
-    if (!text.trim() || !activeId) return;
-    // optimistic message (temporary id)
-    const tempId = "tmp_" + Date.now();
-    const msg = {
-      id: tempId,
-      text,
-      fromMe: true,
-      timestamp: new Date().toISOString(),
-      sender_id: getCurrentUserId(),
-    };
-
-    // optimistic UI update
-    setRooms((prev) =>
-      prev.map((r) =>
-        String(r.id) === String(activeId)
-          ? { ...r, messages: [...(r.messages || []), msg] }
-          : r
-      )
-    );
-    setText("");
-
-    // send to server in background, try to reconcile optimistic msg with server response
-    (async () => {
-      try {
-        const token = normalizeStoredToken(localStorage.getItem("token"));
-        const res = await chatAPI.sendMessage(activeId, text)({ token });
-
-        // If server returned the created message, replace the optimistic one
-        if (res && (res.id || res.pk)) {
-          const serverMsg = {
-            id: res.id || res.pk,
-            text: res.content || res.message || res.text || text,
-            timestamp: res.timestamp || res.created_at || new Date().toISOString(),
-            sender_id: res.sender_id || (res.sender && (res.sender.id || res.sender.user_id)) || getCurrentUserId(),
-            receipts: res.receipts || [],
-          };
-          setRooms((prev) =>
-            prev.map((r) => {
-              if (String(r.id) !== String(activeId)) return r;
-              const msgs = Array.isArray(r.messages) ? r.messages.slice() : [];
-              let replaced = false;
-              const newMsgs = msgs.map((m) => {
-                if (String(m.id) === String(tempId)) {
-                  replaced = true;
-                  return serverMsg;
-                }
-                return m;
-              });
-              if (!replaced) newMsgs.push(serverMsg);
-              return { ...r, messages: newMsgs };
-            })
-          );
-        }
-      } catch (e) {
-        console.warn("sendMessage failed", e);
-        // mark optimistic message as errored so UI can show retry affordance
-        setRooms((prev) =>
-          prev.map((r) => {
-            if (String(r.id) !== String(activeId)) return r;
-            const msgs = (r.messages || []).map((m) =>
-              String(m.id) === String(tempId) ? { ...m, sendError: true } : m
-            );
-            return { ...r, messages: msgs };
-          })
-        );
-      }
-    })();
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
+  // Local controller for send/attach/etc
+  const {
+    text,
+    setText,
+    sendingText,
+    pendingAttachment,
+    handleSend,
+    handleAttach,
+    cancelPendingAttachment,
+    confirmSendAttachment,
+    handleKeyDown,
+  } = useChatController({ activeId, setRooms, getCurrentUserId });
 
   const goBackToList = () => setActiveId(null);
 
@@ -170,12 +102,24 @@ export default function Chat() {
           messagesEndRef={messagesEndRef}
           getCurrentUserId={getCurrentUserId}
         />
+
+        {/* If there's a pending attachment, show a compact preview above the input box */}
+        {pendingAttachment && (
+          <Box sx={{ p: 1, borderTop: '1px solid rgba(0,0,0,0.04)', bgcolor: 'background.default' }}>
+            <AttachmentPreview pending={pendingAttachment} onConfirm={confirmSendAttachment} onCancel={cancelPendingAttachment} />
+          </Box>
+        )}
         {activeId && (
           <ChatInput
             text={text}
             setText={setText}
             handleSend={handleSend}
             handleKeyDown={handleKeyDown}
+            onAttach={handleAttach}
+            pendingAttachment={pendingAttachment}
+            onCancelAttachment={cancelPendingAttachment}
+            onConfirmAttachment={confirmSendAttachment}
+            sending={sendingText}
           />
         )}
       </Box>
