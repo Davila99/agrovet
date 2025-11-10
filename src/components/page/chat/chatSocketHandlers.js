@@ -491,11 +491,10 @@ export function createOnMessageHandler({
                 typeof window._agrovet_chat_service.send === "function"
               ) {
                 try {
-                  window._agrovet_chat_service.send({
-                    type: "read_receipt",
-                    message_id: msg.id,
-                    room_id: activeId,
-                  });
+                  // Inform server that the active room was read. Use the
+                  // canonical 'mark_read' event so the server persists the
+                  // read state and broadcasts receipts to other clients.
+                  window._agrovet_chat_service.send({ type: 'mark_read', room: activeId });
                 } catch (e) {}
                 try {
                   const me =

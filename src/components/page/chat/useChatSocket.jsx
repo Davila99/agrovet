@@ -243,7 +243,19 @@ export default function useChatSocket({
                 if (typeof window !== 'undefined' && window._agrovet_chat_service && typeof window._agrovet_chat_service.send === 'function') {
                     try {
                         window._agrovet_chat_service.send({ type: 'mark_read', room: activeId });
-                        console.log('[READ] 🔹 Enviando mark_read para room', activeId);
+                        console.log('[READ] 🔹 Enviando mark_read (WS) para room', activeId);
+                        // Also attempt an HTTP fallback to ensure server persists the read
+                        try {
+                            const tokenRaw = localStorage.getItem('token');
+                            const token = tokenRaw ? tokenRaw.replace(/^Token\s*/i, '').replace(/^Bearer\s*/i, '') : null;
+                            if (token) {
+                                // lazy import of chatAPI to avoid circular imports
+                                const { chatAPI } = require('../../../services/endpoints/chat');
+                                chatAPI.markRead(activeId)({ token }).catch((err) => {
+                                    try { console.warn('[READ] HTTP markRead fallback failed', err); } catch (e) {}
+                                });
+                            }
+                        } catch (e) { console.warn('[READ] HTTP fallback failed to start', e); }
                     } catch (e) {
                         console.warn('[READ] failed sending mark_read', e);
                     }

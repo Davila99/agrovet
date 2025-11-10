@@ -52,9 +52,7 @@ const MessageItem = memo(({ m, index, userId, activeConv, activeId }) => {
 
   const key = String(m.uid || m.id || `${m.timestamp || ''}_${index}`);
 
-  if (process.env.NODE_ENV === 'development') {
-    try { console.log('[MESSAGE_ITEM] render id=', m && m.id, 'media_spectrum=', resolvedSpectrum); } catch (e) {}
-  }
+  // Development render logging removed to reduce noise. Keep memoization above to limit re-renders.
 
   return (
     <Box key={key} data-msg-id={m.id} data-fromme={fromMe} sx={{ display: 'flex', justifyContent: fromMe ? 'flex-end' : 'flex-start', mb: 1 }}>

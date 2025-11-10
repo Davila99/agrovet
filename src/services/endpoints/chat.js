@@ -58,6 +58,16 @@ export const chatAPI = {
         }
       );
     },
+  markRead: (room) => ({ token } = {}) => {
+    if (room === null || room === undefined || String(room).toLowerCase() === 'null' || String(room).toLowerCase() === 'undefined' || String(room).trim() === '') {
+      return Promise.reject(new Error("Invalid 'room' parameter"));
+    }
+    return httpClient(`/chat/messages/mark_read/`, {
+      method: 'POST',
+      headers: authHeaders(token),
+      body: { room },
+    });
+  },
 };
 
 const resolveWsBase = () => {

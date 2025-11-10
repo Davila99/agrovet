@@ -36,9 +36,112 @@ export default function ChatMessages({ activeConv, activeId, messagesEndRef, get
   useEffect(() => {
     try {
       if (!activeId) return;
-      if (typeof window !== 'undefined' && window._agrovet_chat_service && typeof window._agrovet_chat_service.send === 'function') {
-        try { window._agrovet_chat_service.send({ type: 'mark_read', room: activeId }); console.log('[READ] Enviando mark_read para room', activeId); } catch (e) {}
-      }
+      // 1) Send WS mark_read (best-effort)
+      try {
+        if (typeof window !== 'undefined' && window._agrovet_chat_service && typeof window._agrovet_chat_service.send === 'function') {
+          try { window._agrovet_chat_service.send({ type: 'mark_read', room: activeId }); } catch (e) { /* ignore */ }
+        }
+      } catch (e) {}
+
+      // 2) Optimistically update local store receipts so ticks turn blue immediately
+      try {
+        const currentUserId = typeof getCurrentUserId === 'function' ? String(getCurrentUserId()) : null;
+        const msgsSnapshot = (activeConv && Array.isArray(activeConv.messages)) ? activeConv.messages.slice() : [];
+        if (msgsSnapshot.length && typeof window !== 'undefined' && window._agrovet_chat_store && typeof window._agrovet_chat_store.updateMessage === 'function') {
+          msgsSnapshot.forEach((m) => {
+            try {
+              const mid = m && (m.id || m.message_id);
+              if (!mid) return;
+              // Skip messages sent by current user
+              const fromMe = String(m.sender_id) === String(currentUserId) || m.fromMe;
+              if (fromMe) return;
+
+              const existingReceipts = Array.isArray(m.receipts) ? m.receipts.slice() : [];
+              const hasRead = existingReceipts.some(r => r && String(r.user_id) === String(currentUserId) && (r.read === true || r.read === 'true'));
+              if (hasRead) return;
+
+              // append a local read receipt for UI purposes; server will reconcile
+              const now = new Date().toISOString();
+              const added = { user_id: currentUserId, read: true, read_at: now, delivered: true };
+              const nextReceipts = existingReceipts.concat([added]);
+              // call debug store update: (mid, receipts, roomId)
+              try { window._agrovet_chat_store.updateMessage(mid, nextReceipts, activeId); } catch (e) {}
+            } catch (e) {}
+          });
+        }
+      } catch (e) {}
+
+      // 3) Ensure server persists read state via HTTP fallback and apply
+      // server-acknowledged updates locally when possible. Run in an
+      // async IIFE so we can await the HTTP call without making the
+      // effect callback async directly.
+      (async () => {
+        try {
+          const raw = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+          const token = raw ? raw.replace(/^Token\s*/i, '').replace(/^Bearer\s*/i, '') : null;
+          if (!token) return;
+          try {
+            // lazy require to avoid circulars
+            const { chatAPI } = require('../../services/endpoints/chat');
+            const res = await chatAPI.markRead(activeId)({ token });
+            // res is expected to be { updated: [<message_id>, ...] }
+            if (res && Array.isArray(res.updated) && res.updated.length) {
+              try {
+                const me = typeof getCurrentUserId === 'function' ? getCurrentUserId() : null;
+                const nowIso = new Date().toISOString();
+                for (const mid of res.updated) {
+                  try {
+                    const receipts = [{ user_id: me, delivered: true, delivered_at: nowIso, read: true, read_at: nowIso }];
+                    if (typeof window !== 'undefined' && window._agrovet_chat_store && typeof window._agrovet_chat_store.updateMessage === 'function') {
+                      window._agrovet_chat_store.updateMessage(mid, receipts, activeId);
+                    }
+                    // also update rooms state for immediate UI consistency
+                    try {
+                      // use setTimeout 0 to avoid state mutation during render
+                      setTimeout(() => {
+                        try {
+                          setRooms((prev) => {
+                            try {
+                              const copy = prev.slice();
+                              const idx = copy.findIndex((r) => String(r.id) === String(activeId));
+                              if (idx === -1) return prev;
+                              const room = { ...(copy[idx] || {}) };
+                              const msgs = Array.isArray(room.messages) ? room.messages.slice() : [];
+                              for (let mi = 0; mi < msgs.length; mi++) {
+                                if (String(msgs[mi].id) === String(mid)) {
+                                  let receiptsArr = Array.isArray(msgs[mi].receipts) ? msgs[mi].receipts.slice() : [];
+                                  // upsert current user's read receipt
+                                  let found = false;
+                                  for (let ri = 0; ri < receiptsArr.length; ri++) {
+                                    if (String(receiptsArr[ri].user_id) === String(me)) {
+                                      receiptsArr[ri] = { ...receiptsArr[ri], delivered: true, delivered_at: receiptsArr[ri].delivered_at || nowIso, read: true, read_at: receiptsArr[ri].read_at || nowIso };
+                                      found = true; break;
+                                    }
+                                  }
+                                  if (!found) receiptsArr.push({ user_id: me, delivered: true, delivered_at: nowIso, read: true, read_at: nowIso });
+                                  const anyRead = receiptsArr.some(r => r && (r.read === true || r.read === 'true'));
+                                  const allDelivered = receiptsArr.length && receiptsArr.every(r => r && (r.delivered === true || r.delivered === 'true'));
+                                  msgs[mi] = { ...(msgs[mi] || {}), receipts: receiptsArr, status: anyRead ? 'read' : (allDelivered ? 'delivered' : 'sent') };
+                                  break;
+                                }
+                              }
+                              room.messages = msgs;
+                              copy[idx] = room;
+                              return copy;
+                            } catch (e) { return prev; }
+                          });
+                        } catch (e) {}
+                      }, 0);
+                    } catch (e) {}
+                  } catch (e) {}
+                }
+              } catch (e) {}
+            }
+          } catch (e) {
+            try { console.warn('[READ] HTTP markRead fallback failed', e); } catch (ee) {}
+          }
+        } catch (e) {}
+      })();
     } catch (e) {}
   }, [activeId]);
 

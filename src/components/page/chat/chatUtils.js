@@ -384,7 +384,6 @@ export function dedupeMessages(messages) {
 
       const existing = map.get(key) || {};
       const equal = deepEqual(existing, msg);
-      try { console.log('[DEDUPED] Dedupe check', { key, id: msg.id, equal }); } catch (e) {}
       if (equal) {
         // no change, keep existing reference
         continue;
@@ -397,10 +396,8 @@ export function dedupeMessages(messages) {
           merged.media_spectrum = existing.media_spectrum;
         }
       } catch (e) {}
-      try { console.log('[DEDUPED] merging message, changes found for id=', msg.id); } catch (e) {}
       map.set(key, merged);
     }
-    try { console.log('[DEDUPED] total messages after:', map.size); } catch (e) {}
     return Array.from(map.values());
   } catch (e) {
     try { console.error('[dedupeMessages] error', e); } catch (ee) {}
