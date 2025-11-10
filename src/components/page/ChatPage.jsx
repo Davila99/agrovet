@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { createPortal } from "react-dom";
 import {
   Box,
   Typography,
@@ -20,7 +21,7 @@ const AVAChat = () => {
   const theme = useTheme();
   const isXs = useMediaQuery(theme.breakpoints.down("sm"));
   const isSm = useMediaQuery(theme.breakpoints.between("sm", "md"));
-  const orbSize = isXs ? 160 : isSm ? 180 : 200;
+  const orbSize = isXs ? 180 : isSm ? 220 : 280;
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -75,7 +76,7 @@ const AVAChat = () => {
       >
         <Box display="flex" alignItems="center" gap={2}>
           <TextField
-            placeholder="Ask anything..."
+            placeholder="Escribe tu pregunta aquí..."
             variant="outlined"
             fullWidth
             sx={{
@@ -101,72 +102,106 @@ const AVAChat = () => {
             <MicIcon />
           </IconButton>
         </Box>
+        <Box mt={2} display="flex" gap={2}>
+          <Button
+            sx={{
+              background: "rgba(255,255,255,0.03)",
+              color: "#fff",
+              fontSize: { xs: "0.9rem", md: "0.8rem" },
+
+              "&:hover": { background: "rgba(255,255,255,0.05)" },
+            }}
+          >
+            Encontrar especialista
+          </Button>
+          <Button
+            sx={{
+              background: "rgba(255,255,255,0.03)",
+              color: "#fff",
+              fontSize: { xs: "0.9rem", md: "0.8rem" },
+
+              "&:hover": { background: "rgba(255,255,255,0.05)" },
+            }}
+          >
+            Buscar en el mapa
+          </Button>
+          <Button
+            sx={{
+              background: "rgba(255,255,255,0.03)",
+              color: "#fff",
+              fontSize: { xs: "0.9rem", md: "0.8rem" },
+
+              "&:hover": { background: "rgba(255,255,255,0.05)" },
+            }}
+          >
+            Compartir ubicación
+          </Button>
+        </Box>
       </Box>
 
       {/* Overlay con orb centrado cuando liveActive */}
-      {liveActive && (
-        <Box
-          className="orb-overlay"
-          onClick={() => {
-            /* click fuera no cierra por ahora */
-          }}
-        >
-          <Box
-            display="flex"
-            flexDirection="column"
-            alignItems="center"
-            gap={3}
-            sx={{
-              zIndex: 1500,
-              position: "relative",
-              pointerEvents: "auto",
+      {liveActive &&
+        createPortal(
+          <div
+            className="orb-overlay"
+            onClick={() => {
+              /* click fuera no cierra por ahora */
             }}
           >
-            <Orb
-              size={orbSize}
-              className="orb-center"
-              style={{ pointerEvents: "none" }}
-            />
+            <div
+              style={{
+                position: "relative",
+              }}
+            >
+              <Orb size={orbSize} className="orb-center" />
 
-            {/* Controls on top of orb */}
-            <Box display="flex" gap={2} alignItems="center" sx={{ mt: 4 }}>
-              <IconButton
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setMicMuted((p) => !p);
-                }}
-                sx={{
-                  width: { xs: 48, md: 64 },
-                  height: { xs: 48, md: 64 },
-                  bgcolor: micMuted ? "#ff4b4b" : "#4ade80",
-                  boxShadow: "0 8px 30px rgba(0,0,0,0.45)",
+              {/* Controls on top of orb */}
+              <div
+                style={{
+                  display: "flex",
+                  gap: 16,
+                  alignItems: "center",
+                  marginTop: 16,
                 }}
               >
-                {micMuted ? (
-                  <MicOffIcon sx={{ color: "#fff" }} />
-                ) : (
-                  <MicIcon sx={{ color: "#fff" }} />
-                )}
-              </IconButton>
+                <IconButton
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setMicMuted((p) => !p);
+                  }}
+                  sx={{
+                    width: { xs: 48, md: 64 },
+                    height: { xs: 48, md: 64 },
+                    bgcolor: micMuted ? "#ff4b4b" : "#4ade80",
+                    boxShadow: "0 8px 30px rgba(0,0,0,0.45)",
+                  }}
+                >
+                  {micMuted ? (
+                    <MicOffIcon sx={{ color: "#fff" }} />
+                  ) : (
+                    <MicIcon sx={{ color: "#fff" }} />
+                  )}
+                </IconButton>
 
-              <IconButton
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setLiveActive(false);
-                }}
-                sx={{
-                  width: { xs: 48, md: 64 },
-                  height: { xs: 48, md: 64 },
-                  bgcolor: "#ff4b4b",
-                  boxShadow: "0 8px 30px rgba(0,0,0,0.45)",
-                }}
-              >
-                <CancelIcon sx={{ color: "#fff" }} />
-              </IconButton>
-            </Box>
-          </Box>
-        </Box>
-      )}
+                <IconButton
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setLiveActive(false);
+                  }}
+                  sx={{
+                    width: { xs: 48, md: 64 },
+                    height: { xs: 48, md: 64 },
+                    bgcolor: "#ff4b4b",
+                    boxShadow: "0 8px 30px rgba(0,0,0,0.45)",
+                  }}
+                >
+                  <CancelIcon sx={{ color: "#fff" }} />
+                </IconButton>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
     </Box>
   );
 };
