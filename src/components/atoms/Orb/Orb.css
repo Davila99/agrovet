@@ -86,6 +86,40 @@
   width: 170%;
 }
 
+/* Overlay / centered orb variant */
+.orb-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(4, 8, 18, 0.55);
+  backdrop-filter: blur(8px) brightness(0.6);
+  z-index: 1400; /* above typical MUI dialogs */
+}
+
+.orb-overlay .orb-container {
+  position: relative;
+  border-radius: 50%;
+  rotate: 0deg;
+  filter: drop-shadow(0 0 120px rgba(40,120,255,0.25)) drop-shadow(0 0 80px rgba(255,60,30,0.15));
+}
+
+.orb-overlay .orb {
+  filter: blur(36px);
+  transition: transform 0.4s ease;
+}
+
+.orb-overlay .orb-inner {
+  opacity: 0.95;
+}
+
+/* make sure inner shapes are visible on small screens */
+@media (max-width: 480px) {
+  .orb-overlay { padding: 1rem; }
+  .orb-overlay .orb { filter: blur(28px); }
+}
+
 /* Variantes para usar el orbe como fondo/hero */
 .orb-container.orb-hero {
   position: absolute;

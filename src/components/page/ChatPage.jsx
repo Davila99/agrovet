@@ -1,5 +1,13 @@
 import React, { useState } from "react";
-import { Box, Typography, TextField, IconButton, Button } from "@mui/material";
+import {
+  Box,
+  Typography,
+  TextField,
+  IconButton,
+  Button,
+  useTheme,
+  useMediaQuery,
+} from "@mui/material";
 import Orb from "../atoms/Orb/Orb";
 import MicIcon from "@mui/icons-material/Mic";
 import MicOffIcon from "@mui/icons-material/MicOff";
@@ -8,6 +16,11 @@ import CancelIcon from "@mui/icons-material/Cancel";
 const AVAChat = () => {
   const [liveActive, setLiveActive] = useState(false);
   const [micMuted, setMicMuted] = useState(false);
+
+  const theme = useTheme();
+  const isXs = useMediaQuery(theme.breakpoints.down("sm"));
+  const isSm = useMediaQuery(theme.breakpoints.between("sm", "md"));
+  const orbSize = isXs ? 160 : isSm ? 180 : 200;
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -47,17 +60,17 @@ const AVAChat = () => {
       <Box
         zIndex={1}
         width="100%"
-        maxWidth={960}
+        maxWidth={{ xs: 340, sm: 720, md: 960 }}
         sx={{
-          mt: 20,
+          mt: { xs: 8, md: 20 },
           backdropFilter: "blur(8px)",
           background: "rgba(9,14,25,0.45)",
-          borderRadius: 5,
+          borderRadius: { xs: 2, md: 5 },
           boxShadow: "0 8px 40px rgba(2,6,23,0.6)",
-          padding: 3,
+          padding: { xs: 2, md: 3 },
           borderWidth: 1,
           borderStyle: "solid",
-          borderColor: "rgba(255, 255, 255, 0.1)",
+          borderColor: "rgba(255, 255, 255, 0.08)",
         }}
       >
         <Box display="flex" alignItems="center" gap={2}>
@@ -66,13 +79,14 @@ const AVAChat = () => {
             variant="outlined"
             fullWidth
             sx={{
-              borderRadius: 5,
+              borderRadius: 2,
               input: { color: "#fff" },
               background: "rgba(255,255,255,0.03)",
               "& .MuiOutlinedInput-notchedOutline": { border: "none" },
               borderWidth: 1,
               borderStyle: "solid",
-              borderColor: "rgba(255, 255, 255, 0.2)",
+              borderColor: "rgba(255, 255, 255, 0.08)",
+              fontSize: { xs: "0.9rem", md: "1rem" },
             }}
           />
           <IconButton
@@ -89,46 +103,67 @@ const AVAChat = () => {
         </Box>
       </Box>
 
-      {/* Orb central */}
+      {/* Overlay con orb centrado cuando liveActive */}
       {liveActive && (
         <Box
-          display="flex"
-          flexDirection="column"
-          alignItems="center"
-          gap={4}
-          mt={4}
+          className="orb-overlay"
+          onClick={() => {
+            /* click fuera no cierra por ahora */
+          }}
         >
-          {/* Usamos el nuevo componente Orb */}
-          <Orb size={120} />
+          <Box
+            display="flex"
+            flexDirection="column"
+            alignItems="center"
+            gap={3}
+            sx={{
+              zIndex: 1500,
+              position: "relative",
+              pointerEvents: "auto",
+            }}
+          >
+            <Orb
+              size={orbSize}
+              className="orb-center"
+              style={{ pointerEvents: "none" }}
+            />
 
-          {/* Botones circulares debajo */}
-          <Box display="flex" gap={3}>
-            <IconButton
-              onClick={() => setMicMuted((prev) => !prev)}
-              sx={{
-                width: 56,
-                height: 56,
-                bgcolor: micMuted ? "#ff4b4b" : "#4ade80",
-                "&:hover": { transform: "scale(1.1)" },
-              }}
-            >
-              {micMuted ? (
-                <MicOffIcon sx={{ color: "#fff" }} />
-              ) : (
-                <MicIcon sx={{ color: "#fff" }} />
-              )}
-            </IconButton>
-            <IconButton
-              onClick={() => setLiveActive(false)}
-              sx={{
-                width: 56,
-                height: 56,
-                bgcolor: "#ff4b4b",
-                "&:hover": { transform: "scale(1.1)" },
-              }}
-            >
-              <CancelIcon sx={{ color: "#fff" }} />
-            </IconButton>
+            {/* Controls on top of orb */}
+            <Box display="flex" gap={2} alignItems="center" sx={{ mt: 4 }}>
+              <IconButton
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMicMuted((p) => !p);
+                }}
+                sx={{
+                  width: { xs: 48, md: 64 },
+                  height: { xs: 48, md: 64 },
+                  bgcolor: micMuted ? "#ff4b4b" : "#4ade80",
+                  boxShadow: "0 8px 30px rgba(0,0,0,0.45)",
+                }}
+              >
+                {micMuted ? (
+                  <MicOffIcon sx={{ color: "#fff" }} />
+                ) : (
+                  <MicIcon sx={{ color: "#fff" }} />
+                )}
+              </IconButton>
+
+              <IconButton
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLiveActive(false);
+                }}
+                sx={{
+                  width: { xs: 48, md: 64 },
+                  height: { xs: 48, md: 64 },
+                  bgcolor: "#ff4b4b",
+                  boxShadow: "0 8px 30px rgba(0,0,0,0.45)",
+                }}
+              >
+                <CancelIcon sx={{ color: "#fff" }} />
+              </IconButton>
+            </Box>
           </Box>
         </Box>
       )}
