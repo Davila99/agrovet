@@ -1,7 +1,7 @@
   // Producción (sin espacio accidental)
-const BASE_URL = "https://agrovet.pythonanywhere.com/api";
+// const BASE_URL = "https://agrovet.pythonanywhere.com/api";
 
-  // const BASE_URL = "http://127.0.0.1:8000/api";
+const BASE_URL = "http://127.0.0.1:8000/api";
   // Allow runtime override (e.g. tests or embed) via window.__AGROVET_API_BASE
 
   /**
@@ -42,10 +42,7 @@ const BASE_URL = "https://agrovet.pythonanywhere.com/api";
       const p = String(endpoint || "").trim();
       const path = p.startsWith("/") ? p : "/" + p;
       const url = BASE_URL + path;
-      // Debug: log outgoing request details so we can trace server 500s
-      try {
-        console.debug('[httpClient] request ->', { url, headers: fetchHeaders, body: rest.body });
-      } catch (e) {}
+      
 
       const res = await fetch(url, {
         headers: fetchHeaders,
@@ -63,6 +60,8 @@ const BASE_URL = "https://agrovet.pythonanywhere.com/api";
         data = { raw: text };
       }
 
+      
+
       if (!res.ok) {
         try {
           console.error('[httpClient] ❌ API error', {
@@ -72,10 +71,7 @@ const BASE_URL = "https://agrovet.pythonanywhere.com/api";
             endpoint: url,
           });
         } catch (e) {}
-        try{
-          const raw = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-          if(raw) console.debug('[httpClient] stored token (masked):', String(raw).slice(0,6)+'...');
-        }catch(e){}
+        
           const message = data.detail || data.error || data.message || `HTTP ${res.status} ${res.statusText}`;
         // Si es error de servidor (5xx) notificamos que el servicio está caído
         if (res.status >= 500 && typeof window !== 'undefined') {
@@ -84,6 +80,13 @@ const BASE_URL = "https://agrovet.pythonanywhere.com/api";
             window.dispatchEvent(new CustomEvent('agrovet:service-down'));
           } catch (e) {}
         }
+        // Extra diagnostic for auth login 401 to help debug specialist login issues
+        if (res.status === 401 && String(url).includes('/auth/login')) {
+          try {
+            console.error('[httpClient][AUTH] 401 on login endpoint', { endpoint: url, requestBody: rest && rest.body, responseBody: data });
+          } catch (e) {}
+        }
+
         const err = new Error(message);
         err.status = res.status;
         // Attach parsed response body for callers to inspect serializer errors

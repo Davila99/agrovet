@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import useChatWebSocket from "../../../hooks/useChatWebSocket";
-import { normalizeStoredToken } from "./chatUtils";
+import { normalizeStoredToken, dedupeMessages } from "./chatUtils";
 import { createOnMessageHandler } from "./chatSocketHandlers";
 import { playNotifySound } from "../../../services/sound";
 
@@ -20,18 +20,15 @@ export default function useChatSocket({
     // useChatWebSocket inside its own effect; we only provide the connect function.
     useChatWebSocket((svc) => {
         try {
-            if (!activeId) return;
+            // Connect the websocket even if no chat is actively opened so
+            // the client receives incoming messages for other rooms (chat list updates).
+            // createOnMessageHandler will receive `activeId` (possibly null) and
+            // route updates appropriately.
             if (String(activeId) === "bot-chat") return;
 
             try {
-                console.debug('[useChatSocket] connecting', { activeId, rawTokenLength: rawStored ? String(rawStored).length : 0 });
-            } catch (e) {}
-
-            try {
                 svc.connect(activeId, token, {
-                    onOpen: () => { console.debug("[Chat] WS open", { activeId }); },
                     onMessage: createOnMessageHandler({ activeId, setRooms, markUserOnline, markUserOffline, getCurrentUserId, playNotifySound }),
-                    onClose: (ev) => { try { console.debug('[Chat] WS closed', { activeId, code: ev && ev.code, reason: ev && ev.reason, wasClean: ev && ev.wasClean }); } catch(e){} },
                     onError: (e) => { try { console.error('[Chat] WS error', { activeId, errorEvent: e }); } catch(err){} },
                 });
             } catch (outer) { console.error('[useChatSocket] svc.connect threw', outer, { activeId }); }
@@ -64,48 +61,113 @@ export default function useChatSocket({
                                             const m = msgs[mi];
                                             if (!m || !m.id) continue;
                                             if (String(m.id) === mid) {
-                                                msgs[mi] = { ...m, receipts };
+                                                // Merge all incoming fields from payload into stored message
+                                                const merged = { ...m, ...(payload || {}) };
+                                                // Prefer incoming receipts when provided
+                                                if (Array.isArray(payload.receipts) && payload.receipts.length) merged.receipts = payload.receipts;
+                                                // Preserve existing media_spectrum if payload didn't include it
+                                                if ((merged.media_spectrum === null || merged.media_spectrum === undefined) && m.media_spectrum) {
+                                                    merged.media_spectrum = m.media_spectrum;
+                                                }
+                                                msgs[mi] = merged;
                                                 room.messages = msgs;
                                                 copy[ri] = room;
                                                 changed = true;
                                             }
                                         }
                                     }
+                                    try { console.log('[ROOM_UPDATE] (updateMessage) completed scan, changed=', changed); } catch (e) {}
                                     return changed ? copy : prev;
                                 } catch (e) { return prev; }
                             });
                         }
 
                         if (ev.type === 'addIncomingMessage' && ev.message) {
-                            const payload = ev.message;
+                            let payload = ev.message || {};
+                            // Normalize timestamp: ensure there's a valid ISO timestamp
+                            try {
+                                if (!payload.timestamp) payload.timestamp = new Date().toISOString();
+                                else {
+                                    const parsed = new Date(payload.timestamp);
+                                    if (Number.isNaN(parsed.getTime())) payload.timestamp = new Date().toISOString();
+                                }
+                            } catch (e) { payload.timestamp = new Date().toISOString(); }
+                            // Ensure messages from me appear as newest immediately
+                            try {
+                                const me = typeof getCurrentUserId === 'function' ? getCurrentUserId() : (Number(localStorage.getItem('userId')) || null);
+                                const maybeFromMe = Boolean(payload && (payload.from_me || payload.fromMe)) || (payload && payload.sender_id && me && String(payload.sender_id) === String(me));
+                                if (maybeFromMe) payload.timestamp = new Date().toISOString();
+                            } catch (e) {}
+                            // Ensure stable uid exists for dedupe and rendering
+                            try {
+                                if (!payload.uid) payload.uid = `${payload.id || payload.message_id || 'tmp'}-${payload.timestamp}-${Math.random().toString(36).slice(2,8)}`;
+                            } catch (e) {}
                             const roomHint = payload && (payload.room || payload.room_id || payload.roomId) || null;
                             setRooms((prev) => {
                                 try {
-                                    const copy = prev.slice();
                                     const roomIdToFind = roomHint ? String(roomHint) : String(activeId);
-                                    const idx = copy.findIndex((r) => String(r.id) === roomIdToFind);
-                                    if (idx === -1) {
+
+                                    // compute if message is from me
+                                    let fromMe = Boolean(payload && (payload.from_me || payload.fromMe));
+                                    try {
+                                        const me = typeof getCurrentUserId === 'function' ? getCurrentUserId() : (Number(localStorage.getItem('userId')) || null);
+                                        if (!fromMe && payload && payload.sender_id && me) {
+                                            fromMe = String(payload.sender_id) === String(me);
+                                        }
+                                    } catch (e) {}
+
+                                    // Build a new rooms array immutably, updating only the target room
+                                    const mapped = prev.map((r) => {
+                                        if (String(r.id) !== String(roomIdToFind)) return r;
+                                        const msgs = Array.isArray(r.messages) ? r.messages.slice() : [];
+                                            let newMsgs = dedupeMessages([...msgs, payload]);
+                                            // Normalize timestamps to avoid string ordering issues
+                                            try { newMsgs = newMsgs.map(m => ({ ...m, timestamp: (m && m.timestamp) || new Date().toISOString() })); } catch (e) {}
+                                            try { newMsgs.sort((a, b) => new Date(a.timestamp || 0) - new Date(b.timestamp || 0)); } catch (e) {}
+                                        return {
+                                            ...r,
+                                            messages: newMsgs,
+                                            lastMessage: payload.text || r.lastMessage,
+                                            last_activity: payload.timestamp || r.last_activity,
+                                            unread: !!r.unread || (!fromMe),
+                                        };
+                                    });
+
+                                    // If room wasn't present, create it and put on top
+                                    const exists = mapped.some((r) => String(r.id) === String(roomIdToFind));
+                                    let resultArr;
+                                    if (!exists) {
                                         const newRoom = {
                                             id: String(roomIdToFind),
                                             name: 'Chat ' + String(roomIdToFind),
                                             avatar: '',
                                             participants: [],
-                                            messages: [payload],
+                                            messages: (function(){ const m = dedupeMessages([payload]); try{ m.sort((a,b)=> new Date(a.timestamp||0) - new Date(b.timestamp||0)); }catch(e){} return m; })(),
                                             lastMessage: payload.text || '',
                                             last_activity: payload.timestamp || new Date().toISOString(),
+                                            unread: !fromMe,
                                         };
-                                        const newCopy = [newRoom, ...copy];
-                                        console.debug('[useChatSocket][store] addIncomingMessage: created new room for incoming message', newRoom.id);
-                                        return newCopy;
+                                        try { console.log('[ROOM_UPDATE] (addIncomingMessage) created newRoom', roomIdToFind, 'messages before: 0 after: 1', payload.id); } catch (e) {}
+                                        resultArr = [newRoom, ...prev];
+                                    } else {
+                                        // Move updated room to the top preserving order for others
+                                        const updatedRoom = mapped.find((r) => String(r.id) === String(roomIdToFind));
+                                        const others = mapped.filter((r) => String(r.id) !== String(roomIdToFind));
+                                        try { console.log('[ROOM_UPDATE] (addIncomingMessage) room', roomIdToFind, 'before msgs:', (prev.find(p => String(p.id) === String(roomIdToFind))?.messages || []).length, 'incoming id:', payload.id); } catch (e) {}
+                                        try { console.log('[ROOM_UPDATE] (addIncomingMessage) room', roomIdToFind, 'after msgs:', (updatedRoom.messages || []).length, 'incoming id:', payload.id); } catch (e) {}
+                                        resultArr = [updatedRoom, ...others];
                                     }
-                                    const room = { ...(copy[idx] || {}) };
-                                    const msgs = Array.isArray(room.messages) ? room.messages.slice() : [];
-                                    if (!msgs.some(m => String(m.id) === String(payload.id))) msgs.push(payload);
-                                    room.messages = msgs;
-                                    room.lastMessage = payload.text || room.lastMessage;
-                                    room.last_activity = payload.timestamp || room.last_activity;
-                                    copy[idx] = room;
-                                    return copy;
+
+                                    // Ensure rooms list is sorted by most-recent activity (descending)
+                                    try {
+                                        resultArr = resultArr.slice().sort((a, b) => {
+                                            const ta = new Date(a.last_activity || (a.messages && a.messages.length ? a.messages[a.messages.length - 1].timestamp : 0)).getTime() || 0;
+                                            const tb = new Date(b.last_activity || (b.messages && b.messages.length ? b.messages[b.messages.length - 1].timestamp : 0)).getTime() || 0;
+                                            return tb - ta;
+                                        });
+                                    } catch (e) {}
+
+                                    return resultArr;
                                 } catch (e) { return prev; }
                             });
                         }
@@ -169,6 +231,8 @@ export default function useChatSocket({
                                 }
                                 if (!mutated) return prev;
                                 room.messages = msgs;
+                                // clear unread flag when user views/marks read
+                                try { room.unread = false; } catch (e) {}
                                 copy[idx] = room;
                                 return copy;
                             } catch (e) { return prev; }
@@ -179,7 +243,19 @@ export default function useChatSocket({
                 if (typeof window !== 'undefined' && window._agrovet_chat_service && typeof window._agrovet_chat_service.send === 'function') {
                     try {
                         window._agrovet_chat_service.send({ type: 'mark_read', room: activeId });
-                        console.log('[READ] 🔹 Enviando mark_read para room', activeId);
+                        console.log('[READ] 🔹 Enviando mark_read (WS) para room', activeId);
+                        // Also attempt an HTTP fallback to ensure server persists the read
+                        try {
+                            const tokenRaw = localStorage.getItem('token');
+                            const token = tokenRaw ? tokenRaw.replace(/^Token\s*/i, '').replace(/^Bearer\s*/i, '') : null;
+                            if (token) {
+                                // lazy import of chatAPI to avoid circular imports
+                                const { chatAPI } = require('../../../services/endpoints/chat');
+                                chatAPI.markRead(activeId)({ token }).catch((err) => {
+                                    try { console.warn('[READ] HTTP markRead fallback failed', err); } catch (e) {}
+                                });
+                            }
+                        } catch (e) { console.warn('[READ] HTTP fallback failed to start', e); }
                     } catch (e) {
                         console.warn('[READ] failed sending mark_read', e);
                     }

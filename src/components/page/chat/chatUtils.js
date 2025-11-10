@@ -338,3 +338,96 @@ export function findOptimisticIndex(msgs, serverMsg) {
     return -1;
   } catch (e) { return -1; }
 }
+
+// Deduplicate messages by a stable key (id, client_msg_id, uid, fallback)
+// When duplicates are found, merge their fields so updates (message_update)
+// are preserved instead of discarding the newer payload.
+export function dedupeMessages(messages) {
+  try {
+    // shallow recursive deep-equal (sufficient for message objects)
+    const deepEqual = (a, b) => {
+      if (a === b) return true;
+      if (a == null || b == null) return a === b;
+      if (typeof a !== typeof b) return false;
+      if (Array.isArray(a) && Array.isArray(b)) {
+        if (a.length !== b.length) return false;
+        for (let i = 0; i < a.length; i++) if (!deepEqual(a[i], b[i])) return false;
+        return true;
+      }
+      if (a instanceof Date && b instanceof Date) return a.getTime() === b.getTime();
+      if (typeof a === 'object' && typeof b === 'object') {
+        const ak = Object.keys(a).sort();
+        const bk = Object.keys(b).sort();
+        if (ak.length !== bk.length) return false;
+        for (let i = 0; i < ak.length; i++) {
+          if (ak[i] !== bk[i]) return false;
+          if (!deepEqual(a[ak[i]], b[bk[i]])) return false;
+        }
+        return true;
+      }
+      return String(a) === String(b);
+    };
+
+    const map = new Map();
+    for (let i = 0; i < (messages || []).length; i++) {
+      const msg = messages[i] || {};
+      const hasId = msg && (msg.id || msg.message_id);
+      const clientId = msg && (msg.client_msg_id || msg.clientId || null);
+      const uid = msg && msg.uid;
+      const fallbackKey = `${msg.timestamp || ''}_${i}`;
+      const key = hasId ? `id:${String(msg.id || msg.message_id)}` : (clientId ? `client:${String(clientId)}` : (uid ? `uid:${String(uid)}` : `fallback:${fallbackKey}`));
+
+      if (!map.has(key)) {
+        map.set(key, { ...(msg || {}) });
+        continue;
+      }
+
+      const existing = map.get(key) || {};
+      const equal = deepEqual(existing, msg);
+      if (equal) {
+        // no change, keep existing reference
+        continue;
+      }
+
+      // Changes detected — merge fields, prefer incoming but preserve existing media_spectrum when incoming lacks it
+      const merged = { ...existing, ...(msg || {}) };
+      try {
+        if ((merged.media_spectrum === null || merged.media_spectrum === undefined) && Array.isArray(existing.media_spectrum) && existing.media_spectrum.length) {
+          merged.media_spectrum = existing.media_spectrum;
+        }
+      } catch (e) {}
+      map.set(key, merged);
+    }
+    return Array.from(map.values());
+  } catch (e) {
+    try { console.error('[dedupeMessages] error', e); } catch (ee) {}
+    return messages || [];
+  }
+}
+
+  // Create a minimal room object from an incoming message.
+  export function createRoomFromMessage(roomId, msg, currentUserId) {
+    try {
+      return {
+        id: String(roomId),
+        name: 'Chat ' + String(roomId),
+        avatar: '',
+        participants: [],
+        messages: [msg],
+        lastMessage: (msg && (msg.text || msg.message || '')) || '',
+        last_activity: (msg && (msg.timestamp || new Date().toISOString())) || new Date().toISOString(),
+        unread: currentUserId ? String(msg && msg.sender_id) !== String(currentUserId) : true,
+      };
+    } catch (e) {
+      return {
+        id: String(roomId),
+        name: 'Chat ' + String(roomId),
+        avatar: '',
+        participants: [],
+        messages: [msg],
+        lastMessage: (msg && (msg.text || msg.message || '')) || '',
+        last_activity: (msg && (msg.timestamp || new Date().toISOString())) || new Date().toISOString(),
+        unread: true,
+      };
+    }
+  }

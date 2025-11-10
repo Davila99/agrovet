@@ -13,14 +13,8 @@ const MessageStatusTicks = ({ message = null, receipts = [], timestamp, isOwnMes
 
   // If not our message we already returned above.
   // For group chats use aggregate logic (all delivered / all read).
-  try {
-    // Provide message id in logs when available to make tracing easier
-    if (message && message.id) console.debug('[TickRender] message', message.id, sourceReceipts);
-    else console.debug('[TickRender] receipts', sourceReceipts);
-  } catch (e) {}
-
+  // If there are no receipts, render a single grey tick (sent)
   if (!sourceReceipts || !sourceReceipts.length) {
-    console.debug('[TickRender] No receipts -> sent only');
     return <span style={{ color: '#999', marginLeft: 6 }}>✓</span>;
   }
 
@@ -28,7 +22,7 @@ const MessageStatusTicks = ({ message = null, receipts = [], timestamp, isOwnMes
   if (Array.isArray(sourceReceipts) && sourceReceipts.length > 1) {
     const allDelivered = sourceReceipts.every(r => !!r.delivered);
     const allRead = sourceReceipts.every(r => !!r.read);
-    console.debug('[TickRender] aggregate', { allDelivered, allRead, receipts: sourceReceipts });
+  // aggregate receipts for group chats
     if (allRead) return <span style={{ color: '#2196F3', marginLeft: 6 }}>✓✓</span>;
     if (allDelivered) return <span style={{ color: '#555', marginLeft: 6 }}>✓✓</span>;
     return <span style={{ color: '#999', marginLeft: 6 }}>✓</span>;
@@ -38,7 +32,6 @@ const MessageStatusTicks = ({ message = null, receipts = [], timestamp, isOwnMes
   const receipt = Array.isArray(sourceReceipts) && sourceReceipts.length ? sourceReceipts[0] : null;
   const isDelivered = Boolean(receipt && receipt.delivered);
   const isRead = Boolean(receipt && receipt.read);
-  console.debug('[TickRender] single', { receipt, isDelivered, isRead });
   if (isRead) return <span style={{ color: '#2196F3', marginLeft: 6 }}>✓✓</span>;
   if (isDelivered) return <span style={{ color: '#555', marginLeft: 6 }}>✓✓</span>;
   return <span style={{ color: '#999', marginLeft: 6 }}>✓</span>;
