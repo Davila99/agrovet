@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Box, useMediaQuery } from "@mui/material";
 import {
   ChatList,
@@ -7,7 +7,6 @@ import {
   ChatInput,
   useChatRooms,
   useChatSocket,
-  mergeRooms,
 } from "./chat/index.js";
 import AttachmentPreview from "./chat/AttachmentPreview";
 import useChatController from "./chat/useChatController";
@@ -15,6 +14,8 @@ import useChatController from "./chat/useChatController";
 export default function Chat() {
   const isMd = useMediaQuery("(min-width:900px)");
   const [activeId, setActiveId] = useState(null);
+  // Shared rooms state to pass to hooks (useChatRooms, useChatSocket, controllers)
+  const [rooms, setRooms] = useState([]);
   const [viewMode, setViewMode] = useState("chats");
   const messagesEndRef = useRef(null);
 
@@ -35,8 +36,24 @@ export default function Chat() {
     }
   };
 
-  // Rooms hook: returns rooms and helper to open/create 1:1
-  const { rooms, setRooms, openOneToOne } = useChatRooms(mergeRooms, activeId);
+  // Debug: print rooms state whenever it changes to trace propagation
+  useEffect(() => {
+    try {
+      console.log('[DEBUG] Estado actual de rooms:', (rooms || []).length, 'activeId:', activeId);
+      (rooms || []).forEach((room) => {
+        try {
+          console.log(`[DEBUG] Room ${room.id}:`, {
+            messages: (room.messages && room.messages.length) || 0,
+            lastMessage: room.lastMessage,
+            unread: room.unread,
+          });
+        } catch (e) {}
+      });
+    } catch (e) {}
+  }, [rooms, activeId]);
+
+  // Rooms hook: returns helper to open/create 1:1 and uses shared state
+  const { openOneToOne } = useChatRooms(activeId, [rooms, setRooms]);
 
   // NOTE: useMemo removed intentionally for debugging: ensure activeConv
   // is recalculated whenever `rooms` or `activeId` change. If this fixes
@@ -69,7 +86,6 @@ export default function Chat() {
   const goBackToList = () => setActiveId(null);
 
   return (
-     console.log("👍👍👍👍👍👍👍👍👍👍se abre en chats"),
     <Box sx={{ display: "flex", height: "100%" }}>
       {(!activeId || isMd) && (
         <ChatList

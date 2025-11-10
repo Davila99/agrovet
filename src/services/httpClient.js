@@ -82,6 +82,13 @@ const BASE_URL = "http://127.0.0.1:8000/api";
             window.dispatchEvent(new CustomEvent('agrovet:service-down'));
           } catch (e) {}
         }
+        // Extra diagnostic for auth login 401 to help debug specialist login issues
+        if (res.status === 401 && String(url).includes('/auth/login')) {
+          try {
+            console.error('[httpClient][AUTH] 401 on login endpoint', { endpoint: url, requestBody: rest && rest.body, responseBody: data });
+          } catch (e) {}
+        }
+
         const err = new Error(message);
         err.status = res.status;
         // Attach parsed response body for callers to inspect serializer errors

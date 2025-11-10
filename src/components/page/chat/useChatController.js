@@ -16,7 +16,28 @@ export default function useChatController({ activeId, setRooms, getCurrentUserId
     const tempId = 'tmp_' + Date.now();
     const clientMsgId = `cid_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
     const msg = { id: tempId, text, client_msg_id: clientMsgId, fromMe: true, timestamp: new Date().toISOString(), uid: `tmp_${tempId}-${new Date().toISOString()}`, sender_id: getCurrentUserId() };
+    try { console.log('[SEND] ➤ button pressed', { activeId: String(activeId), tempId, shortText: String(text).slice(0,120) }); } catch (e) {}
     setRooms((prev) => prev.map((r) => String(r.id) === String(activeId) ? { ...r, messages: [...(r.messages || []), msg] } : r));
+    // Log counts before/after optimistic insert inside a controlled updater to capture previous state
+    try {
+      setRooms((prev) => {
+        try {
+          const copy = prev.slice();
+          const idx = copy.findIndex((r) => String(r.id) === String(activeId));
+          if (idx === -1) return prev;
+          const room = { ...(copy[idx] || {}) };
+          const prevMsgsLen = Array.isArray(room.messages) ? room.messages.length : 0;
+          const msgs = Array.isArray(room.messages) ? room.messages.slice() : [];
+          msgs.push(msg);
+          const newMsgsLen = msgs.length;
+          room.messages = msgs;
+          copy[idx] = room;
+          try { console.log('[SEND] Antes/Despues (optimistic) room=', activeId, 'msgs:', prevMsgsLen, '->', newMsgsLen, 'tempId=', tempId); } catch(e){}
+          try { console.log('[TRAY] ✅ Ya aparezco en bandeja de msj', { room: String(activeId), msgId: tempId }); } catch(e){}
+          return copy;
+        } catch (e) { return prev; }
+      });
+    } catch (e) {}
     try { playSendSound(); } catch (e) {}
     setText('');
     setSendingText(true);
@@ -34,11 +55,14 @@ export default function useChatController({ activeId, setRooms, getCurrentUserId
               if (idx === -1) return prev;
               const room = { ...(copy[idx] || {}) };
               const msgs = Array.isArray(room.messages) ? room.messages.slice() : [];
+              const prevLen = msgs.length;
               const already = msgs.some((m) => String(m.id) === String(serverMsg.id));
               const tempIdx = msgs.findIndex((m) => String(m.id) === String(tempId));
               if (already) {
                 if (tempIdx !== -1) msgs.splice(tempIdx, 1);
               } else if (tempIdx !== -1) msgs[tempIdx] = serverMsg; else msgs.push(serverMsg);
+              const newLen = msgs.length;
+              try { console.log('[SEND] Server ack reconciled. room=', activeId, 'prevMsgs=', prevLen, '-> newMsgs=', newLen, 'tempId=', tempId, 'serverId=', serverMsg.id); } catch (e) {}
               room.messages = msgs;
               room.lastMessage = serverMsg.text || room.lastMessage;
               room.last_activity = serverMsg.timestamp || room.last_activity;

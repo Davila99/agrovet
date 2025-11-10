@@ -407,3 +407,30 @@ export function dedupeMessages(messages) {
     return messages || [];
   }
 }
+
+  // Create a minimal room object from an incoming message.
+  export function createRoomFromMessage(roomId, msg, currentUserId) {
+    try {
+      return {
+        id: String(roomId),
+        name: 'Chat ' + String(roomId),
+        avatar: '',
+        participants: [],
+        messages: [msg],
+        lastMessage: (msg && (msg.text || msg.message || '')) || '',
+        last_activity: (msg && (msg.timestamp || new Date().toISOString())) || new Date().toISOString(),
+        unread: currentUserId ? String(msg && msg.sender_id) !== String(currentUserId) : true,
+      };
+    } catch (e) {
+      return {
+        id: String(roomId),
+        name: 'Chat ' + String(roomId),
+        avatar: '',
+        participants: [],
+        messages: [msg],
+        lastMessage: (msg && (msg.text || msg.message || '')) || '',
+        last_activity: (msg && (msg.timestamp || new Date().toISOString())) || new Date().toISOString(),
+        unread: true,
+      };
+    }
+  }

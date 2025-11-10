@@ -45,7 +45,11 @@ export const chatAPI = {
   getLastMessages:
     (room, limit = 50) =>
     ({ token } = {}) => {
-      // debug logs removed
+      // Defensive: if room is missing or literally the string 'null'/'undefined', fail fast
+      if (room === null || room === undefined || String(room).toLowerCase() === 'null' || String(room).toLowerCase() === 'undefined' || String(room).trim() === '') {
+        return Promise.reject(new Error("Invalid 'room' parameter"));
+      }
+
       return httpClient(
         `/chat/messages/last_messages/?room=${encodeURIComponent(room)}&limit=${encodeURIComponent(limit)}`,
         {
@@ -86,6 +90,11 @@ export function chatServiceFactory() {
 
   const connect = (room, token, handlers = {}) => {
     try {
+      // Defensive: do not attempt to connect to a 'null' or invalid room id
+      if (room === null || room === undefined || String(room).toLowerCase() === 'null' || String(room).toLowerCase() === 'undefined' || String(room).trim() === '') {
+        try { console.warn('[SOCKET] 🚫 connect called with invalid room, aborting:', room); } catch (e) {}
+        return;
+      }
       const base = resolveWsBase();
       const proto = base && String(base).startsWith("https") ? "wss" : "ws";
       const host = base ? new URL(base).host : `${location.hostname}:${location.port || 80}`;

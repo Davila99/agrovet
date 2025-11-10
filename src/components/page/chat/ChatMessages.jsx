@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Box, Typography } from '@mui/material';
 import MessageItem from './components/MessageItem';
 import { formatTimestamp, dedupeMessages } from './chatUtils';
@@ -6,15 +6,33 @@ import { formatTimestamp, dedupeMessages } from './chatUtils';
 export default function ChatMessages({ activeConv, activeId, messagesEndRef, getCurrentUserId }) {
   const userId = getCurrentUserId();
 
-  // Debug: log renders and message counts to trace why UI may not update
-  try { console.log('[CHAT_MESSAGES] render, activeConv.id=', activeConv && activeConv.id, 'messages.length=', (activeConv && activeConv.messages && activeConv.messages.length) || 0); } catch (e) {}
+  // Debug: (removed verbose render log)
 
+  // Build deduped, chronological messages array once per activeConv
+  const msgs = useMemo(() => {
+    const raw = (activeConv?.messages || []).slice();
+    // Dedupe first (preserve the first-seen ordering), then ensure chronological
+    try {
+      const deduped = dedupeMessages(raw || []);
+      deduped.sort((a, b) => new Date(a.timestamp || 0) - new Date(b.timestamp || 0));
+      return deduped;
+    } catch (e) {
+      try {
+        raw.sort((a, b) => new Date(a.timestamp || 0) - new Date(b.timestamp || 0));
+      } catch (ee) {}
+      return raw || [];
+    }
+  }, [activeConv]);
+
+  // Scroll to bottom when messages change
   useEffect(() => {
-    setTimeout(() => {
+    const t = setTimeout(() => {
       try { messagesEndRef.current?.scrollIntoView({ behavior: 'auto', block: 'end' }); } catch (e) {}
     }, 50);
-  }, [activeConv?.messages?.length]);
+    return () => clearTimeout(t);
+  }, [msgs.length]);
 
+  // Send mark_read when user opens a conversation
   useEffect(() => {
     try {
       if (!activeId) return;
@@ -32,11 +50,7 @@ export default function ChatMessages({ activeConv, activeId, messagesEndRef, get
     );
   }
 
-  const raw = (activeConv?.messages || []).slice().sort((a, b) => new Date(a.timestamp || 0) - new Date(b.timestamp || 0));
-
-  // Use shared dedupe helper which merges updates instead of discarding
-  const msgs = dedupeMessages(raw || []);
-  try { console.log('[CHAT_MESSAGES] raw length:', raw.length, 'after dedupe msgs length:', msgs.length); } catch (e) {}
+  // quiet: removed post-dedupe length log
 
   return (
     <Box id="chat-messages-container" sx={{ flex: 1, overflowY: 'auto', p: 2, backgroundColor: '#f6fff8', backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'><g fill='%2339FF14' fill-opacity='0.06'><circle cx='20' cy='30' r='8'/><circle cx='34' cy='18' r='6'/><circle cx='12' cy='18' r='6'/><circle cx='58' cy='30' r='8'/><circle cx='72' cy='18' r='6'/><circle cx='50' cy='18' r='6'/></g></svg>")`, backgroundRepeat: 'repeat', backgroundSize: '160px 160px' }}>

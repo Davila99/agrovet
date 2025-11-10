@@ -46,7 +46,7 @@ export default function ChatList({
         flexDirection: "column",
       }}
     >
-  {typeof window !== 'undefined' && (() => { try { console.log('[CHAT_LIST] render rooms=', Array.isArray(rooms) ? rooms.length : 'unknown'); } catch(e){} return null; })()}
+  {/* CHAT_LIST render log removed */}
   <Box sx={{ p: 2 }}>
         <Typography variant="h6">Chats</Typography>
         <Typography variant="caption" color="text.secondary">

@@ -20,10 +20,11 @@ export default function useChatSocket({
     // useChatWebSocket inside its own effect; we only provide the connect function.
     useChatWebSocket((svc) => {
         try {
-            if (!activeId) return;
+            // Connect the websocket even if no chat is actively opened so
+            // the client receives incoming messages for other rooms (chat list updates).
+            // createOnMessageHandler will receive `activeId` (possibly null) and
+            // route updates appropriately.
             if (String(activeId) === "bot-chat") return;
-
-            // debug connecting log removed
 
             try {
                 svc.connect(activeId, token, {
@@ -82,7 +83,25 @@ export default function useChatSocket({
                         }
 
                         if (ev.type === 'addIncomingMessage' && ev.message) {
-                            const payload = ev.message;
+                            let payload = ev.message || {};
+                            // Normalize timestamp: ensure there's a valid ISO timestamp
+                            try {
+                                if (!payload.timestamp) payload.timestamp = new Date().toISOString();
+                                else {
+                                    const parsed = new Date(payload.timestamp);
+                                    if (Number.isNaN(parsed.getTime())) payload.timestamp = new Date().toISOString();
+                                }
+                            } catch (e) { payload.timestamp = new Date().toISOString(); }
+                            // Ensure messages from me appear as newest immediately
+                            try {
+                                const me = typeof getCurrentUserId === 'function' ? getCurrentUserId() : (Number(localStorage.getItem('userId')) || null);
+                                const maybeFromMe = Boolean(payload && (payload.from_me || payload.fromMe)) || (payload && payload.sender_id && me && String(payload.sender_id) === String(me));
+                                if (maybeFromMe) payload.timestamp = new Date().toISOString();
+                            } catch (e) {}
+                            // Ensure stable uid exists for dedupe and rendering
+                            try {
+                                if (!payload.uid) payload.uid = `${payload.id || payload.message_id || 'tmp'}-${payload.timestamp}-${Math.random().toString(36).slice(2,8)}`;
+                            } catch (e) {}
                             const roomHint = payload && (payload.room || payload.room_id || payload.roomId) || null;
                             setRooms((prev) => {
                                 try {
@@ -101,7 +120,10 @@ export default function useChatSocket({
                                     const mapped = prev.map((r) => {
                                         if (String(r.id) !== String(roomIdToFind)) return r;
                                         const msgs = Array.isArray(r.messages) ? r.messages.slice() : [];
-                                        const newMsgs = dedupeMessages([...msgs, payload]);
+                                            let newMsgs = dedupeMessages([...msgs, payload]);
+                                            // Normalize timestamps to avoid string ordering issues
+                                            try { newMsgs = newMsgs.map(m => ({ ...m, timestamp: (m && m.timestamp) || new Date().toISOString() })); } catch (e) {}
+                                            try { newMsgs.sort((a, b) => new Date(a.timestamp || 0) - new Date(b.timestamp || 0)); } catch (e) {}
                                         return {
                                             ...r,
                                             messages: newMsgs,
@@ -113,27 +135,39 @@ export default function useChatSocket({
 
                                     // If room wasn't present, create it and put on top
                                     const exists = mapped.some((r) => String(r.id) === String(roomIdToFind));
+                                    let resultArr;
                                     if (!exists) {
                                         const newRoom = {
                                             id: String(roomIdToFind),
                                             name: 'Chat ' + String(roomIdToFind),
                                             avatar: '',
                                             participants: [],
-                                            messages: dedupeMessages([payload]),
+                                            messages: (function(){ const m = dedupeMessages([payload]); try{ m.sort((a,b)=> new Date(a.timestamp||0) - new Date(b.timestamp||0)); }catch(e){} return m; })(),
                                             lastMessage: payload.text || '',
                                             last_activity: payload.timestamp || new Date().toISOString(),
                                             unread: !fromMe,
                                         };
                                         try { console.log('[ROOM_UPDATE] (addIncomingMessage) created newRoom', roomIdToFind, 'messages before: 0 after: 1', payload.id); } catch (e) {}
-                                        return [newRoom, ...prev];
+                                        resultArr = [newRoom, ...prev];
+                                    } else {
+                                        // Move updated room to the top preserving order for others
+                                        const updatedRoom = mapped.find((r) => String(r.id) === String(roomIdToFind));
+                                        const others = mapped.filter((r) => String(r.id) !== String(roomIdToFind));
+                                        try { console.log('[ROOM_UPDATE] (addIncomingMessage) room', roomIdToFind, 'before msgs:', (prev.find(p => String(p.id) === String(roomIdToFind))?.messages || []).length, 'incoming id:', payload.id); } catch (e) {}
+                                        try { console.log('[ROOM_UPDATE] (addIncomingMessage) room', roomIdToFind, 'after msgs:', (updatedRoom.messages || []).length, 'incoming id:', payload.id); } catch (e) {}
+                                        resultArr = [updatedRoom, ...others];
                                     }
 
-                                    // Move updated room to the top preserving order for others
-                                    const updatedRoom = mapped.find((r) => String(r.id) === String(roomIdToFind));
-                                    const others = mapped.filter((r) => String(r.id) !== String(roomIdToFind));
-                                    try { console.log('[ROOM_UPDATE] (addIncomingMessage) room', roomIdToFind, 'before msgs:', (prev.find(p => String(p.id) === String(roomIdToFind))?.messages || []).length, 'incoming id:', payload.id); } catch (e) {}
-                                    try { console.log('[ROOM_UPDATE] (addIncomingMessage) room', roomIdToFind, 'after msgs:', (updatedRoom.messages || []).length, 'incoming id:', payload.id); } catch (e) {}
-                                    return [updatedRoom, ...others];
+                                    // Ensure rooms list is sorted by most-recent activity (descending)
+                                    try {
+                                        resultArr = resultArr.slice().sort((a, b) => {
+                                            const ta = new Date(a.last_activity || (a.messages && a.messages.length ? a.messages[a.messages.length - 1].timestamp : 0)).getTime() || 0;
+                                            const tb = new Date(b.last_activity || (b.messages && b.messages.length ? b.messages[b.messages.length - 1].timestamp : 0)).getTime() || 0;
+                                            return tb - ta;
+                                        });
+                                    } catch (e) {}
+
+                                    return resultArr;
                                 } catch (e) { return prev; }
                             });
                         }

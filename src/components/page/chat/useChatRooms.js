@@ -1,10 +1,49 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { chatAPI } from "../../../services/endpoints";
-import { normalizeStoredToken } from "./chatUtils";
+import { normalizeStoredToken, dedupeMessages } from "./chatUtils";
 
-export default function useChatRooms(mergeRooms, activeId) {
-  const [rooms, setRooms] = useState([]);
+export default function useChatRooms(activeId, externalSetRooms = null) {
+  // If an external [rooms, setRooms] pair is provided, use it; otherwise
+  // create internal state and setters.
+  const [internalRooms, internalSetRooms] = useState([]);
+  const rooms = externalSetRooms ? externalSetRooms[0] : internalRooms;
+  const setRooms = externalSetRooms ? externalSetRooms[1] : internalSetRooms;
   const creatingRoomRef = useRef(new Set());
+
+  // Define mergeRooms locally to ensure consistent merging & dedupe behavior
+  const mergeRooms = useCallback((prevRooms, newRooms) => {
+    const merged = [...(prevRooms || [])];
+
+    (newRooms || []).forEach((newRoom) => {
+      if (!newRoom || !newRoom.id) return;
+
+      const existingIndex = merged.findIndex(
+        (r) => String(r.id) === String(newRoom.id)
+      );
+
+      if (existingIndex === -1) {
+        // new room, add to the start
+        merged.unshift(newRoom);
+      } else {
+        const existing = merged[existingIndex] || {};
+        const mergedMessages = dedupeMessages([
+          ...(existing.messages || []),
+          ...(newRoom.messages || []),
+        ]);
+
+        merged[existingIndex] = {
+          ...existing,
+          ...newRoom,
+          messages: mergedMessages,
+          lastMessage: newRoom.lastMessage || existing.lastMessage,
+          last_activity: newRoom.last_activity || existing.last_activity,
+          unread: newRoom.unread !== undefined ? newRoom.unread : existing.unread,
+        };
+      }
+    });
+
+    return merged;
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -85,7 +124,8 @@ export default function useChatRooms(mergeRooms, activeId) {
   useEffect(() => {
     let mounted = true;
     const load = async () => {
-      if (!activeId) return;
+      // Treat literal strings 'null' and 'undefined' as missing activeId
+      if (!activeId || String(activeId).toLowerCase() === 'null' || String(activeId).toLowerCase() === 'undefined') return;
       const token = normalizeStoredToken(localStorage.getItem("token"));
       try {
         const data = await chatAPI.getLastMessages(activeId, 100)({ token });

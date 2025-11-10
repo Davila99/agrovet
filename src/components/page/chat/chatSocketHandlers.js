@@ -1,7 +1,7 @@
 // Factory that returns an onMessage handler for the chat websocket.
 // The handler mirrors the previous inline implementation but is extracted
 // so the main hook file stays small and imports this logic.
-import { deriveStatusFromReceipts, upsertReceipt, findOptimisticIndex } from './chatUtils';
+import { deriveStatusFromReceipts, upsertReceipt, findOptimisticIndex, createRoomFromMessage } from './chatUtils';
 
 export function createOnMessageHandler({
   activeId,
@@ -11,11 +11,11 @@ export function createOnMessageHandler({
   getCurrentUserId,
   playNotifySound,
 }) {
-  return function onMessage(ev) {
+    return function onMessage(ev) {
     console.log("[WS][DEBUG] Mensaje recibido en cliente", {
       userId: getCurrentUserId && getCurrentUserId(),
       activeId,
-      data: event.data,
+      data: ev && ev.data,
     });
     try {
       let d = null;
@@ -314,6 +314,13 @@ export function createOnMessageHandler({
         } catch (e) {}
 
         // raw WS payload debug removed
+        // If we already have a global debug store that will add incoming
+        // messages and notify subscribers, avoid duplicating work here.
+        if (typeof window !== 'undefined' && window._agrovet_chat_store && typeof window._agrovet_chat_store.addIncomingMessage === 'function') {
+          // Let the debug store + subscribers handle chat.message insertion
+          return;
+        }
+
         const msg = {
           id: d.message_id || d.id || "msg_" + Date.now(),
           sender_id: d.sender_id || d.sender || (d.sender && d.sender.id),
@@ -378,8 +385,20 @@ export function createOnMessageHandler({
               : String(activeId);
             const idx = prev.findIndex((r) => String(r.id) === roomIdToFind);
             if (idx === -1) {
-              // incoming room not found in state (debug removed)
-              return prev;
+              // incoming room not found in state: create a new room if this
+              // message actually came with an incomingRoom (don't create when
+              // roomIdToFind is derived from activeId fallback).
+              if (!incomingRoom) {
+                return prev;
+              }
+              try {
+                const currentUserId = typeof getCurrentUserId === 'function' ? getCurrentUserId() : null;
+                const newRoom = createRoomFromMessage(roomIdToFind, msg, currentUserId);
+                try { console.log('[CHAT_LIST] Creando nueva room automáticamente:', roomIdToFind, 'msgId=', msg && msg.id); } catch (e) {}
+                return [newRoom, ...prev];
+              } catch (e) {
+                return prev;
+              }
             }
             const copy = prev.slice();
             const room = { ...(copy[idx] || {}) };
