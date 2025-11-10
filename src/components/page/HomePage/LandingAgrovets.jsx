@@ -1,19 +1,22 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Box, Typography, Divider, Button } from "@mui/material";
+import { Box, Typography, Divider, Button, Stack } from "@mui/material";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import PersonSearchIcon from "@mui/icons-material/PersonSearch";
+import BusinessCenterIcon from "@mui/icons-material/BusinessCenter";
+import ForumIcon from "@mui/icons-material/Forum";
+import ChatIcon from "@mui/icons-material/Chat";
 import ImgOne from "../../../assets/image/img1.webp";
-import ImgThree from "../../../assets/image/img3.webp";
-import ImgFour from "../../../assets/image/img4.webp";
 
+// Animaciones base
 const fadeInUp = {
-  hidden: { opacity: 0, y: 50 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
+  hidden: { opacity: 0, y: 40 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.8, type: "spring" } },
 };
 
-// simple easing
+// Funciones de conteo y animaciones
 const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
 
-// hook de conteo
 function useCountUp(end, { start = false, duration = 1.2, decimals = 0 } = {}) {
   const [value, setValue] = useState(0);
   const rafRef = useRef(null);
@@ -21,7 +24,6 @@ function useCountUp(end, { start = false, duration = 1.2, decimals = 0 } = {}) {
 
   useEffect(() => {
     if (!start) {
-      // reset to 0 when not started (optional)
       setValue(0);
       return;
     }
@@ -37,16 +39,11 @@ function useCountUp(end, { start = false, duration = 1.2, decimals = 0 } = {}) {
       const eased = easeOutCubic(progress);
       const current = from + delta * eased;
       setValue(Number(current.toFixed(decimals)));
-
-      if (progress < 1) {
-        rafRef.current = requestAnimationFrame(tick);
-      }
+      if (progress < 1) rafRef.current = requestAnimationFrame(tick);
     }
 
     rafRef.current = requestAnimationFrame(tick);
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    };
+    return () => cancelAnimationFrame(rafRef.current);
   }, [start, end, duration, decimals]);
 
   return value;
@@ -58,11 +55,47 @@ const formatNumber = (num, decimals = 0) =>
     maximumFractionDigits: decimals,
   }).format(num);
 
-const LandingAgrovetsAnim = () => {
-  // control para iniciar conteos cuando el bloque de estadísticas entra en viewport
-  const [startStats, setStartStats] = useState(false);
+// Typewriter animado
+const TypewriterText = ({
+  text,
+  speed = 45,
+  delay = 0,
+  variant = "h4",
+  sx,
+}) => {
+  const [displayed, setDisplayed] = useState("");
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      let i = 0;
+      const interval = setInterval(() => {
+        setDisplayed(text.slice(0, i));
+        i++;
+        if (i > text.length) clearInterval(interval);
+      }, speed);
+    }, delay);
+    return () => clearTimeout(timeout);
+  }, [text, speed, delay]);
+  return (
+    <Typography
+      variant={variant}
+      sx={{ ...sx, whiteSpace: "pre-line", display: "inline-block" }}
+    >
+      {displayed}
+      <motion.span
+        animate={{ opacity: [1, 0, 1] }}
+        transition={{ repeat: Infinity, duration: 1 }}
+        style={{ display: "inline-block" }}
+      >
+        |
+      </motion.span>
+    </Typography>
+  );
+};
 
-  // valores animados
+const LandingAgrovetsAnim = () => {
+  const [startStats, setStartStats] = useState(false);
+  const navigate = useNavigate();
+
   const valExports = useCountUp(2014.6, {
     start: startStats,
     duration: 1.4,
@@ -79,15 +112,58 @@ const LandingAgrovetsAnim = () => {
     decimals: 1,
   });
 
+  const sections = [
+    {
+      key: "specialist",
+      title: "¿Eres especialista?",
+      description:
+        "Crea tu perfil profesional y ofrece tus servicios a productores.",
+      icon: <PersonSearchIcon sx={{ fontSize: 46, color: "#103E68" }} />,
+      action: () => navigate("/profile/create?role=specialist"),
+      cta: "Crear perfil",
+      color: "#103E68",
+    },
+    {
+      key: "business",
+      title: "¿Tienes un negocio?",
+      description:
+        "Registra tu empresa para llegar a más clientes y gestionar servicios.",
+      icon: <BusinessCenterIcon sx={{ fontSize: 46, color: "#35722b" }} />,
+      action: () => navigate("/profile/create?role=business"),
+      cta: "Registrar negocio",
+      color: "#35722b",
+    },
+    {
+      key: "forum",
+      title: "Comparte en el foro",
+      description: "Publica tus dudas, ideas o experiencias con la comunidad.",
+      icon: <ForumIcon sx={{ fontSize: 46, color: "#6b4fdb" }} />,
+      action: () => navigate("/forum"),
+      cta: "Ir al foro",
+      color: "#6b4fdb",
+    },
+    {
+      key: "ava",
+      title: "Consulta con AVA",
+      description:
+        "Habla con nuestro asistente virtual para obtener respuestas rápidas.",
+      icon: <ChatIcon sx={{ fontSize: 46, color: "#e07a5f" }} />,
+      action: () => navigate("/chat"),
+      cta: "Hablar con AVA",
+      color: "#e07a5f",
+    },
+  ];
+
   return (
     <Box
       sx={{
         mx: "auto",
-        px: { xs: 3, md: 2 },
-        color: "#000",
+        px: { xs: 3, md: 6 },
+        py: { xs: 6, md: 10 },
+        background: "linear-gradient(180deg, #f9fafc 0%, #ffffff 100%)",
       }}
     >
-      {/* Hero */}
+      {/* HERO */}
       <motion.div initial="hidden" animate="visible" variants={fadeInUp}>
         <Box
           sx={{
@@ -98,20 +174,23 @@ const LandingAgrovetsAnim = () => {
           }}
         >
           <Box sx={{ flex: 1 }}>
-            <Typography
+            <TypewriterText
+              text="Descubre el futuro agropecuario de Nicaragua con Agrovets"
               variant="h3"
-              fontWeight="bold"
-              sx={{ mb: 3, lineHeight: 1.2, color: "#103E68" }}
-            >
-              Descubre el futuro agropecuario de Nicaragua con{" "}
-              <Box component="span" sx={{ color: "#9EF01A" }}>
-                Agrovets
-              </Box>
-            </Typography>
+              speed={35}
+              sx={{
+                fontWeight: "bold",
+                mb: 3,
+                lineHeight: 1.2,
+                background: "linear-gradient(90deg,#103E68 0%,#35722b 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+              }}
+            />
             <Typography variant="body1" sx={{ mb: 3, lineHeight: 1.6 }}>
-              Nicaragua tiene un gran potencial en agricultura y ganadería, pero
-              se enfrenta a desafíos de salud e información que limitan su
-              crecimiento.
+              Conecta con especialistas, negocios y productores para impulsar el
+              desarrollo agropecuario. Agrovets facilita la colaboración y el
+              conocimiento compartido.
             </Typography>
             <Button
               variant="contained"
@@ -122,291 +201,204 @@ const LandingAgrovetsAnim = () => {
                 px: 5,
                 py: 1.8,
                 borderRadius: 3,
-                transition: "all 0.3s ease",
+                boxShadow: "0 4px 12px rgba(16,62,104,0.3)",
                 "&:hover": {
                   bgcolor: "#35722b",
-                  transform: "scale(1.05)",
+                  transform: "translateY(-2px)",
                 },
               }}
+              onClick={() => navigate("/chat")}
             >
               Únete ahora
             </Button>
           </Box>
+
           <Box
-            component="img"
+            component={motion.img}
             src={ImgOne}
-            alt="Camión agrícola"
+            alt="Imagen agro"
+            whileHover={{ scale: 1.03 }}
+            transition={{ type: "spring", stiffness: 100 }}
             sx={{
-              width: { xs: "100%", md: 400 },
+              width: { xs: "100%", md: 420 },
               borderRadius: 3,
               objectFit: "cover",
-              boxShadow: "0 12px 24px rgba(0,0,0,0.15)",
-              transition: "transform 0.4s ease",
-              "&:hover": {
-                transform: "scale(1.05)",
-              },
+              boxShadow: "0 12px 24px rgba(0,0,0,0.12)",
             }}
           />
         </Box>
       </motion.div>
 
-      <Divider sx={{ mb: 8 }} />
+      <Divider sx={{ my: 8 }} />
 
-      {/* Estado del sector */}
+      {/* ESTADÍSTICAS */}
       <motion.div
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true }}
         variants={fadeInUp}
+        onViewportEnter={() => setStartStats(true)}
       >
-        <Box sx={{ mb: 8 }}>
-          <Typography
-            variant="h4"
-            fontWeight="bold"
-            sx={{ mb: 2, color: "#103E68" }}
-          >
-            Situación del sector agropecuario
-          </Typography>
-          <Typography variant="body1" sx={{ mb: 3, lineHeight: 1.6 }}>
-            Nicaragua cuenta con un potencial significativo en agricultura y
-            ganadería, pero enfrenta retos de productividad y acceso a servicios
-            técnicos en tiempo real. A continuación, datos relevantes que
-            ilustran el panorama reciente:
-          </Typography>
+        <TypewriterText
+          text="Situación del sector agropecuario"
+          variant="h4"
+          speed={45}
+          sx={{ fontWeight: "bold", mb: 2, color: "#103E68" }}
+        />
+        <Typography variant="body1" sx={{ mb: 3 }}>
+          Algunos datos relevantes:
+        </Typography>
 
-          {/* Aquí activamos conteo cuando este bloque entra en viewport */}
-          <motion.div
-            onViewportEnter={() => setStartStats(true)}
-            viewport={{ once: true }}
-          >
-            <Box
-              sx={{
-                display: "flex",
-                flexDirection: { xs: "column", sm: "row" },
-                gap: 2,
-                mb: 3,
-              }}
-            >
-              <Box
-                sx={{
-                  flex: 1,
-                  bgcolor: "#F6FBF2",
-                  borderRadius: 2,
-                  p: 2,
-                  boxShadow: "0 6px 16px rgba(16,62,104,0.06)",
-                }}
-              >
-                <Typography
-                  variant="h5"
-                  fontWeight="bold"
-                  sx={{ color: "#103E68" }}
-                >
-                  {formatNumber(valExports, 1)}M $
-                </Typography>
-                <Typography variant="body2" sx={{ color: "#445660" }}>
-                  Valor exportaciones (1er trim. 2023)
-                </Typography>
-              </Box>
-
-              <Box
-                sx={{
-                  flex: 1,
-                  bgcolor: "#FFF9EF",
-                  borderRadius: 2,
-                  p: 2,
-                  boxShadow: "0 6px 16px rgba(53,114,43,0.06)",
-                }}
-              >
-                <Typography
-                  variant="h5"
-                  fontWeight="bold"
-                  sx={{ color: "#35722b" }}
-                >
-                  {valVariation < 0 ? "" : "+"}
-                  {formatNumber(valVariation, 1)}%
-                </Typography>
-                <Typography variant="body2" sx={{ color: "#445660" }}>
-                  Variación anual del sector
-                </Typography>
-              </Box>
-
-              <Box
-                sx={{
-                  flex: 1,
-                  bgcolor: "#F0F9FF",
-                  borderRadius: 2,
-                  p: 2,
-                  boxShadow: "0 6px 16px rgba(16,62,104,0.04)",
-                }}
-              >
-                <Typography
-                  variant="h5"
-                  fontWeight="bold"
-                  sx={{ color: "#103E68" }}
-                >
-                  {formatNumber(valParticipation, 1)}%
-                </Typography>
-                <Typography variant="body2" sx={{ color: "#445660" }}>
-                  Participación agropecuaria en exportaciones
-                </Typography>
-              </Box>
-            </Box>
-          </motion.div>
-
-          <Box
-            component="img"
-            src={ImgThree}
-            alt="Campos agrícolas de Nicaragua"
-            sx={{
-              width: "100%",
-              height: { xs: 200, md: 260 },
-              borderRadius: 3,
-              objectFit: "cover",
-              boxShadow: "0 8px 20px rgba(0,0,0,0.12)",
-              transition: "transform 0.4s ease",
-              "&:hover": { transform: "scale(1.03)" },
-            }}
-          />
-        </Box>
-      </motion.div>
-
-      <Divider sx={{ mb: 8 }} />
-
-      {/* Información sobre AVA */}
-      <motion.div
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true }}
-        variants={fadeInUp}
-      >
-        <Box sx={{ mb: 8 }}>
-          <Typography
-            variant="h4"
-            fontWeight="bold"
-            sx={{ mb: 2, color: "#103E68" }}
-          >
-            AVA (Agro Virtual Assistant)
-          </Typography>
-
-          <Typography variant="body1" sx={{ mb: 2, lineHeight: 1.6 }}>
-            AVA es una herramienta diseñada para reducir la brecha de acceso a
-            asesoría técnica en campo. Su objetivo es facilitar decisiones
-            rápidas y basadas en conocimiento, mejorando salud animal y
-            rendimiento de cultivos.
-          </Typography>
-
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="body2" sx={{ mb: 1 }}>
-              • Conecta a productores con veterinarios y agrónomos en tiempo
-              real.
-            </Typography>
-            <Typography variant="body2" sx={{ mb: 1 }}>
-              • Ofrece guías prácticas, diagnóstico inicial y seguimiento
-              integrado.
-            </Typography>
-            <Typography variant="body2">
-              • Permite priorizar intervenciones, reducir pérdidas y optimizar
-              recursos.
-            </Typography>
-          </Box>
-
-          <Box
-            sx={{
-              display: "flex",
-              gap: 2,
-              flexDirection: { xs: "column", sm: "row" },
-            }}
-          >
-            <Button
-              variant="contained"
-              sx={{
-                bgcolor: "#103E68",
-                color: "#fff",
-                fontWeight: "bold",
-                px: 4,
-                py: 1.6,
-                borderRadius: 3,
-                "&:hover": { bgcolor: "#0b2a45" },
-              }}
-              aria-label="Conoce más sobre AVA"
-            >
-              Conoce AVA
-            </Button>
-
-            <Button
-              variant="outlined"
-              sx={{
-                borderColor: "#103E68",
-                color: "#103E68",
-                fontWeight: 600,
-                px: 4,
-                py: 1.6,
-                borderRadius: 3,
-                "&:hover": { backgroundColor: "#F5F8FB" },
-              }}
-              aria-label="Únete a Agrovets"
-            >
-              Únete ahora
-            </Button>
-          </Box>
-        </Box>
-      </motion.div>
-
-      <Divider sx={{ mb: 8 }} />
-
-      {/* Desafíos y solución */}
-      <motion.div
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true }}
-        variants={fadeInUp}
-      >
         <Box
           sx={{
             display: "flex",
-            flexDirection: { xs: "column", md: "row" },
-            alignItems: "center",
-            gap: 5,
-            bgcolor: "#35722b",
-            borderRadius: 4,
-            p: { xs: 3, md: 5 },
-            color: "#fff",
-            mb: 8,
+            flexDirection: { xs: "column", sm: "row" },
+            gap: 3,
           }}
         >
-          <Box
-            component="img"
-            src={ImgFour}
-            alt="Ganadería"
-            sx={{
-              width: { xs: "100%", md: "40%" },
-              height: { xs: 250, md: 320 },
-              borderRadius: 3,
-              objectFit: "cover",
-              boxShadow: "0 12px 24px rgba(0,0,0,0.3)",
-            }}
-          />
-          <Box sx={{ flex: 1, textAlign: { xs: "center", md: "left" } }}>
-            <Typography variant="h4" fontWeight="bold" sx={{ mb: 2 }}>
-              Salud de cultivos y ganado
-            </Typography>
-            <Typography variant="body1" sx={{ mb: 2, lineHeight: 1.6 }}>
-              La salud de cultivos y ganado, tanto bovino como porcino, es
-              esencial. Los productores enfrentan dificultades para acceder en
-              tiempo real a veterinarios y agrónomos.
-            </Typography>
-            <Typography variant="body1" sx={{ lineHeight: 1.6 }}>
-              Agrovets es la solución, una plataforma móvil que conecta
-              agricultores y ganaderos con expertos, optimizando la producción y
-              cuidado del sector agropecuario.
-            </Typography>
-          </Box>
+          {[
+            {
+              value: valExports,
+              label: "Valor exportaciones (1er trim. 2023)",
+              color: "#103E68",
+            },
+            {
+              value: valVariation,
+              label: "Variación anual del sector",
+              color: "#35722b",
+            },
+            {
+              value: valParticipation,
+              label: "Participación en exportaciones",
+              color: "#103E68",
+            },
+          ].map((item, i) => (
+            <Box key={i} sx={{ flex: 1 }}>
+              <Typography
+                variant="h5"
+                fontWeight="bold"
+                sx={{ color: item.color }}
+              >
+                {formatNumber(item.value, 1)}
+                {i === 0 ? "M $" : "%"}
+              </Typography>
+              <Typography variant="body2" sx={{ color: "#445660" }}>
+                {item.label}
+              </Typography>
+            </Box>
+          ))}
         </Box>
       </motion.div>
 
-      <Divider sx={{ mb: 8 }} />
+      <Divider sx={{ my: 8 }} />
 
-      {/* ChatBot moved to its own route (/chat) and removed from landing */}
+      {/* PARTICIPACIÓN (fluido, sin cards) */}
+{/* PARTICIPACIÓN — versión narrativa fluida */}
+<Box
+  sx={{
+    mt: 10,
+    py: 8,
+    px: { xs: 2, md: 6 },
+    background: "linear-gradient(180deg,#ffffff 0%,#f7faf8 100%)",
+  }}
+>
+  <Stack spacing={8}>
+    {[
+      {
+        key: "specialist",
+        text: "¿Eres especialista? En Agrovets puedes crear tu perfil profesional, conectar con productores y ofrecer tus servicios directamente.",
+        icon: <PersonSearchIcon sx={{ fontSize: 56, color: "#103E68" }} />,
+        cta: "Crear perfil profesional",
+        color: "#103E68",
+        action: () => navigate("/profile/create?role=specialist"),
+      },
+      {
+        key: "business",
+        text: "¿Tienes un negocio? Regístralo en Agrovets y llega a más clientes agropecuarios que buscan tus productos y servicios.",
+        icon: <BusinessCenterIcon sx={{ fontSize: 56, color: "#35722b" }} />,
+        cta: "Registrar mi negocio",
+        color: "#35722b",
+        action: () => navigate("/profile/create?role=business"),
+      },
+      {
+        key: "forum",
+        text: "Únete a la comunidad. Publica tus dudas, comparte experiencias o novedades del sector en nuestro foro colaborativo.",
+        icon: <ForumIcon sx={{ fontSize: 56, color: "#6b4fdb" }} />,
+        cta: "Ir al foro",
+        color: "#6b4fdb",
+        action: () => navigate("/forum"),
+      },
+      {
+        key: "ava",
+        text: "Consulta con AVA, el asistente virtual de Agrovets. Recibe orientación inmediata sobre servicios, perfiles o temas del sector.",
+        icon: <ChatIcon sx={{ fontSize: 56, color: "#e07a5f" }} />,
+        cta: "Hablar con AVA",
+        color: "#e07a5f",
+        action: () => navigate("/chat"),
+      },
+    ].map((section, idx) => (
+      <motion.div
+        key={section.key}
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ delay: idx * 0.15, duration: 0.6, type: "spring" }}
+      >
+        <Stack
+          direction={{ xs: "column", md: "row" }}
+          spacing={4}
+          alignItems="center"
+          sx={{
+            pl: { md: 4 },
+            pr: { md: 6 },
+            py: 3,
+            borderLeft: { md: `5px solid ${section.color}` },
+            borderRadius: 2,
+            transition: "all 0.3s ease",
+            "&:hover": {
+              backgroundColor: "rgba(16,62,104,0.04)",
+              transform: "translateY(-3px)",
+            },
+          }}
+        >
+          {section.icon}
+          <Box sx={{ flex: 1 }}>
+            <Typography
+              variant="h6"
+              fontWeight={700}
+              sx={{
+                color: section.color,
+                mb: 1,
+              }}
+            >
+              {section.text.split("?")[0]}?
+            </Typography>
+            <Typography variant="body1" sx={{ color: "#445660", mb: 2 }}>
+              {section.text.split("?")[1]}
+            </Typography>
+            <Button
+              variant="outlined"
+              onClick={section.action}
+              sx={{
+                color: section.color,
+                borderColor: section.color,
+                fontWeight: 600,
+                px: 3,
+                "&:hover": {
+                  bgcolor: section.color,
+                  color: "#fff",
+                },
+              }}
+            >
+              {section.cta}
+            </Button>
+          </Box>
+        </Stack>
+      </motion.div>
+    ))}
+  </Stack>
+</Box>
+
     </Box>
   );
 };

@@ -24,6 +24,7 @@ a:hover {
 
 body {
   background: #fff;
+  color: #213547; /* asegurar texto oscuro sobre fondo claro */
   margin: 0;
   min-width: 320px;
   min-height: 100vh;

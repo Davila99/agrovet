@@ -21,7 +21,6 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <Router>
-        <Navbar />
         <Routes>
           <Route path="/" element={<HomePage />} />
 

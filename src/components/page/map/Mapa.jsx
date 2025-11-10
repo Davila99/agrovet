@@ -1,24 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import {
-  Box,
-  Select,
-  MenuItem,
-  Typography,
-  Button,
-  Paper,
-  Stack,
-  Tooltip,
-  IconButton,
-} from "@mui/material";
-import MapOutlinedIcon from "@mui/icons-material/MapOutlined";
-import LayersIcon from "@mui/icons-material/Layers";
-import RefreshIcon from "@mui/icons-material/Refresh";
-import MyLocationIcon from "@mui/icons-material/MyLocation";
+import { Box, Typography, Paper, Tooltip } from "@mui/material";
 import MapIcon from "@mui/icons-material/Map";
 import { motion, AnimatePresence } from "framer-motion";
 import fetchUsers from "../../../data/users";
+import Navbar from "../navigation/nav.jsx";
 
 // 🌐 Fuentes de mapas base
 const BASE_PROVIDERS = [
@@ -339,173 +326,177 @@ const Mapa3DGratis = () => {
   };
 
   return (
-    <Box
-      sx={{
-        position: "relative",
-        width: "100%",
-        height: "100vh",
-      }}
-    >
-      <Box ref={mapContainer} sx={{ width: "100%", height: "100%" }} />
-
-      {/* 📍 Panel superior: ubicación (más transparente, estilo Google Maps) */}
-      <Paper
-        elevation={3}
+    <>
+      <Navbar />
+      <Box
         sx={{
-          position: "absolute",
-          top: 90,
-          left: 10,
-
-          p: 1,
-          borderRadius: 2,
-          bgcolor: "rgba(0,0,0,0.32)",
-          color: "white",
-          fontSize: "0.85rem",
-          backdropFilter: "blur(6px)",
-          boxShadow: "0 6px 18px rgba(0,0,0,0.18)",
-          minWidth: 160,
+          position: "relative",
+          width: "100%",
+          height: "100vh",
         }}
       >
-        <Typography variant="caption" display="block">
-          🧭 Centro: {center[1].toFixed(4)}, {center[0].toFixed(4)}
-        </Typography>
-        <Typography variant="caption" display="block">
-          🔍 Zoom: {zoom}
-        </Typography>
-        {lastClick && (
+        <Box ref={mapContainer} sx={{ width: "100%", height: "100%" }} />
+
+        {/* 📍 Panel superior: ubicación (más transparente, estilo Google Maps) */}
+        <Paper
+          elevation={3}
+          sx={{
+            position: "absolute",
+            top: 90,
+            left: 10,
+
+            p: 1,
+            borderRadius: 2,
+            bgcolor: "rgba(0,0,0,0.32)",
+            color: "white",
+            fontSize: "0.85rem",
+            backdropFilter: "blur(6px)",
+            boxShadow: "0 6px 18px rgba(0,0,0,0.18)",
+            minWidth: 160,
+          }}
+        >
           <Typography variant="caption" display="block">
-            📍 Último click: {lastClick[1].toFixed(5)},{" "}
-            {lastClick[0].toFixed(5)}
+            🧭 Centro: {center[1].toFixed(4)}, {center[0].toFixed(4)}
           </Typography>
-        )}
-      </Paper>
+          <Typography variant="caption" display="block">
+            🔍 Zoom: {zoom}
+          </Typography>
+          {lastClick && (
+            <Typography variant="caption" display="block">
+              📍 Último click: {lastClick[1].toFixed(5)},{" "}
+              {lastClick[0].toFixed(5)}
+            </Typography>
+          )}
+        </Paper>
 
-      {/* Los controles nativos se muestran ahora en bottom-right; se eliminaron los iconos flotantes duplicados */}
+        {/* Los controles nativos se muestran ahora en bottom-right; se eliminaron los iconos flotantes duplicados */}
 
-      {/* ── Panel central inferior: información de la ubicación seleccionada ── */}
-      <Paper
-        sx={{
-          position: "absolute",
-          bottom: 40,
-          left: 20,
+        {/* ── Panel central inferior: información de la ubicación seleccionada ── */}
+        <Paper
+          sx={{
+            position: "absolute",
+            bottom: 40,
+            left: 20,
 
-          bgcolor: "transparent",
-        }}
-      >
-        <Tooltip title="Cambiar tipo de mapa">
-          <Paper
-            onClick={() => setOpen(!open)}
-            elevation={5}
-            sx={{
-              p: 1,
-              width: 50,
-              height: 50,
-              borderRadius: "12px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-              bgcolor: "white",
-              transition: "all 0.2s ease",
-              "&:hover": {
-                transform: "scale(1.06)",
-                boxShadow: "0 6px 16px rgba(0,0,0,0.25)",
-              },
-            }}
-          >
-            <MapIcon sx={{ color: "#000000ff" }} />
-          </Paper>
-        </Tooltip>
-
-        {/* Panel animado con las miniaturas */}
-        <AnimatePresence>
-          {open && (
-            <motion.div
-              initial={{ opacity: 0, y: 10, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 10, scale: 0.95 }}
-              transition={{ duration: 0.25 }}
+            bgcolor: "transparent",
+          }}
+        >
+          <Tooltip title="Cambiar tipo de mapa">
+            <Paper
+              onClick={() => setOpen(!open)}
+              elevation={5}
+              sx={{
+                p: 1,
+                width: 50,
+                height: 50,
+                borderRadius: "12px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                bgcolor: "white",
+                transition: "all 0.2s ease",
+                "&:hover": {
+                  transform: "scale(1.06)",
+                  boxShadow: "0 6px 16px rgba(0,0,0,0.25)",
+                },
+              }}
             >
-              <Paper
-                elevation={8}
-                sx={{
-                  mt: 1,
-                  p: 1,
-                  borderRadius: 2,
-                  bgcolor: "white",
-                  boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
-                  backdropFilter: "blur(12px)",
-                  WebkitBackdropFilter: "blur(12px)",
-                  zIndex: 1200,
-                  display: "grid",
-                  gridTemplateColumns: "repeat(2, 1fr)",
-                  gap: 1,
-                  width: 220,
-                }}
+              <MapIcon sx={{ color: "#000000ff" }} />
+            </Paper>
+          </Tooltip>
+
+          {/* Panel animado con las miniaturas */}
+          <AnimatePresence>
+            {open && (
+              <motion.div
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                transition={{ duration: 0.25 }}
               >
-                {BASE_PROVIDERS.map((p, idx) => (
-                  <motion.div
-                    key={p.id}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.97 }}
-                    onClick={() => {
-                      setProviderIdx(idx);
-                      setOpen(false);
-                    }}
-                    style={{
-                      borderRadius: 8,
-                      overflow: "hidden",
-                      position: "relative",
-                      cursor: "pointer",
-                      boxShadow:
-                        idx === providerIdx
-                          ? "0 0 0 2px #1976d2 inset"
-                          : "0 0 0 1px rgba(0,0,0,0.15) inset",
-                      transition: "box-shadow 0.2s ease",
-                    }}
-                  >
-                    <img
-                      src={
-                        p.id.includes("esri")
-                          ? "https://ocdn.eu/pulscms-transforms/1/oH5k9kpTURBXy8wZTY1NDlmMDQzOTMwYzNlZDU5NTFhMGM0MWNmNTkwMS5qcGeSlQM1AM0DUM0B3ZMFzQFjzQGV3gACoTAFoTEA"
-                          : p.id.includes("osm")
-                          ? "https://b.thumbs.redditmedia.com/_-tFDewWnuXggz7RBtf-c9a69HtU2Bd64VLrU3jyOZo.jpg"
-                          : p.id.includes("dark")
-                          ? "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTraeOzakXtVUuTTmYjVdEU-sdbsvaPHltbT1mNc9i1u9F7ikyOk5gMc-o6_goOcTUkp48&usqp=CAU"
-                          : "https://www.shutterstock.com/image-vector/small-map-city-260nw-770438665.jpg"
-                      }
-                      alt={p.name}
-                      style={{
-                        width: "100%",
-                        height: 70,
-                        objectFit: "cover",
-                        filter: idx === providerIdx ? "none" : "grayscale(30%)",
+                <Paper
+                  elevation={8}
+                  sx={{
+                    mt: 1,
+                    p: 1,
+                    borderRadius: 2,
+                    bgcolor: "white",
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
+                    backdropFilter: "blur(12px)",
+                    WebkitBackdropFilter: "blur(12px)",
+                    zIndex: 1200,
+                    display: "grid",
+                    gridTemplateColumns: "repeat(2, 1fr)",
+                    gap: 1,
+                    width: 220,
+                  }}
+                >
+                  {BASE_PROVIDERS.map((p, idx) => (
+                    <motion.div
+                      key={p.id}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.97 }}
+                      onClick={() => {
+                        setProviderIdx(idx);
+                        setOpen(false);
                       }}
-                    />
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        position: "absolute",
-                        bottom: 4,
-                        left: 4,
-                        px: 0.6,
-                        py: 0.2,
-                        bgcolor: "rgba(0,0,0,0.55)",
-                        color: "white",
-                        borderRadius: 1,
-                        fontSize: "0.7rem",
+                      style={{
+                        borderRadius: 8,
+                        overflow: "hidden",
+                        position: "relative",
+                        cursor: "pointer",
+                        boxShadow:
+                          idx === providerIdx
+                            ? "0 0 0 2px #1976d2 inset"
+                            : "0 0 0 1px rgba(0,0,0,0.15) inset",
+                        transition: "box-shadow 0.2s ease",
                       }}
                     >
-                      {p.name}
-                    </Typography>
-                  </motion.div>
-                ))}
-              </Paper>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </Paper>
-    </Box>
+                      <img
+                        src={
+                          p.id.includes("esri")
+                            ? "https://ocdn.eu/pulscms-transforms/1/oH5k9kpTURBXy8wZTY1NDlmMDQzOTMwYzNlZDU5NTFhMGM0MWNmNTkwMS5qcGeSlQM1AM0DUM0B3ZMFzQFjzQGV3gACoTAFoTEA"
+                            : p.id.includes("osm")
+                            ? "https://b.thumbs.redditmedia.com/_-tFDewWnuXggz7RBtf-c9a69HtU2Bd64VLrU3jyOZo.jpg"
+                            : p.id.includes("dark")
+                            ? "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTraeOzakXtVUuTTmYjVdEU-sdbsvaPHltbT1mNc9i1u9F7ikyOk5gMc-o6_goOcTUkp48&usqp=CAU"
+                            : "https://www.shutterstock.com/image-vector/small-map-city-260nw-770438665.jpg"
+                        }
+                        alt={p.name}
+                        style={{
+                          width: "100%",
+                          height: 70,
+                          objectFit: "cover",
+                          filter:
+                            idx === providerIdx ? "none" : "grayscale(30%)",
+                        }}
+                      />
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          position: "absolute",
+                          bottom: 4,
+                          left: 4,
+                          px: 0.6,
+                          py: 0.2,
+                          bgcolor: "rgba(0,0,0,0.55)",
+                          color: "white",
+                          borderRadius: 1,
+                          fontSize: "0.7rem",
+                        }}
+                      >
+                        {p.name}
+                      </Typography>
+                    </motion.div>
+                  ))}
+                </Paper>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </Paper>
+      </Box>
+    </>
   );
 };
 
