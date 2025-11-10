@@ -7,6 +7,10 @@ import AudioPlayer from './AudioPlayer';
 
 // Renders a single message (text, image, video, audio) and status ticks.
 export default function MessageItem({ m, index, userId, activeConv, activeId }) {
+  try {
+    // diagnostic: log message id and whether it contains a spectrum
+    try { console.log('[MESSAGE_ITEM] render id=', m && m.id, 'media_spectrum=', Array.isArray(m && m.media_spectrum) ? m.media_spectrum.length : (m && m.media_spectrum)); } catch (e) {}
+  } catch (e) {}
   const fromMe = String(m.sender_id) === String(userId) || m.fromMe;
   const key = String(m.uid || m.id || `${m.timestamp || ''}_${index}`);
 

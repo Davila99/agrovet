@@ -38,10 +38,10 @@ export default function Chat() {
   // Rooms hook: returns rooms and helper to open/create 1:1
   const { rooms, setRooms, openOneToOne } = useChatRooms(mergeRooms, activeId);
 
-  const activeConv = useMemo(
-    () => rooms.find((c) => String(c.id) === String(activeId)) || null,
-    [rooms, activeId]
-  );
+  // NOTE: useMemo removed intentionally for debugging: ensure activeConv
+  // is recalculated whenever `rooms` or `activeId` change. If this fixes
+  // the missing render it indicates `rooms` reference was not updating.
+  const activeConv = rooms.find((c) => String(c.id) === String(activeId)) || null;
 
   // WS hook
   useChatSocket({
@@ -69,6 +69,7 @@ export default function Chat() {
   const goBackToList = () => setActiveId(null);
 
   return (
+     console.log("👍👍👍👍👍👍👍👍👍👍se abre en chats"),
     <Box sx={{ display: "flex", height: "100%" }}>
       {(!activeId || isMd) && (
         <ChatList

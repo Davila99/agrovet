@@ -33,6 +33,7 @@ export default function ChatList({
   isParticipantOnline,
 }) {
   return (
+   
     <Box
       sx={{
         width: { xs: "100%", md: 420 },
@@ -45,7 +46,8 @@ export default function ChatList({
         flexDirection: "column",
       }}
     >
-      <Box sx={{ p: 2 }}>
+  {typeof window !== 'undefined' && (() => { try { console.log('[CHAT_LIST] render rooms=', Array.isArray(rooms) ? rooms.length : 'unknown'); } catch(e){} return null; })()}
+  <Box sx={{ p: 2 }}>
         <Typography variant="h6">Chats</Typography>
         <Typography variant="caption" color="text.secondary">
           Conversaciones recientes

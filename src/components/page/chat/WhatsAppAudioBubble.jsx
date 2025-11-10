@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Box, Avatar } from '@mui/material';
-import MessageStatusTicks from './MessageStatusTicks';
 import AudioPlayButton from './AudioPlayButton';
 import AudioTime from './AudioTime';
 import Waveform from './Waveform';
@@ -157,10 +156,7 @@ export default function WhatsAppAudioBubble({
       {/* waveform + cursor */}
       <Waveform waveformData={waveformData} progress={progress} barWidth={barWidth} barGap={barGap} waveHeight={waveHeight} />
 
-      {/* timestamp and read indicator */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-        <MessageStatusTicks receipts={receipts} timestamp={timestamp} isOwnMessage={fromMe} currentUserId={currentUserId} />
-      </Box>
+      {/* timestamp and read indicator are rendered by the parent MessageItem to avoid duplication */}
     </Box>
   );
 }

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import useChatWebSocket from "../../../hooks/useChatWebSocket";
-import { normalizeStoredToken } from "./chatUtils";
+import { normalizeStoredToken, dedupeMessages } from "./chatUtils";
 import { createOnMessageHandler } from "./chatSocketHandlers";
 import { playNotifySound } from "../../../services/sound";
 
@@ -23,15 +23,11 @@ export default function useChatSocket({
             if (!activeId) return;
             if (String(activeId) === "bot-chat") return;
 
-            try {
-                console.debug('[useChatSocket] connecting', { activeId, rawTokenLength: rawStored ? String(rawStored).length : 0 });
-            } catch (e) {}
+            // debug connecting log removed
 
             try {
                 svc.connect(activeId, token, {
-                    onOpen: () => { console.debug("[Chat] WS open", { activeId }); },
                     onMessage: createOnMessageHandler({ activeId, setRooms, markUserOnline, markUserOffline, getCurrentUserId, playNotifySound }),
-                    onClose: (ev) => { try { console.debug('[Chat] WS closed', { activeId, code: ev && ev.code, reason: ev && ev.reason, wasClean: ev && ev.wasClean }); } catch(e){} },
                     onError: (e) => { try { console.error('[Chat] WS error', { activeId, errorEvent: e }); } catch(err){} },
                 });
             } catch (outer) { console.error('[useChatSocket] svc.connect threw', outer, { activeId }); }
@@ -64,13 +60,22 @@ export default function useChatSocket({
                                             const m = msgs[mi];
                                             if (!m || !m.id) continue;
                                             if (String(m.id) === mid) {
-                                                msgs[mi] = { ...m, receipts };
+                                                // Merge all incoming fields from payload into stored message
+                                                const merged = { ...m, ...(payload || {}) };
+                                                // Prefer incoming receipts when provided
+                                                if (Array.isArray(payload.receipts) && payload.receipts.length) merged.receipts = payload.receipts;
+                                                // Preserve existing media_spectrum if payload didn't include it
+                                                if ((merged.media_spectrum === null || merged.media_spectrum === undefined) && m.media_spectrum) {
+                                                    merged.media_spectrum = m.media_spectrum;
+                                                }
+                                                msgs[mi] = merged;
                                                 room.messages = msgs;
                                                 copy[ri] = room;
                                                 changed = true;
                                             }
                                         }
                                     }
+                                    try { console.log('[ROOM_UPDATE] (updateMessage) completed scan, changed=', changed); } catch (e) {}
                                     return changed ? copy : prev;
                                 } catch (e) { return prev; }
                             });
@@ -81,31 +86,54 @@ export default function useChatSocket({
                             const roomHint = payload && (payload.room || payload.room_id || payload.roomId) || null;
                             setRooms((prev) => {
                                 try {
-                                    const copy = prev.slice();
                                     const roomIdToFind = roomHint ? String(roomHint) : String(activeId);
-                                    const idx = copy.findIndex((r) => String(r.id) === roomIdToFind);
-                                    if (idx === -1) {
+
+                                    // compute if message is from me
+                                    let fromMe = Boolean(payload && (payload.from_me || payload.fromMe));
+                                    try {
+                                        const me = typeof getCurrentUserId === 'function' ? getCurrentUserId() : (Number(localStorage.getItem('userId')) || null);
+                                        if (!fromMe && payload && payload.sender_id && me) {
+                                            fromMe = String(payload.sender_id) === String(me);
+                                        }
+                                    } catch (e) {}
+
+                                    // Build a new rooms array immutably, updating only the target room
+                                    const mapped = prev.map((r) => {
+                                        if (String(r.id) !== String(roomIdToFind)) return r;
+                                        const msgs = Array.isArray(r.messages) ? r.messages.slice() : [];
+                                        const newMsgs = dedupeMessages([...msgs, payload]);
+                                        return {
+                                            ...r,
+                                            messages: newMsgs,
+                                            lastMessage: payload.text || r.lastMessage,
+                                            last_activity: payload.timestamp || r.last_activity,
+                                            unread: !!r.unread || (!fromMe),
+                                        };
+                                    });
+
+                                    // If room wasn't present, create it and put on top
+                                    const exists = mapped.some((r) => String(r.id) === String(roomIdToFind));
+                                    if (!exists) {
                                         const newRoom = {
                                             id: String(roomIdToFind),
                                             name: 'Chat ' + String(roomIdToFind),
                                             avatar: '',
                                             participants: [],
-                                            messages: [payload],
+                                            messages: dedupeMessages([payload]),
                                             lastMessage: payload.text || '',
                                             last_activity: payload.timestamp || new Date().toISOString(),
+                                            unread: !fromMe,
                                         };
-                                        const newCopy = [newRoom, ...copy];
-                                        console.debug('[useChatSocket][store] addIncomingMessage: created new room for incoming message', newRoom.id);
-                                        return newCopy;
+                                        try { console.log('[ROOM_UPDATE] (addIncomingMessage) created newRoom', roomIdToFind, 'messages before: 0 after: 1', payload.id); } catch (e) {}
+                                        return [newRoom, ...prev];
                                     }
-                                    const room = { ...(copy[idx] || {}) };
-                                    const msgs = Array.isArray(room.messages) ? room.messages.slice() : [];
-                                    if (!msgs.some(m => String(m.id) === String(payload.id))) msgs.push(payload);
-                                    room.messages = msgs;
-                                    room.lastMessage = payload.text || room.lastMessage;
-                                    room.last_activity = payload.timestamp || room.last_activity;
-                                    copy[idx] = room;
-                                    return copy;
+
+                                    // Move updated room to the top preserving order for others
+                                    const updatedRoom = mapped.find((r) => String(r.id) === String(roomIdToFind));
+                                    const others = mapped.filter((r) => String(r.id) !== String(roomIdToFind));
+                                    try { console.log('[ROOM_UPDATE] (addIncomingMessage) room', roomIdToFind, 'before msgs:', (prev.find(p => String(p.id) === String(roomIdToFind))?.messages || []).length, 'incoming id:', payload.id); } catch (e) {}
+                                    try { console.log('[ROOM_UPDATE] (addIncomingMessage) room', roomIdToFind, 'after msgs:', (updatedRoom.messages || []).length, 'incoming id:', payload.id); } catch (e) {}
+                                    return [updatedRoom, ...others];
                                 } catch (e) { return prev; }
                             });
                         }
@@ -169,6 +197,8 @@ export default function useChatSocket({
                                 }
                                 if (!mutated) return prev;
                                 room.messages = msgs;
+                                // clear unread flag when user views/marks read
+                                try { room.unread = false; } catch (e) {}
                                 copy[idx] = room;
                                 return copy;
                             } catch (e) { return prev; }
