@@ -18,7 +18,7 @@ import HomeIcon from "@mui/icons-material/Home";
 import MapIcon from "@mui/icons-material/Map";
 import InfoIcon from "@mui/icons-material/Info";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
-import SmartToyIcon from "@mui/icons-material/SmartToy";
+import { RiChatVoiceAiFill } from "react-icons/ri";
 import { Link } from "react-router-dom";
 import { menuItems, comunidadSubmenu } from "./data";
 
@@ -133,7 +133,12 @@ const MobileDrawer = ({
               <ListItemButton component={Link} to={item.path} onClick={onClose}>
                 {item.icon === "home" && <HomeIcon sx={{ mr: 1 }} />}
                 {item.icon === "map" && <MapIcon sx={{ mr: 1 }} />}
-                {item.icon === "ava" && <SmartToyIcon sx={{ mr: 1 }} />}
+                {item.icon === "ava" && (
+                  <RiChatVoiceAiFill
+                    style={{ marginRight: 8, color: "#103e68" }}
+                    size={18}
+                  />
+                )}
                 {item.icon === "chat" && (
                   <ChatBubbleOutlineIcon sx={{ mr: 1 }} />
                 )}

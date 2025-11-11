@@ -20,9 +20,9 @@ import MapIcon from "@mui/icons-material/Map";
 import InfoIcon from "@mui/icons-material/Info";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import DashboardIcon from "@mui/icons-material/Dashboard";
-import SmartToyIcon from "@mui/icons-material/SmartToy";
 import PeopleIcon from "@mui/icons-material/People";
 import BusinessIcon from "@mui/icons-material/Business";
+import { RiChatVoiceAiFill } from "react-icons/ri";
 
 import { menuItems, comunidadSubmenu } from "./data";
 
@@ -67,7 +67,10 @@ const DesktopMenu = ({
                   />
                 )}
                 {icon === "ava" && (
-                  <SmartToyIcon sx={{ marginRight: 1 }} fontSize="small" />
+                  <RiChatVoiceAiFill
+                    style={{ marginRight: 8, color: "#103e68" }}
+                    size={16}
+                  />
                 )}
                 {icon === "info" && (
                   <InfoIcon sx={{ marginRight: 1 }} fontSize="small" />
@@ -108,6 +111,12 @@ const DesktopMenu = ({
                 <ChatBubbleOutlineIcon
                   sx={{ marginRight: 1 }}
                   fontSize="small"
+                />
+              )}
+              {icon === "ava" && (
+                <RiChatVoiceAiFill
+                  style={{ marginRight: 8, color: "#103e68" }}
+                  size={16}
                 />
               )}
               {icon === "info" && (
@@ -189,7 +198,10 @@ const DesktopMenu = ({
                         to="/dashboard?tab=ava"
                       >
                         <ListItemIcon>
-                          <SmartToyIcon fontSize="small" />
+                          <RiChatVoiceAiFill
+                            style={{ marginRight: 8, color: "#103e68" }}
+                            size={16}
+                          />
                         </ListItemIcon>
                         <ListItemText
                           primary="AVA IA"
