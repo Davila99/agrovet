@@ -116,16 +116,19 @@ const EditUser = () => {
         await authAPI.updateUser(id, fd, token);
         // Si hay specialist_profile, intentar actualizarlo por user id
         if (user.specialist_profile) {
+          // use the fetched user's id (authoritative) instead of the route param
+          // this avoids 404s when the route id doesn't match the authenticated user
+          const profileUserId = Number(user.id || id);
           try {
             await profilesAPI.patchSpecialistByUser(
-              Number(id),
+              profileUserId,
               user.specialist_profile,
               token
             );
           } catch (e) {
-            // fallback a PUT si PATCH no está soportado por user id
+            // fallback to PUT if PATCH is not supported for this endpoint
             await profilesAPI.putSpecialistByUser(
-              Number(id),
+              profileUserId,
               user.specialist_profile,
               token
             );
@@ -143,15 +146,16 @@ const EditUser = () => {
         await authAPI.updateUser(id, payload, token);
         // actualizar specialist_profile por separado si existe
         if (user.specialist_profile) {
+          const profileUserId = Number(user.id || id);
           try {
             await profilesAPI.patchSpecialistByUser(
-              Number(id),
+              profileUserId,
               user.specialist_profile,
               token
             );
           } catch (e) {
             await profilesAPI.putSpecialistByUser(
-              Number(id),
+              profileUserId,
               user.specialist_profile,
               token
             );

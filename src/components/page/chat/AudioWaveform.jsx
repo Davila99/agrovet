@@ -27,7 +27,7 @@ export default function AudioWaveform({ spectrum = [], width = 120, height = 36,
       // limit output length
       const preview = scaled.slice(0, 64);
       // eslint-disable-next-line no-console
-      console.debug('[AudioWaveform] render', { bins: scaled.length, preview });
+  // audio waveform render (debug suppressed)
     }
   } catch (e) {}
 

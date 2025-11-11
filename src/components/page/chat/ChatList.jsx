@@ -17,6 +17,7 @@ import {
 import SearchIcon from "@mui/icons-material/Search";
 import SpecialistsList from "../Dashboard/SpecialistsList";
 import { resolveAvatar, cleanName } from "./chatUtils";
+import { usePresenceStore } from '../../../store/usePresenceStore';
 
 export default function ChatList({
   rooms,
@@ -32,6 +33,7 @@ export default function ChatList({
   computeLastTsForRoom,
   isParticipantOnline,
 }) {
+  const presenceUsers = usePresenceStore((s) => s.users || {});
   return (
    
     <Box
@@ -116,7 +118,31 @@ export default function ChatList({
                 (computeLastTsForRoom(a) || 0)
             )
             .map((c) => {
-              const avatarSrc = resolveAvatar(c.avatar || "");
+              // Determine display name and avatar from participants (prefer other participant in 1:1)
+              const parts = c && c.participants ? c.participants : [];
+              const me = getCurrentUserId ? getCurrentUserId() : null;
+              let other = null;
+              if (Array.isArray(parts)) {
+                for (const p of parts) {
+                  try {
+                    const pid = p && (p.id || p.user_id || p.pk) ? (p.id || p.user_id || p.pk) : p;
+                    if (pid && String(pid) !== String(me)) { other = p; break; }
+                  } catch (e) {}
+                }
+              }
+              // Fallback to room-level fields
+              const displayName = other && (other.name || other.full_name || other.username || other.display_name || other.first_name) ? (other.name || other.full_name || other.username || other.display_name || other.first_name) : (c.name || `Chat ${c.id}`);
+              const avatarRaw = (other && (other.profile_picture_url || other.avatar || other.picture || other.photo)) || c.avatar || '';
+              const avatarSrc = resolveAvatar(avatarRaw || "");
+              const otherId = other && (other.id || other.user_id || other.pk) ? (other.id || other.user_id || other.pk) : null;
+              const online = (() => {
+                try {
+                  if (typeof isParticipantOnline === 'function' && otherId) return isParticipantOnline(otherId);
+                  const st = presenceUsers && otherId ? presenceUsers[String(otherId)] : null;
+                  return st && st.isOnline;
+                } catch (e) { return false; }
+              })();
+
               return (
                 <ListItemButton
                   key={c.id}
@@ -124,24 +150,37 @@ export default function ChatList({
                   selected={String(activeId) === String(c.id)}
                 >
                   <ListItemAvatar>
-                    <Avatar src={avatarSrc} alt={c.name}>
-                      {!avatarSrc && c.name ? c.name.charAt(0) : null}
-                    </Avatar>
+                    <Box sx={{ position: 'relative', display: 'inline-block' }}>
+                      <Avatar src={avatarSrc} alt={displayName}>
+                        {!avatarSrc && displayName ? String(displayName).charAt(0) : null}
+                      </Avatar>
+                      {/* online dot for other participant */}
+                      {online && (
+                        <Box sx={{ position: 'absolute', right: -4, bottom: -4, width: 12, height: 12, borderRadius: '50%', bgcolor: 'success.main', border: '2px solid white' }} />
+                      )}
+                    </Box>
                   </ListItemAvatar>
                   <ListItemText
-                    primary={cleanName(c.name)}
+                    primary={cleanName(displayName)}
                     secondary={
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          color: "text.secondary",
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                        }}
-                      >
-                        {c.lastMessage}
-                      </Typography>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: "text.secondary",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
+                          {c.lastMessage}
+                        </Typography>
+                        {online && (
+                          <Typography variant="caption" sx={{ color: 'success.main', fontWeight: 600 }}>
+                            En línea
+                          </Typography>
+                        )}
+                      </Box>
                     }
                   />
                 </ListItemButton>

@@ -12,11 +12,7 @@ export function createOnMessageHandler({
   playNotifySound,
 }) {
     return function onMessage(ev) {
-    console.log("[WS][DEBUG] Mensaje recibido en cliente", {
-      userId: getCurrentUserId && getCurrentUserId(),
-      activeId,
-      data: ev && ev.data,
-    });
+    // socket trace removed to reduce console noise
     try {
       let d = null;
       try {
@@ -35,8 +31,13 @@ export function createOnMessageHandler({
         return;
       }
 
-      if (d.type === "presence.online")
-        return markUserOnline(d.user_id || d.user);
+      if (d.type === "presence.online") {
+        try {
+          const raw = d.user_id || d.user || d.userId || null;
+          const pid = raw && typeof raw === 'object' ? (raw.id || raw.user_id || raw.pk) : raw;
+          return markUserOnline(pid);
+        } catch (e) { return; }
+      }
 
       if (d.type === "message_update") {
         // debug logs removed for message_update
@@ -52,7 +53,7 @@ export function createOnMessageHandler({
           payload.room ||
           d.room_id ||
           d.room ||
-          String(activeId);
+          null;
         // store update debug removed
 
         setRooms((prev) => {
@@ -72,6 +73,13 @@ export function createOnMessageHandler({
                     if (String(m.id) === mid) {
                       // merge receipts and other updated fields from payload
                       const merged = { ...m, ...(payload || {}), receipts };
+                      // If server/other client signals an uploading status, keep upload flags
+                      try {
+                        if ((payload && String(payload.status) === 'uploading') || payload && payload.media_uploading) {
+                          merged.media_uploading = true;
+                          merged.previewUrl = merged.previewUrl || payload.previewUrl || payload.media_url || merged.media_url || null;
+                        }
+                      } catch (e) {}
                       try {
                         // preserve existing media_spectrum when payload doesn't include it
                         if ((merged.media_spectrum === null || merged.media_spectrum === undefined) && m.media_spectrum) {
@@ -79,8 +87,7 @@ export function createOnMessageHandler({
                         }
                       } catch (e) {}
                       try {
-                        // diagnostic: log whether merged message carries a spectrum
-                        console.log('[ROOM_UPDATE] (updateMessage) merged media_spectrum for mid=', mid, 'room=', copy[ri] && copy[ri].id, 'hasSpectrum=', Array.isArray(merged.media_spectrum) ? merged.media_spectrum.length : !!merged.media_spectrum);
+                        // diagnostic log suppressed to reduce noise
                       } catch (e) {}
                       try {
                         const newStatus = deriveStatusFromReceipts(receipts, me);
@@ -109,12 +116,18 @@ export function createOnMessageHandler({
                   const newStatus = deriveStatusFromReceipts(receipts, me);
                   // merge incoming payload fields into stored message
                   const mergedMsg = { ...m, ...(payload || {}), receipts, status: newStatus };
+                  try {
+                    if ((payload && String(payload.status) === 'uploading') || payload && payload.media_uploading) {
+                      mergedMsg.media_uploading = true;
+                      mergedMsg.previewUrl = mergedMsg.previewUrl || payload.previewUrl || payload.media_url || mergedMsg.media_url || null;
+                    }
+                  } catch (e) {}
                   // preserve existing spectrum if payload didn't include it
                   if ((mergedMsg.media_spectrum === null || mergedMsg.media_spectrum === undefined) && m.media_spectrum) {
                     mergedMsg.media_spectrum = m.media_spectrum;
                   }
                   try {
-                    console.log('[ROOM_UPDATE] (updateMessage) mergedMsg media_spectrum for mid=', mid, 'room=', room && room.id, 'hasSpectrum=', Array.isArray(mergedMsg.media_spectrum) ? mergedMsg.media_spectrum.length : !!mergedMsg.media_spectrum);
+                    // diagnostic log suppressed to reduce noise
                   } catch (e) {}
                   msgs[mi] = mergedMsg;
                 } catch (e) {
@@ -141,7 +154,7 @@ export function createOnMessageHandler({
           const payload = d.message || {};
           const mid = payload.id || payload.message_id || null;
           const roomId = payload.room_id || payload.room || d.room_id || d.room || null;
-          try { console.log('[CHAT_LIST] ⚡ Recibido message_update:', { id: mid, room: roomId }); } catch (e) {}
+          try { /* chat_list update received (log suppressed) */ } catch (e) {}
 
           if (roomId) {
             // try to get text from payload or debug store
@@ -183,7 +196,7 @@ export function createOnMessageHandler({
               } catch (e) { return prev; }
             });
 
-            try { console.log('[CHAT_LIST] 🔔 Actualizada bandeja por message_update:', { room: roomId, lastMessage: lastText }); } catch (e) {}
+            try { /* tray update suppressed */ } catch (e) {}
           }
         } catch (e) {}
         return;
@@ -193,7 +206,7 @@ export function createOnMessageHandler({
         // status_update debug removed
         const mid = d.message_id || d.messageId || d.id || null;
         const userId = d.user_id || d.userId || null;
-        const roomId = d.room_id || d.room || String(activeId);
+  const roomId = d.room_id || d.room || null;
         const status = d.status || null;
         try {
           const current =
@@ -203,14 +216,25 @@ export function createOnMessageHandler({
 
         if (mid) {
           try {
+            // If the WS status_update carries receipts, forward them to the
+            // debug store. Avoid writing an empty receipts array which can
+            // inadvertently clear persisted receipt state when the payload
+            // doesn't include receipts.
             if (
               typeof window !== "undefined" &&
               window._agrovet_chat_store &&
               typeof window._agrovet_chat_store.updateMessage === "function"
             ) {
-              try {
-                window._agrovet_chat_store.updateMessage(mid, [], roomId);
-              } catch (e) {}
+              const storeReceipts = Array.isArray(d.receipts)
+                ? d.receipts
+                : Array.isArray(d.message && d.message.receipts)
+                ? d.message.receipts
+                : null;
+              if (storeReceipts) {
+                try {
+                  window._agrovet_chat_store.updateMessage(mid, storeReceipts, roomId);
+                } catch (e) {}
+              }
             }
           } catch (e) {}
 
@@ -248,8 +272,13 @@ export function createOnMessageHandler({
         return;
       }
 
-      if (d.type === "presence.offline")
-        return markUserOffline(d.user_id || d.user);
+      if (d.type === "presence.offline") {
+        try {
+          const raw = d.user_id || d.user || d.userId || null;
+          const pid = raw && typeof raw === 'object' ? (raw.id || raw.user_id || raw.pk) : raw;
+          return markUserOffline(pid);
+        } catch (e) { return; }
+      }
 
       if (d.type && d.type.startsWith("chat.")) {
         try {
@@ -261,50 +290,75 @@ export function createOnMessageHandler({
             d.type === "message_seen" ||
             d.type === "message_delivered"
           ) {
-            // receipt event debug removed
+            // receipt event: prefer room id from payload; if missing, search all rooms
+            const targetRoomId = d.room_id || d.room || null;
+            const targetIds = Array.isArray(d.message_ids)
+              ? d.message_ids.map(String)
+              : d.message_id
+              ? [String(d.message_id)]
+              : [];
+            if (!targetIds.length && d.message_id) targetIds.push(String(d.message_id));
+            if (!targetIds.length) return;
+
+            const receiptStatus =
+              d.type === "chat.read" ||
+              d.type === "chat.message.read" ||
+              Boolean(d.read)
+                ? "read"
+                : d.type === "chat.delivery" ||
+                  d.type === "chat.message.delivered" ||
+                  Boolean(d.delivered)
+                ? "delivered"
+                : null;
+
             setRooms((prev) => {
               try {
-                const idx = prev.findIndex(
-                  (r) => String(r.id) === String(activeId)
-                );
-                if (idx === -1) return prev;
                 const copy = prev.slice();
-                const room = { ...(copy[idx] || {}) };
-                const msgs = Array.isArray(room.messages)
-                  ? room.messages.slice()
-                  : [];
-                const targetIds = Array.isArray(d.message_ids)
-                  ? d.message_ids.map(String)
-                  : d.message_id
-                  ? [String(d.message_id)]
-                  : [];
-                if (!targetIds.length && d.message_id)
-                  targetIds.push(String(d.message_id));
-                if (targetIds.length) {
-                  const receiptStatus =
-                    d.type === "chat.read" ||
-                    d.type === "chat.message.read" ||
-                    Boolean(d.read)
-                      ? "read"
-                      : d.type === "chat.delivery" ||
-                        d.type === "chat.message.delivered" ||
-                        Boolean(d.delivered)
-                      ? "delivered"
-                      : null;
+                let changed = false;
+
+                if (targetRoomId) {
+                  const idx = copy.findIndex((r) => String(r.id) === String(targetRoomId));
+                  if (idx !== -1) {
+                    const room = { ...(copy[idx] || {}) };
+                    const msgs = Array.isArray(room.messages) ? room.messages.slice() : [];
+                    for (let mi = 0; mi < msgs.length; mi++) {
+                      const m = msgs[mi];
+                      if (!m || !m.id) continue;
+                      if (!targetIds.includes(String(m.id))) continue;
+                      const newReceipts = receiptStatus ? upsertReceipt(m.receipts, d.user_id, receiptStatus) : m.receipts || [];
+                      msgs[mi] = { ...m, receipts: newReceipts };
+                      changed = true;
+                    }
+                    if (changed) {
+                      room.messages = msgs;
+                      copy[idx] = room;
+                      return copy;
+                    }
+                  }
+                  return prev;
+                }
+
+                // No room id: update any room that contains the target message ids
+                for (let ri = 0; ri < copy.length; ri++) {
+                  const room = { ...(copy[ri] || {}) };
+                  const msgs = Array.isArray(room.messages) ? room.messages.slice() : [];
+                  let roomChanged = false;
                   for (let mi = 0; mi < msgs.length; mi++) {
                     const m = msgs[mi];
                     if (!m || !m.id) continue;
                     if (!targetIds.includes(String(m.id))) continue;
-                    const newReceipts = receiptStatus
-                      ? upsertReceipt(m.receipts, d.user_id, receiptStatus)
-                      : m.receipts || [];
+                    const newReceipts = receiptStatus ? upsertReceipt(m.receipts, d.user_id, receiptStatus) : m.receipts || [];
                     msgs[mi] = { ...m, receipts: newReceipts };
+                    roomChanged = true;
+                  }
+                  if (roomChanged) {
+                    room.messages = msgs;
+                    copy[ri] = room;
+                    changed = true;
                   }
                 }
-                room.messages = msgs;
-                copy[idx] = room;
-                // message receipts update debug removed
-                return copy;
+
+                return changed ? copy : prev;
               } catch (e) {
                 return prev;
               }
@@ -329,7 +383,11 @@ export function createOnMessageHandler({
           fromMe: String(d.sender_id) === String(getCurrentUserId()) || false,
           receipts: d.receipts || [],
           client_msg_id: d.client_msg_id || null,
-          media_url: d.media_url || d.mediaUrl || d.media || null,
+          // stable uid for rendering/dedupe (used elsewhere in client code)
+          uid: (d.uid || d.message_uid || d.client_msg_id) ? (d.uid || d.message_uid || d.client_msg_id) : `${d.message_id || d.id || 'msg'}-${(d.timestamp || Date.now())}-${Math.random().toString(36).slice(2,8)}`,
+          // Prefer explicit preview_data_url (base64/data:) when provided by sender
+          media_url: d.preview_data_url || d.media_url || d.mediaUrl || d.media || null,
+          previewUrl: d.preview_data_url || d.previewUrl || d.preview_url || null,
           media_id: d.media_id || d.mediaId || null,
           media_spectrum: d.media_spectrum || d.mediaSpectrum || null,
         };
@@ -380,75 +438,127 @@ export function createOnMessageHandler({
 
         setRooms((prev) => {
           try {
-            const roomIdToFind = incomingRoom
-              ? String(incomingRoom)
-              : String(activeId);
-            const idx = prev.findIndex((r) => String(r.id) === roomIdToFind);
-            if (idx === -1) {
-              // incoming room not found in state: create a new room if this
-              // message actually came with an incomingRoom (don't create when
-              // roomIdToFind is derived from activeId fallback).
-              if (!incomingRoom) {
-                return prev;
+            // Determine the target room. If the server didn't include a room
+            // id, try to match the incoming server message against any
+            // optimistic message we have in state (client_msg_id / tmp_ heuristics).
+            // This allows us to reconcile server acks for uploads without
+            // blindly inserting messages into the currently active room.
+            let roomIdToFind = incomingRoom ? String(incomingRoom) : null;
+            let foundRoomIdx = -1;
+            let foundOptIdx = -1;
+
+            if (!roomIdToFind) {
+              for (let ri = 0; ri < prev.length; ri++) {
+                const candidate = prev[ri] || {};
+                const msgsCandidate = Array.isArray(candidate.messages) ? candidate.messages.slice() : [];
+                const idx = findOptimisticIndex(msgsCandidate, msg);
+                if (idx !== -1) {
+                  foundRoomIdx = ri;
+                  foundOptIdx = idx;
+                  roomIdToFind = String(candidate.id);
+                  break;
+                }
               }
+              // If we couldn't match an optimistic placeholder and server omitted
+              // the room id, there's nothing safe we can do here — avoid
+              // creating rooms out of thin air.
+              if (!roomIdToFind) return prev;
+            }
+
+            const idx = typeof foundRoomIdx === 'number' && foundRoomIdx !== -1 ? foundRoomIdx : prev.findIndex((r) => String(r.id) === String(roomIdToFind));
+            if (idx === -1) {
+              // If server provided a room id that we don't have locally, create
+              // a minimal room object and insert it at the top.
+              if (!roomIdToFind) return prev;
               try {
                 const currentUserId = typeof getCurrentUserId === 'function' ? getCurrentUserId() : null;
                 const newRoom = createRoomFromMessage(roomIdToFind, msg, currentUserId);
-                try { console.log('[CHAT_LIST] Creando nueva room automáticamente:', roomIdToFind, 'msgId=', msg && msg.id); } catch (e) {}
+                newRoom.unread_count = msg && msg.fromMe ? 0 : 1;
+                try { /* auto-create room log suppressed */ } catch (e) {}
                 return [newRoom, ...prev];
               } catch (e) {
                 return prev;
               }
             }
+
             const copy = prev.slice();
             const room = { ...(copy[idx] || {}) };
-            const msgs = Array.isArray(room.messages)
-              ? room.messages.slice()
-              : [];
-            try { console.log('[ROOM_UPDATE] (chat.message) room', roomIdToFind, 'before msgs:', msgs.length, 'incoming msg id:', msg.id); } catch (e) {}
-            if (msgs.some((m) => String(m.id) === String(msg.id))) return prev;
+            const msgs = Array.isArray(room.messages) ? room.messages.slice() : [];
+            try { /* room update before msgs log suppressed */ } catch (e) {}
+            // If a message with the same id exists, decide if we should merge
+            const existingIdxById = msgs.findIndex((m) => String(m.id) === String(msg.id));
+            if (existingIdxById !== -1) {
+              try {
+                const existingMsg = msgs[existingIdxById] || {};
+                // If incoming message carries new media fields (media_url / preview_data_url / file_url)
+                // or different receipts/status, merge into the existing message so the UI updates.
+                const incomingHasMedia = Boolean(msg.media_url || msg.preview_data_url || msg.file_url || msg.mediaUrl);
+                const incomingHasReceiptsOrStatus = Boolean(msg.receipts && msg.receipts.length) || Boolean(msg.status);
+                if (incomingHasMedia || incomingHasReceiptsOrStatus) {
+                  try { console.info('[ROOM_UPDATE] merging incoming server message into existing by id', { room: String(room.id), id: msg.id, incomingHasMedia, incomingHasReceiptsOrStatus }); } catch (e) {}
+                  const mergedMsg = { ...existingMsg, ...(msg || {}) };
+                  // ensure upload flags cleared if final media_url present
+                  if (mergedMsg.media_url || mergedMsg.file_url || mergedMsg.mediaUrl) {
+                    mergedMsg.media_uploading = false;
+                    mergedMsg.media_upload_percent = null;
+                  }
+                  msgs[existingIdxById] = mergedMsg;
+                } else {
+                  // nothing new to apply, skip to avoid duplication
+                  return prev;
+                }
+              } catch (e) { return prev; }
+            }
 
-            // Use shared heuristic util to find optimistic index
-            let optIdx = findOptimisticIndex(msgs, msg);
+            // Use shared heuristic util to find optimistic index (either foundOptIdx or check in this room)
+            let optIdx = foundOptIdx !== -1 ? foundOptIdx : findOptimisticIndex(msgs, msg);
 
             if (optIdx !== -1) {
               try {
                 const prevMsg = msgs[optIdx];
                 try {
-                  if (prevMsg) {
-                    if (
-                      (!msg.media_spectrum || msg.media_spectrum === null) &&
-                      prevMsg.media_spectrum
-                    )
-                      msg.media_spectrum = prevMsg.media_spectrum;
-                    if (
-                      (!msg.media_url || msg.media_url === null) &&
-                      prevMsg.media_url
-                    )
-                      msg.media_url = prevMsg.media_url;
-                    if (
-                      prevMsg &&
-                      prevMsg.media_url &&
-                      typeof prevMsg.media_url === "string" &&
-                      prevMsg.media_url.startsWith("blob:") &&
-                      msg.media_url &&
-                      !msg.media_url.startsWith("blob:")
-                    ) {
-                      try {
-                        URL.revokeObjectURL(prevMsg.media_url);
-                      } catch (e) {}
-                    }
+                  // Preserve useful fields from the optimistic message if server omitted them
+                  const merged = { ...(prevMsg || {}), ...(msg || {}) };
+                  if ((merged.media_spectrum === null || merged.media_spectrum === undefined) && prevMsg && prevMsg.media_spectrum) merged.media_spectrum = prevMsg.media_spectrum;
+                  if ((!merged.media_url || merged.media_url === null) && prevMsg && prevMsg.media_url) merged.media_url = prevMsg.media_url;
+                  // If previous media_url was a blob URL and server provided a real URL,
+                  // revoke the blob to free memory.
+                  if (
+                    prevMsg &&
+                    prevMsg.media_url &&
+                    typeof prevMsg.media_url === 'string' &&
+                    prevMsg.media_url.startsWith('blob:') &&
+                    merged.media_url &&
+                    !merged.media_url.startsWith('blob:')
+                  ) {
+                    try { URL.revokeObjectURL(prevMsg.media_url); } catch (e) {}
                   }
-                } catch (e) {}
-                msgs[optIdx] = msg;
+
+                  // Important: clear upload indicators so the UI removes the overlay
+                  merged.media_uploading = false;
+                  merged.media_upload_percent = null;
+
+                  msgs[optIdx] = merged;
+                } catch (e) {
+                  // Fallback: replace optimistic message but ensure upload flags cleared
+                  const mergedMsg = { ...(prevMsg || {}), ...(msg || {}), media_uploading: false, media_upload_percent: null };
+                  msgs[optIdx] = mergedMsg;
+                }
                 // replaced optimistic message debug removed
               } catch (e) {}
             } else {
               msgs.push(msg);
+              // increment unread_count only when a new incoming message is appended
+              try {
+                const isActiveRoomLocal = String(roomIdToFind) === String(activeId);
+                room.unread_count = isActiveRoomLocal ? 0 : ((room.unread_count || 0) + (msg && msg.fromMe ? 0 : 1));
+                // maintain boolean for backward compatibility
+                room.unread = isActiveRoomLocal ? false : (!!room.unread || (!msg.fromMe));
+              } catch (e) {}
             }
 
             room.messages = msgs;
-            try { console.log('[ROOM_UPDATE] (chat.message) room', roomIdToFind, 'after msgs:', msgs.length, 'added id:', msg.id); } catch (e) {}
+                    try { /* room update after msgs log suppressed */ } catch (e) {}
             room.lastMessage = msg.text || room.lastMessage;
             room.last_activity = msg.timestamp || room.last_activity;
             // mark unread when message comes from other user, but don't mark unread
@@ -481,15 +591,15 @@ export function createOnMessageHandler({
 
             try {
               const isActiveRoom = String(roomIdToFind) === String(activeId);
-              try { console.log('[CHAT_LIST] 🔔 Actualizada bandeja para room:', roomIdToFind, { lastMessage: room.lastMessage, unread: room.unread }); } catch (e) {}
+              try { /* tray update suppressed */ } catch (e) {}
 
-              if (
-                isActiveRoom &&
-                !msg.fromMe &&
-                typeof window !== "undefined" &&
-                window._agrovet_chat_service &&
-                typeof window._agrovet_chat_service.send === "function"
-              ) {
+                    if (
+                      isActiveRoom &&
+                      !msg.fromMe &&
+                      typeof window !== "undefined" &&
+                      window._agrovet_chat_service &&
+                      typeof window._agrovet_chat_service.send === "function"
+                    ) {
                 try {
                   // Inform server that the active room was read. Use the
                   // canonical 'mark_read' event so the server persists the
@@ -551,6 +661,9 @@ export function createOnMessageHandler({
                             break;
                           }
                         }
+                        // clear unread_count for the active room when we mark messages read
+                        roomR.unread_count = 0;
+                        roomR.unread = false;
                         roomR.messages = msgsR;
                         copyR[idxR] = roomR;
                         return copyR;
@@ -563,7 +676,7 @@ export function createOnMessageHandler({
               }
             } catch (e) {}
 
-            try { console.log('[ROOM_UPDATE] (chat.message) msg.media_spectrum:', msg.media_spectrum); } catch (e) {}
+            try { /* media_spectrum log suppressed */ } catch (e) {}
             return sorted;
           } catch (e) {
             return prev;
@@ -591,16 +704,19 @@ export function createOnMessageHandler({
               if (!resp.ok) return;
               const data = await resp.json();
               let descr = data && (data.description || data.desc || null);
+              // Also try to extract a canonical public URL for the media if provided by the media API
+              const finalMediaUrl = data && (data.url || data.media_url || data.file_url || data.object_url || data.path || null);
               if (descr) {
                 try {
                   const parsed =
                     typeof descr === "string" ? JSON.parse(descr) : descr;
                   if (Array.isArray(parsed) && parsed.length) {
-                    try { console.log('[MEDIA_FETCH] fetched spectrum for msg.id=', msg.id, 'length=', Array.isArray(parsed) ? parsed.length : 0); } catch (e) {}
+                    try { /* media_fetch log suppressed */ } catch (e) {}
                     // compute a best-effort target room id (incomingRoom may be null)
-                    const targetRoomId = incomingRoom
-                      ? String(incomingRoom)
-                      : String(activeId);
+                    // For fetched media spectrum, only target the explicit
+                    // incoming room (do not default to activeId to avoid
+                    // accidentally applying spectrum to the wrong conversation).
+                    const targetRoomId = incomingRoom ? String(incomingRoom) : null;
                     setRooms((prev2) => {
                       try {
                         const copy2 = prev2.slice();
@@ -614,8 +730,18 @@ export function createOnMessageHandler({
                             (mm) => String(mm.id) === String(msg.id)
                           );
                           if (mIdx !== -1) {
-                            msgs2[mIdx] = { ...(msgs2[mIdx] || {}), media_spectrum: parsed, __spectrum_updated_at: new Date().toISOString() };
-                            try { console.log('[ROOM_UPDATE] applied fetched spectrum to msg', msg.id, 'room=', copy2[ri] && copy2[ri].id); } catch (e) {}
+                            // Merge spectrum and, if available, final media URL into the message
+                            const existing = msgs2[mIdx] || {};
+                            const updated = { ...(existing || {}), media_spectrum: parsed, __spectrum_updated_at: new Date().toISOString() };
+                            if (finalMediaUrl) {
+                              updated.media_url = updated.media_url || finalMediaUrl;
+                              updated.mediaUrl = updated.mediaUrl || finalMediaUrl;
+                              updated.previewUrl = updated.previewUrl || finalMediaUrl;
+                              updated.media_uploading = false;
+                              updated.media_upload_percent = null;
+                            }
+                            msgs2[mIdx] = updated;
+                            try { /* applied fetched spectrum+url log suppressed */ } catch (e) {}
                             r.messages = msgs2;
                             copy2[ri] = r;
                             return copy2;
@@ -635,9 +761,26 @@ export function createOnMessageHandler({
                           (mm) => String(mm.id) === String(msg.id)
                         );
                         if (mIdx !== -1) {
-                          msgs2[mIdx] = { ...(msgs2[mIdx] || {}), media_spectrum: parsed, __spectrum_updated_at: new Date().toISOString() };
+                          const existing = msgs2[mIdx] || {};
+                          const updated = { ...(existing || {}), media_spectrum: parsed, __spectrum_updated_at: new Date().toISOString() };
+                          if (finalMediaUrl) {
+                            updated.media_url = updated.media_url || finalMediaUrl;
+                            updated.mediaUrl = updated.mediaUrl || finalMediaUrl;
+                            updated.previewUrl = updated.previewUrl || finalMediaUrl;
+                            updated.media_uploading = false;
+                            updated.media_upload_percent = null;
+                          }
+                          msgs2[mIdx] = updated;
                         } else {
-                          msgs2.push({ ...(msg || {}), media_spectrum: parsed, __spectrum_updated_at: new Date().toISOString() });
+                          const base = { ...(msg || {}), media_spectrum: parsed, __spectrum_updated_at: new Date().toISOString() };
+                          if (finalMediaUrl) {
+                            base.media_url = base.media_url || finalMediaUrl;
+                            base.mediaUrl = base.mediaUrl || finalMediaUrl;
+                            base.previewUrl = base.previewUrl || finalMediaUrl;
+                            base.media_uploading = false;
+                            base.media_upload_percent = null;
+                          }
+                          msgs2.push(base);
                         }
                         room2.messages = msgs2;
                         copy2[idx2] = room2;

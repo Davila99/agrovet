@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Box, useMediaQuery } from "@mui/material";
 import {
   ChatList,
@@ -36,21 +36,7 @@ export default function Chat() {
     }
   };
 
-  // Debug: print rooms state whenever it changes to trace propagation
-  useEffect(() => {
-    try {
-      console.log('[DEBUG] Estado actual de rooms:', (rooms || []).length, 'activeId:', activeId);
-      (rooms || []).forEach((room) => {
-        try {
-          console.log(`[DEBUG] Room ${room.id}:`, {
-            messages: (room.messages && room.messages.length) || 0,
-            lastMessage: room.lastMessage,
-            unread: room.unread,
-          });
-        } catch (e) {}
-      });
-    } catch (e) {}
-  }, [rooms, activeId]);
+  // Removed noisy debug logs to reduce console spam in production/dev.
 
   // Rooms hook: returns helper to open/create 1:1 and uses shared state
   const { openOneToOne } = useChatRooms(activeId, [rooms, setRooms]);
@@ -61,14 +47,48 @@ export default function Chat() {
   const activeConv = rooms.find((c) => String(c.id) === String(activeId)) || null;
 
   // WS hook
+  // Track presence of online users locally and pass handlers into the socket
+  const [onlineUsers, setOnlineUsers] = useState(() => new Set());
+  const markUserOnline = useCallback((id) => {
+    try {
+      setOnlineUsers((prev) => {
+        const copy = new Set(Array.from(prev || []));
+        if (id === null || id === undefined) return copy;
+        copy.add(String(id));
+        return copy;
+      });
+    } catch (e) {}
+  }, [setOnlineUsers]);
+
+  const markUserOffline = useCallback((id) => {
+    try {
+      setOnlineUsers((prev) => {
+        const copy = new Set(Array.from(prev || []));
+        if (id === null || id === undefined) return copy;
+        copy.delete(String(id));
+        return copy;
+      });
+    } catch (e) {}
+  }, [setOnlineUsers]);
+
   useChatSocket({
     activeId,
     setRooms,
-    markUserOnline: () => {},
-    markUserOffline: () => {},
+    markUserOnline,
+    markUserOffline,
     getReceiptUserId: () => {},
     getCurrentUserId,
   });
+
+  // expose active room globally for auxiliary helpers (sound, legacy code)
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') window.__AGROVET_ACTIVE_ROOM = activeId || null;
+    } catch (e) {}
+    return () => {
+      try { if (typeof window !== 'undefined') window.__AGROVET_ACTIVE_ROOM = null; } catch (e) {}
+    };
+  }, [activeId]);
 
   // Local controller for send/attach/etc
   const {
@@ -81,9 +101,21 @@ export default function Chat() {
     cancelPendingAttachment,
     confirmSendAttachment,
     handleKeyDown,
+    uploadingAttachment,
   } = useChatController({ activeId, setRooms, getCurrentUserId });
 
   const goBackToList = () => setActiveId(null);
+
+  const isParticipantOnline = useCallback(
+    (userId) => {
+      try {
+        return userId ? onlineUsers.has(String(userId)) : false;
+      } catch (e) {
+        return false;
+      }
+    },
+    [onlineUsers]
+  );
 
   return (
     <Box sx={{ display: "flex", height: "100%" }}>
@@ -100,6 +132,7 @@ export default function Chat() {
           isMd={isMd}
           computeLastTsForRoom={computeLastTsForRoom}
           getCurrentUserId={getCurrentUserId}
+          isParticipantOnline={isParticipantOnline}
         />
       )}
 
@@ -111,6 +144,8 @@ export default function Chat() {
             sendError={null}
             onBack={goBackToList}
             isMd={isMd}
+            getCurrentUserId={getCurrentUserId}
+            isParticipantOnline={isParticipantOnline}
           />
         )}
         <ChatMessages
@@ -120,24 +155,26 @@ export default function Chat() {
           getCurrentUserId={getCurrentUserId}
         />
 
-        {/* If there's a pending attachment, show a compact preview above the input box */}
-        {pendingAttachment && (
-          <Box sx={{ p: 1, borderTop: '1px solid rgba(0,0,0,0.04)', bgcolor: 'background.default' }}>
-            <AttachmentPreview pending={pendingAttachment} onConfirm={confirmSendAttachment} onCancel={cancelPendingAttachment} />
-          </Box>
-        )}
+        {/* When there's a pending attachment, replace the input with the preview UI (WhatsApp-like). */}
         {activeId && (
-          <ChatInput
-            text={text}
-            setText={setText}
-            handleSend={handleSend}
-            handleKeyDown={handleKeyDown}
-            onAttach={handleAttach}
-            pendingAttachment={pendingAttachment}
-            onCancelAttachment={cancelPendingAttachment}
-            onConfirmAttachment={confirmSendAttachment}
-            sending={sendingText}
-          />
+          pendingAttachment ? (
+            <Box sx={{ p: 1, borderTop: '1px solid rgba(0,0,0,0.04)', bgcolor: 'background.default' }}>
+              <AttachmentPreview pending={pendingAttachment} onConfirm={confirmSendAttachment} onCancel={cancelPendingAttachment} isUploading={uploadingAttachment} />
+            </Box>
+          ) : (
+            <ChatInput
+              text={text}
+              setText={setText}
+              handleSend={handleSend}
+              handleKeyDown={handleKeyDown}
+              onAttach={handleAttach}
+              pendingAttachment={pendingAttachment}
+              onCancelAttachment={cancelPendingAttachment}
+              onConfirmAttachment={confirmSendAttachment}
+              sending={sendingText}
+              uploadingAttachment={uploadingAttachment}
+            />
+          )
         )}
       </Box>
     </Box>

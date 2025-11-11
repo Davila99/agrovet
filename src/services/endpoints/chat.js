@@ -30,10 +30,12 @@ export const chatAPI = {
 
   sendMessage: (room, content, opts = {}) => ({ token } = {}) => {
     const media_id = opts.media_id;
+    const media_url = opts.media_url;
     const client_msg_id = opts.client_msg_id;
     // debug logs removed
     const body = { room, content };
     if (media_id) body.media = media_id;
+    if (media_url) body.media_url = media_url;
     if (client_msg_id) body.client_msg_id = client_msg_id;
     return httpClient("/chat/messages/", {
       method: "POST",
@@ -149,7 +151,64 @@ export function chatServiceFactory() {
                 const incoming = (parsed.message && typeof parsed.message === 'object') ? parsed.message : parsed;
                 const room = incoming.room || incoming.room_id || parsed.room || parsed.room_id || null;
                 try { console.log('[RECV] 💬 chat.message recibido:', { room: room, id: incoming.id || incoming.message_id, sender: incoming.sender_id, text: incoming.text }); } catch (e) {}
+                // If we have an optimistic message stored with media (blob preview) and the
+                // server message arrives without media fields, try to merge/preserve the optimistic
+                // media fields so the UI doesn't blink to empty. We attempt multiple lookups:
+                // 1) getMessageById(serverId)
+                // 2) if incoming contains client_msg_id, scan the room's debug dump for a matching optimistic message
+                try {
+                  if (typeof window !== 'undefined' && window._agrovet_chat_store) {
+                    const store = window._agrovet_chat_store;
+                    const sid = incoming && (incoming.id || incoming.message_id);
+                    let existing = null;
+                    try {
+                      if (sid && typeof store.getMessageById === 'function') existing = store.getMessageById(sid);
+                    } catch (e) {}
+
+                    // If not found by server id, and we have a client_msg_id, try to locate
+                    // the optimistic message in the same room via dumpRoom(room)
+                    try {
+                      const clientCid = incoming && (incoming.client_msg_id || incoming.clientMsgId || incoming.client_message_id || null);
+                      const roomHint = room || (incoming && (incoming.room || incoming.room_id || incoming.roomId)) || null;
+                      if (!existing && clientCid && roomHint && typeof store.dumpRoom === 'function') {
+                        try {
+                          const dump = store.dumpRoom(String(roomHint)) || [];
+                          for (const m of dump) {
+                            if (!m) continue;
+                            if (m.client_msg_id && String(m.client_msg_id) === String(clientCid)) { existing = m; break; }
+                            if (m.clientMsgId && String(m.clientMsgId) === String(clientCid)) { existing = m; break; }
+                          }
+                          if (existing) try { console.info('[RECV] matched incoming by client_msg_id', { room: roomHint, client_msg_id: clientCid, serverId: sid }); } catch(e){}
+                        } catch (e) {}
+                      }
+                    } catch (e) {}
+
+                    if (existing) {
+                      try {
+                        const hasExistingPreview = existing.media_url && typeof existing.media_url === 'string' && existing.media_url.startsWith('blob:');
+                        const incomingHasMedia = (incoming.media_url || incoming.media || incoming.mediaUrl || incoming.media_id || incoming.mediaId);
+                        if (hasExistingPreview && !incomingHasMedia) {
+                          incoming.media_url = incoming.media_url || existing.media_url || existing.previewUrl || existing.mediaUrl;
+                          incoming.mediaUrl = incoming.mediaUrl || incoming.media_url;
+                          incoming.previewUrl = incoming.previewUrl || incoming.media_url;
+                          incoming.media_spectrum = incoming.media_spectrum || existing.media_spectrum || (existing.media && existing.media.description) || null;
+                          incoming.media_id = incoming.media_id || incoming.media || existing.media_id || existing.media || null;
+                          try { console.info('[RECV] preserved optimistic media fields onto incoming server message', { serverId: sid, client_msg_id: incoming.client_msg_id || null }); } catch(e){}
+                        }
+                      } catch (e) {}
+                    }
+                  }
+                } catch (e) {}
                 if (window._agrovet_chat_store && typeof window._agrovet_chat_store.addIncomingMessage === 'function') {
+                  // If sender provided a small data-url preview, prefer that for
+                  // receivers since blob: URLs are not valid across clients.
+                  try {
+                    if (incoming && incoming.preview_data_url) {
+                      incoming.media_url = incoming.preview_data_url;
+                      incoming.previewUrl = incoming.preview_data_url;
+                      incoming.media_uploading = incoming.media_uploading || true;
+                    }
+                  } catch (e) {}
                   window._agrovet_chat_store.addIncomingMessage(incoming);
                 }
               } catch (e) { console.warn('[chatService] _agrovet_chat_store.addIncomingMessage failed', e); }
