@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Box, useMediaQuery } from "@mui/material";
 import {
   ChatList,
@@ -47,14 +47,48 @@ export default function Chat() {
   const activeConv = rooms.find((c) => String(c.id) === String(activeId)) || null;
 
   // WS hook
+  // Track presence of online users locally and pass handlers into the socket
+  const [onlineUsers, setOnlineUsers] = useState(() => new Set());
+  const markUserOnline = useCallback((id) => {
+    try {
+      setOnlineUsers((prev) => {
+        const copy = new Set(Array.from(prev || []));
+        if (id === null || id === undefined) return copy;
+        copy.add(String(id));
+        return copy;
+      });
+    } catch (e) {}
+  }, [setOnlineUsers]);
+
+  const markUserOffline = useCallback((id) => {
+    try {
+      setOnlineUsers((prev) => {
+        const copy = new Set(Array.from(prev || []));
+        if (id === null || id === undefined) return copy;
+        copy.delete(String(id));
+        return copy;
+      });
+    } catch (e) {}
+  }, [setOnlineUsers]);
+
   useChatSocket({
     activeId,
     setRooms,
-    markUserOnline: () => {},
-    markUserOffline: () => {},
+    markUserOnline,
+    markUserOffline,
     getReceiptUserId: () => {},
     getCurrentUserId,
   });
+
+  // expose active room globally for auxiliary helpers (sound, legacy code)
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') window.__AGROVET_ACTIVE_ROOM = activeId || null;
+    } catch (e) {}
+    return () => {
+      try { if (typeof window !== 'undefined') window.__AGROVET_ACTIVE_ROOM = null; } catch (e) {}
+    };
+  }, [activeId]);
 
   // Local controller for send/attach/etc
   const {
@@ -72,6 +106,17 @@ export default function Chat() {
 
   const goBackToList = () => setActiveId(null);
 
+  const isParticipantOnline = useCallback(
+    (userId) => {
+      try {
+        return userId ? onlineUsers.has(String(userId)) : false;
+      } catch (e) {
+        return false;
+      }
+    },
+    [onlineUsers]
+  );
+
   return (
     <Box sx={{ display: "flex", height: "100%" }}>
       {(!activeId || isMd) && (
@@ -87,6 +132,7 @@ export default function Chat() {
           isMd={isMd}
           computeLastTsForRoom={computeLastTsForRoom}
           getCurrentUserId={getCurrentUserId}
+          isParticipantOnline={isParticipantOnline}
         />
       )}
 
@@ -98,6 +144,8 @@ export default function Chat() {
             sendError={null}
             onBack={goBackToList}
             isMd={isMd}
+            getCurrentUserId={getCurrentUserId}
+            isParticipantOnline={isParticipantOnline}
           />
         )}
         <ChatMessages

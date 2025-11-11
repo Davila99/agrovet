@@ -31,8 +31,13 @@ export function createOnMessageHandler({
         return;
       }
 
-      if (d.type === "presence.online")
-        return markUserOnline(d.user_id || d.user);
+      if (d.type === "presence.online") {
+        try {
+          const raw = d.user_id || d.user || d.userId || null;
+          const pid = raw && typeof raw === 'object' ? (raw.id || raw.user_id || raw.pk) : raw;
+          return markUserOnline(pid);
+        } catch (e) { return; }
+      }
 
       if (d.type === "message_update") {
         // debug logs removed for message_update
@@ -267,8 +272,13 @@ export function createOnMessageHandler({
         return;
       }
 
-      if (d.type === "presence.offline")
-        return markUserOffline(d.user_id || d.user);
+      if (d.type === "presence.offline") {
+        try {
+          const raw = d.user_id || d.user || d.userId || null;
+          const pid = raw && typeof raw === 'object' ? (raw.id || raw.user_id || raw.pk) : raw;
+          return markUserOffline(pid);
+        } catch (e) { return; }
+      }
 
       if (d.type && d.type.startsWith("chat.")) {
         try {

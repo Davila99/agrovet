@@ -3,6 +3,8 @@ import useChatWebSocket from "../../../hooks/useChatWebSocket";
 import { normalizeStoredToken, dedupeMessages } from "./chatUtils";
 import { createOnMessageHandler } from "./chatSocketHandlers";
 import { playNotifySound } from "../../../services/sound";
+import { connectPresence } from '../../../services/endpoints/chat';
+import { usePresenceStore } from '../../../store/usePresenceStore';
 
 export default function useChatSocket({
     activeId,
@@ -15,6 +17,98 @@ export default function useChatSocket({
     // compute token unconditionally (hooks must be called at top level)
     const rawStored = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
     const token = normalizeStoredToken(rawStored);
+
+    // Presence websocket connection: separate from chat WS. This allows the
+    // client to receive presence.online/presence.offline and init_rooms even
+    // when no specific chat room is open.
+    useEffect(() => {
+        if (!token) return;
+        let pres = null;
+        try {
+                pres = connectPresence(token, {
+                    onOpen: (ev) => {
+                        try { console.info('[presence] connected'); } catch (e) {}
+                    },
+                    onMessage: (ev) => {
+                        try {
+                            const raw = (ev && ev.data) ? ev.data : ev;
+                            const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+                            try { console.info('[presence.onMessage]', parsed && parsed.type ? parsed.type : 'unknown', parsed); } catch (e) {}
+                            if (!parsed || !parsed.type) return;
+                            if (parsed.type === 'presence.online') {
+                                try {
+                                    const raw = parsed.user_id || parsed.user || parsed.userId || parsed.user_id;
+                                    const pid = raw && typeof raw === 'object' ? (raw.id || raw.user_id || raw.pk) : raw;
+                                    // update global presence store
+                                    try { usePresenceStore.getState().updateUser(pid, { isOnline: true, lastSeen: null }); } catch (e) {}
+                                    try { console.info('[presence] user_online', pid, usePresenceStore.getState().users && usePresenceStore.getState().users[String(pid)]); } catch (e) {}
+                                    markUserOnline(pid);
+                                } catch (e) { console.warn('[presence] online handler error', e); }
+                                return;
+                            }
+                            if (parsed.type === 'presence.offline') {
+                                try {
+                                    const raw = parsed.user_id || parsed.user || parsed.userId || parsed.user_id;
+                                    const pid = raw && typeof raw === 'object' ? (raw.id || raw.user_id || raw.pk) : raw;
+                                    const last_seen = parsed.last_seen || parsed.lastSeen || null;
+                                    try { usePresenceStore.getState().updateUser(pid, { isOnline: false, lastSeen: last_seen || new Date().toISOString() }); } catch (e) {}
+                                    try { console.info('[presence] user_offline', pid, usePresenceStore.getState().users && usePresenceStore.getState().users[String(pid)]); } catch (e) {}
+                                    markUserOffline(pid);
+                                } catch (e) { console.warn('[presence] offline handler error', e); }
+                                return;
+                            }
+                        if (parsed.type === 'init_rooms' && Array.isArray(parsed.rooms)) {
+                            try {
+                                // Annotate existing rooms state with participant online flags from presence
+                                setRooms((prev) => {
+                                    try {
+                                        const copy = prev.slice();
+                                        for (const r of parsed.rooms) {
+                                            const rid = String(r.id);
+                                            const idx = copy.findIndex(rr => String(rr.id) === rid);
+                                            if (idx === -1) continue;
+                                            const annotatedParts = r.participants || [];
+                                            const roomCopy = { ...copy[idx] };
+                                            roomCopy.participants = (roomCopy.participants || []).map(p => {
+                                                try {
+                                                    const pid = p && (p.id || p.user_id || p.pk) ? (p.id || p.user_id || p.pk) : p;
+                                                    const ann = annotatedParts.find(ap => String(ap.id) === String(pid));
+                                                    if (ann && typeof ann.online !== 'undefined') return { ...p, online: !!ann.online };
+                                                } catch (e) {}
+                                                return p;
+                                            });
+                                            copy[idx] = roomCopy;
+                                        }
+                                        // Also populate global presence store from init_rooms
+                                        try {
+                                            for (const r of parsed.rooms) {
+                                                const parts = r.participants || [];
+                                                for (const ap of parts) {
+                                                    try {
+                                                        const raw = ap && (ap.id || ap.user_id || ap.pk) ? (ap.id || ap.user_id || ap.pk) : ap;
+                                                        const pid = raw && typeof raw === 'object' ? (raw.id || raw.user_id || raw.pk) : raw;
+                                                        if (!pid) continue;
+                                                        usePresenceStore.getState().updateUser(pid, { isOnline: !!ap.online, lastSeen: ap.last_seen || ap.lastSeen || null });
+                                                    } catch (e) {}
+                                                }
+                                            }
+                                        } catch (e) {}
+                                        return copy;
+                                    } catch (e) { return prev; }
+                                });
+                            } catch (e) {}
+                        }
+                    } catch (e) {}
+                },
+                onOpen: () => {},
+                onClose: () => {},
+            });
+        } catch (e) {}
+
+        return () => {
+            try { if (pres && typeof pres.disconnect === 'function') pres.disconnect(); } catch (e) {}
+        };
+    }, [token, markUserOnline, markUserOffline, setRooms]);
 
     // Attach websocket via the shared hook. The connect factory is called by
     // useChatWebSocket inside its own effect; we only provide the connect function.

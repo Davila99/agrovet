@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { normalizeStoredToken } from './chatUtils';
 import { chatAPI } from '../../../services/endpoints';
-import { playSendSound } from '../../../services/sound';
+import { playOutgoingSound, playSendSound } from '../../../services/sound';
 
 // Hook that encapsulates Chat local state and send/attach handlers so the
 // main `Chat.jsx` stays thin and mostly imports components.
@@ -19,8 +19,7 @@ export default function useChatController({ activeId, setRooms, getCurrentUserId
     const msg = { id: tempId, text, client_msg_id: clientMsgId, fromMe: true, timestamp: new Date().toISOString(), uid: `tmp_${tempId}-${new Date().toISOString()}`, sender_id: getCurrentUserId() };
   // Intentional minimal logging: note when a text send is initiated
   try { console.info('[SEND] button pressed', { room: String(activeId), tempId, shortText: String(text).slice(0,120) }); } catch (e) {}
-    setRooms((prev) => prev.map((r) => String(r.id) === String(activeId) ? { ...r, messages: [...(r.messages || []), msg] } : r));
-    // Log counts before/after optimistic insert inside a controlled updater to capture previous state
+    // Insert optimistic message into room (single update). Use controlled updater below.
     try {
       setRooms((prev) => {
         try {
@@ -28,18 +27,15 @@ export default function useChatController({ activeId, setRooms, getCurrentUserId
           const idx = copy.findIndex((r) => String(r.id) === String(activeId));
           if (idx === -1) return prev;
           const room = { ...(copy[idx] || {}) };
-          const prevMsgsLen = Array.isArray(room.messages) ? room.messages.length : 0;
           const msgs = Array.isArray(room.messages) ? room.messages.slice() : [];
           msgs.push(msg);
-          const newMsgsLen = msgs.length;
           room.messages = msgs;
           copy[idx] = room;
-          // suppressed verbose debug logs; kept quiet optimistic update here
           return copy;
         } catch (e) { return prev; }
       });
     } catch (e) {}
-    try { playSendSound(); } catch (e) {}
+  try { playOutgoingSound && typeof playOutgoingSound === 'function' ? playOutgoingSound(activeId) : playSendSound && playSendSound(); } catch (e) {}
     setText('');
     setSendingText(true);
 

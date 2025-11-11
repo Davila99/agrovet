@@ -37,6 +37,32 @@ export function playNotifySound() {
   } catch (e) {}
 }
 
+// Decide which outgoing sound to play based on whether the user is in the
+// active room and whether the browser window is focused. If the window is not
+// focused or the user is in a different room, play the notification sound;
+// otherwise play the in-room 'writing' sound.
+export function playOutgoingSound(roomId) {
+  try {
+    const windowFocused = (typeof document !== 'undefined') ? document.hasFocus() : true;
+    const activeRoom = (typeof window !== 'undefined') ? window.__AGROVET_ACTIVE_ROOM : null;
+    const isActiveRoom = roomId ? String(activeRoom) === String(roomId) : Boolean(activeRoom);
+
+    if (!windowFocused || !isActiveRoom) {
+      // play notification
+      if (!notifyAudio) return;
+      const a = notifyAudio.cloneNode();
+      a.play().catch(() => {});
+    } else {
+      // play writing
+      if (!sendAudio) return;
+      const a = sendAudio.cloneNode();
+      a.play().catch(() => {});
+    }
+  } catch (e) {
+    // swallow errors from autoplay policies or missing audio
+  }
+}
+
 export default {
   playSendSound,
   playNotifySound,
