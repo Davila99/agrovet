@@ -80,10 +80,11 @@ export default function ChatMessages({ activeConv, activeId, messagesEndRef, get
           const raw = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
           const token = raw ? raw.replace(/^Token\s*/i, '').replace(/^Bearer\s*/i, '') : null;
           if (!token) return;
-          try {
-            // lazy require to avoid circulars
-            const { chatAPI } = require('../../services/endpoints/chat');
-            const res = await chatAPI.markRead(activeId)({ token });
+            try {
+            // use dynamic import to avoid bundler/require issues in the browser
+            const mod = await import('../../../services/endpoints/chat');
+            const chatAPI = mod && (mod.chatAPI || (mod.default && mod.default.chatAPI) || mod.default || mod);
+            const res = chatAPI ? await chatAPI.markRead(activeId)({ token }) : null;
             // res is expected to be { updated: [<message_id>, ...] }
             if (res && Array.isArray(res.updated) && res.updated.length) {
               try {
@@ -95,44 +96,8 @@ export default function ChatMessages({ activeConv, activeId, messagesEndRef, get
                     if (typeof window !== 'undefined' && window._agrovet_chat_store && typeof window._agrovet_chat_store.updateMessage === 'function') {
                       window._agrovet_chat_store.updateMessage(mid, receipts, activeId);
                     }
-                    // also update rooms state for immediate UI consistency
-                    try {
-                      // use setTimeout 0 to avoid state mutation during render
-                      setTimeout(() => {
-                        try {
-                          setRooms((prev) => {
-                            try {
-                              const copy = prev.slice();
-                              const idx = copy.findIndex((r) => String(r.id) === String(activeId));
-                              if (idx === -1) return prev;
-                              const room = { ...(copy[idx] || {}) };
-                              const msgs = Array.isArray(room.messages) ? room.messages.slice() : [];
-                              for (let mi = 0; mi < msgs.length; mi++) {
-                                if (String(msgs[mi].id) === String(mid)) {
-                                  let receiptsArr = Array.isArray(msgs[mi].receipts) ? msgs[mi].receipts.slice() : [];
-                                  // upsert current user's read receipt
-                                  let found = false;
-                                  for (let ri = 0; ri < receiptsArr.length; ri++) {
-                                    if (String(receiptsArr[ri].user_id) === String(me)) {
-                                      receiptsArr[ri] = { ...receiptsArr[ri], delivered: true, delivered_at: receiptsArr[ri].delivered_at || nowIso, read: true, read_at: receiptsArr[ri].read_at || nowIso };
-                                      found = true; break;
-                                    }
-                                  }
-                                  if (!found) receiptsArr.push({ user_id: me, delivered: true, delivered_at: nowIso, read: true, read_at: nowIso });
-                                  const anyRead = receiptsArr.some(r => r && (r.read === true || r.read === 'true'));
-                                  const allDelivered = receiptsArr.length && receiptsArr.every(r => r && (r.delivered === true || r.delivered === 'true'));
-                                  msgs[mi] = { ...(msgs[mi] || {}), receipts: receiptsArr, status: anyRead ? 'read' : (allDelivered ? 'delivered' : 'sent') };
-                                  break;
-                                }
-                              }
-                              room.messages = msgs;
-                              copy[idx] = room;
-                              return copy;
-                            } catch (e) { return prev; }
-                          });
-                        } catch (e) {}
-                      }, 0);
-                    } catch (e) {}
+                    // avoid directly mutating local rooms state here; rely on the debug store
+                    // and existing subscription machinery to propagate updates.
                   } catch (e) {}
                 }
               } catch (e) {}
@@ -156,7 +121,7 @@ export default function ChatMessages({ activeConv, activeId, messagesEndRef, get
   // quiet: removed post-dedupe length log
 
   return (
-    <Box id="chat-messages-container" sx={{ flex: 1, overflowY: 'auto', p: 2, backgroundColor: '#f6fff8', backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'><g fill='%2339FF14' fill-opacity='0.06'><circle cx='20' cy='30' r='8'/><circle cx='34' cy='18' r='6'/><circle cx='12' cy='18' r='6'/><circle cx='58' cy='30' r='8'/><circle cx='72' cy='18' r='6'/><circle cx='50' cy='18' r='6'/></g></svg>")`, backgroundRepeat: 'repeat', backgroundSize: '160px 160px' }}>
+  <Box id="chat-messages-container" sx={{ flex: 1, overflowY: 'auto', p: 1, backgroundColor: '#f6fff8', backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'><g fill='%2339FF14' fill-opacity='0.06'><circle cx='20' cy='30' r='8'/><circle cx='34' cy='18' r='6'/><circle cx='12' cy='18' r='6'/><circle cx='58' cy='30' r='8'/><circle cx='72' cy='18' r='6'/><circle cx='50' cy='18' r='6'/></g></svg>")`, backgroundRepeat: 'repeat', backgroundSize: '160px 160px' }}>
       {msgs.map((m, i) => (
         <MessageItem key={String(m.uid || m.id || `${m.timestamp || ''}_${i}`)} m={m} index={i} userId={userId} activeConv={activeConv} activeId={activeId} />
       ))}

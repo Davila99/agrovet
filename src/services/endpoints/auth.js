@@ -37,12 +37,10 @@ export const getProfile = async (token) => {
   try {
     const storedId = localStorage.getItem("userId");
     if (storedId) {
-      console.log("[getProfile] Usando userId guardado:", storedId);
       return await authAPI.userById(storedId, token);
     }
   } catch (e) {
-    console.warn("[getProfile] Error leyendo userId:", e);
+    // swallow localStorage read errors silently
   }
-  console.log("[getProfile] Usando endpoint /me/");
   return await authAPI.profile(token);
 };

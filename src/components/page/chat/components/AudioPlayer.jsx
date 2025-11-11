@@ -57,7 +57,7 @@ export default function AudioPlayer({ src, spectrum, messageId, onPlayStart, act
   }, [src, messageId]);
 
   useEffect(() => {
-    try { console.debug('[AudioPlayer] init', { messageId, spectrumLen: Array.isArray(spectrum) ? spectrum.length : 0 }); } catch (e) {}
+  try { console.info('[AudioPlayer] init', { messageId, spectrumLen: Array.isArray(spectrum) ? spectrum.length : 0 }); } catch (e) {}
   }, [messageId, spectrum]);
 
   const toggle = async () => {

@@ -24,7 +24,11 @@ export default function useChatSocket({
             // the client receives incoming messages for other rooms (chat list updates).
             // createOnMessageHandler will receive `activeId` (possibly null) and
             // route updates appropriately.
-            if (String(activeId) === "bot-chat") return;
+            // Do not attempt to connect when there's no active room selected.
+            if (!activeId || String(activeId) === "bot-chat") {
+                try { console.warn('[SOCKET] connect skipped, invalid or empty activeId:', activeId); } catch(e){}
+                return;
+            }
 
             try {
                 svc.connect(activeId, token, {
@@ -84,6 +88,14 @@ export default function useChatSocket({
 
                         if (ev.type === 'addIncomingMessage' && ev.message) {
                             let payload = ev.message || {};
+                            // Prefer cross-client preview (data URL) when provided by sender.
+                            try {
+                                if (payload && payload.preview_data_url) {
+                                    payload.media_url = payload.preview_data_url;
+                                    payload.previewUrl = payload.preview_data_url;
+                                    payload.media_uploading = payload.media_uploading || (String(payload.status) === 'uploading');
+                                }
+                            } catch (e) {}
                             // Normalize timestamp: ensure there's a valid ISO timestamp
                             try {
                                 if (!payload.timestamp) payload.timestamp = new Date().toISOString();
@@ -106,6 +118,47 @@ export default function useChatSocket({
                             setRooms((prev) => {
                                 try {
                                     const roomIdToFind = roomHint ? String(roomHint) : String(activeId);
+
+                                    // Quick dedupe: if the target room already contains this message id, ignore
+                                    try {
+                                        const existingRoom = prev.find(r => String(r.id) === String(roomIdToFind));
+                                            if (existingRoom && Array.isArray(existingRoom.messages)) {
+                                                // Diagnostic: log existing messages' ids and client_msg_ids to inspect dedupe
+                                                try {
+                                                    const existingKeys = existingRoom.messages.map(mm => ({ id: mm && mm.id, client_msg_id: mm && (mm.client_msg_id || mm.clientMsgId || mm.client_msgid) }));
+                                                    console.info('[ROOM_UPDATE] addIncomingMessage: existingRoom keys', { room: String(existingRoom.id), existingKeys, incomingId: payload.id, incomingClientMsgId: payload.client_msg_id || payload.client_msgid || null });
+                                                } catch (e) {}
+                                                // If a message with the same server id already exists, skip
+                                                const already = existingRoom.messages.some(m => m && (String(m.id) === String(payload.id) || String(m.message_id) === String(payload.id)));
+                                                if (already) {
+                                                    // Check for optimistic message that used client_msg_id / client_msg_id mapping
+                                                    try {
+                                                        const clientId = payload.client_msg_id || payload.client_msgid || payload.clientId || null;
+                                                        if (clientId) {
+                                                            // Find optimistic message by client_msg_id and merge server payload into it
+                                                            const idx = existingRoom.messages.findIndex(m => m && (m.client_msg_id === clientId || m.client_msgid === clientId || m.clientMsgId === clientId));
+                                                            if (idx !== -1) {
+                                                                try { console.log('[ROOM_UPDATE] addIncomingMessage: merging server message into optimistic message via client_msg_id', payload.id, clientId); } catch(e){}
+                                                                const copy = prev.slice();
+                                                                const roomCopy = { ...copy[copy.findIndex(r=>String(r.id)===String(roomIdToFind))] };
+                                                                const msgs = Array.isArray(roomCopy.messages) ? roomCopy.messages.slice() : [];
+                                                                const existing = msgs[idx];
+                                                                const merged = { ...existing, ...(payload || {}) };
+                                                                // mark upload as finished when server provides a final media_url
+                                                                if (payload.media_url || payload.file_url || payload.mediaUrl) merged.media_uploading = false;
+                                                                msgs[idx] = merged;
+                                                                roomCopy.messages = msgs;
+                                                                copy[copy.findIndex(r=>String(r.id)===String(roomIdToFind))] = roomCopy;
+                                                                return copy;
+                                                            }
+                                                        }
+                                                    } catch(e) {}
+
+                                                    try { console.log('[ROOM_UPDATE] addIncomingMessage: message already present, skipping', payload.id); } catch(e){}
+                                                    return prev;
+                                                }
+                                            }
+                                    } catch(e) {}
 
                                     // compute if message is from me
                                     let fromMe = Boolean(payload && (payload.from_me || payload.fromMe));
@@ -245,17 +298,29 @@ export default function useChatSocket({
                         window._agrovet_chat_service.send({ type: 'mark_read', room: activeId });
                         console.log('[READ] 🔹 Enviando mark_read (WS) para room', activeId);
                         // Also attempt an HTTP fallback to ensure server persists the read
-                        try {
-                            const tokenRaw = localStorage.getItem('token');
-                            const token = tokenRaw ? tokenRaw.replace(/^Token\s*/i, '').replace(/^Bearer\s*/i, '') : null;
-                            if (token) {
-                                // lazy import of chatAPI to avoid circular imports
-                                const { chatAPI } = require('../../../services/endpoints/chat');
-                                chatAPI.markRead(activeId)({ token }).catch((err) => {
-                                    try { console.warn('[READ] HTTP markRead fallback failed', err); } catch (e) {}
-                                });
-                            }
-                        } catch (e) { console.warn('[READ] HTTP fallback failed to start', e); }
+                                                        try {
+                                                                const tokenRaw = localStorage.getItem('token');
+                                                                const token = tokenRaw ? tokenRaw.replace(/^Token\s*/i, '').replace(/^Bearer\s*/i, '') : null;
+                                                                if (token) {
+                                                                        // use dynamic import (works in browser) to avoid 'require is not defined'
+                                                                        import('../../../services/endpoints/chat')
+                                                                            .then((mod) => {
+                                                                                try {
+                                                                                    const chatAPI = mod.chatAPI || (mod.default && mod.default.chatAPI) || mod;
+                                                                                    if (chatAPI && typeof chatAPI.markRead === 'function') {
+                                                                                        chatAPI.markRead(activeId)({ token }).catch((err) => {
+                                                                                            try { console.warn('[READ] HTTP markRead fallback failed', err); } catch (e) {}
+                                                                                        });
+                                                                                    }
+                                                                                } catch (err) {
+                                                                                    try { console.warn('[READ] dynamic import succeeded but markRead call failed', err); } catch(e){}
+                                                                                }
+                                                                            })
+                                                                            .catch((err) => {
+                                                                                try { console.warn('[READ] dynamic import of chatAPI failed', err); } catch(e){}
+                                                                            });
+                                                                }
+                                                        } catch (e) { console.warn('[READ] HTTP fallback failed to start', e); }
                     } catch (e) {
                         console.warn('[READ] failed sending mark_read', e);
                     }

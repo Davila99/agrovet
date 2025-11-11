@@ -196,7 +196,7 @@ export function mergeRooms(existing, incoming) {
           if (Array.isArray(im.receipts) && im.receipts.length) {
             merged.receipts = im.receipts;
             try {
-              console.debug('[mergeRooms] Actualizando receipts del mensaje', im.id, im.receipts);
+              // receipts update log suppressed to reduce console noise
             } catch (err) {
               // ignore logging failures in non-browser contexts
             }

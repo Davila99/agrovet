@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Box, Button, Typography, IconButton } from "@mui/material";
+import { Box, Button, Typography, IconButton, CircularProgress } from "@mui/material";
 import CloseIcon from '@mui/icons-material/Close';
 import SendIcon from '@mui/icons-material/Send';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -9,7 +9,7 @@ import WaveformPlayer from './WaveformPlayer';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
 
-export default function AttachmentPreview({ pending, onConfirm, onCancel }) {
+export default function AttachmentPreview({ pending, onConfirm, onCancel, isUploading = false }) {
   if (!pending) return null;
   const { previewUrl, name, file, size } = pending;
   const mediaType = (pending && pending.media_type) || (file && file.type && file.type.split('/')[0]) || null;
@@ -37,84 +37,91 @@ export default function AttachmentPreview({ pending, onConfirm, onCancel }) {
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
         <Typography variant="body2" color="text.secondary">{cleanName(name)} • {(size/1024).toFixed(1)} KB</Typography>
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-          <IconButton
-            onClick={onConfirm}
-            aria-label="enviar"
-            sx={{ bgcolor: 'success.main', color: 'common.white', '&:hover': { bgcolor: 'success.dark' } }}
-            size="large"
-          >
-            <SendIcon />
-          </IconButton>
-          <IconButton
-            onClick={onCancel}
-            aria-label="cancelar"
-            sx={{ bgcolor: 'error.main', color: 'common.white', '&:hover': { bgcolor: 'error.dark' } }}
-            size="large"
-          >
-            <DeleteIcon />
-          </IconButton>
-          <IconButton onClick={onCancel} aria-label="cerrar" sx={{ ml: 1 }}><CloseIcon /></IconButton>
+          {/* While uploading hide the send/delete buttons and show a progress indicator */}
+          {isUploading ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <CircularProgress size={28} />
+            </Box>
+          ) : (
+            <>
+              <IconButton
+                onClick={() => onConfirm && onConfirm()}
+                aria-label="enviar"
+                sx={{ bgcolor: 'success.main', color: 'common.white', '&:hover': { bgcolor: 'success.dark' } }}
+                size="large"
+              >
+                <SendIcon />
+              </IconButton>
+              <IconButton
+                onClick={() => onCancel && onCancel()}
+                aria-label="cancelar"
+                sx={{ bgcolor: 'error.main', color: 'common.white', '&:hover': { bgcolor: 'error.dark' } }}
+                size="large"
+              >
+                <DeleteIcon />
+              </IconButton>
+              <IconButton onClick={() => onCancel && onCancel()} aria-label="cerrar" sx={{ ml: 1 }}><CloseIcon /></IconButton>
+            </>
+          )}
         </Box>
       </Box>
     </Box>
   );
 }
 
-  function PreviewAudioPlayer({ previewUrl, spectrum = [] }) {
-    const [playing, setPlaying] = useState(false);
-    const [progress, setProgress] = useState(0);
-    const audioRef = useRef(null);
+function PreviewAudioPlayer({ previewUrl, spectrum = [] }) {
+  const [playing, setPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const audioRef = useRef(null);
 
-    useEffect(() => {
-      if (!previewUrl) return;
-      const a = new Audio(previewUrl);
-      a.preload = 'metadata';
-      audioRef.current = a;
-      const onLoaded = () => {
-        // noop
-      };
-      const onTime = () => {
-        if (!a.duration) return setProgress(0);
-        const p = a.currentTime / a.duration;
-        setProgress(p);
-        // debug log progress
-        try { console.log('[PreviewAudioPlayer] progress', p); } catch (e) {}
-      };
-      const onEnd = () => {
-        setPlaying(false);
-        setProgress(0);
-      };
-      a.addEventListener('loadedmetadata', onLoaded);
-      a.addEventListener('timeupdate', onTime);
-      a.addEventListener('ended', onEnd);
-      return () => {
-        try { a.pause(); a.src = ''; } catch (e) {}
-        a.removeEventListener('loadedmetadata', onLoaded);
-        a.removeEventListener('timeupdate', onTime);
-        a.removeEventListener('ended', onEnd);
-      };
-    }, [previewUrl]);
-
-    const toggle = async () => {
-      const a = audioRef.current;
-      if (!a) return;
-      if (playing) {
-        a.pause();
-        setPlaying(false);
-        return;
-      }
-      try { await a.play(); setPlaying(true); } catch (e) { console.error('preview play failed', e); }
+  useEffect(() => {
+    if (!previewUrl) return;
+    const a = new Audio(previewUrl);
+    a.preload = 'metadata';
+    audioRef.current = a;
+    const onLoaded = () => {
+      // noop
     };
+    const onTime = () => {
+      if (!a.duration) return setProgress(0);
+      const p = a.currentTime / a.duration;
+      setProgress(p);
+    };
+    const onEnd = () => {
+      setPlaying(false);
+      setProgress(0);
+    };
+    a.addEventListener('loadedmetadata', onLoaded);
+    a.addEventListener('timeupdate', onTime);
+    a.addEventListener('ended', onEnd);
+    return () => {
+      try { a.pause(); a.src = ''; } catch (e) {}
+      a.removeEventListener('loadedmetadata', onLoaded);
+      a.removeEventListener('timeupdate', onTime);
+      a.removeEventListener('ended', onEnd);
+    };
+  }, [previewUrl]);
 
-    return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <IconButton size="small" onClick={toggle} sx={{ bgcolor: '#e8f4ff', color: '#1976d2' }}>
-            {playing ? <PauseIcon /> : <PlayArrowIcon />}
-          </IconButton>
-          <AudioWaveform spectrum={spectrum} width={260} height={36} dotted={true} progress={progress} isPlaying={playing} activeColor={'#6b6b6b'} inactiveColor={'#e6e6e6'} />
-        </Box>
-        <Typography variant="caption" color="text.secondary">{Math.round(progress * 100)}%</Typography>
+  const toggle = async () => {
+    const a = audioRef.current;
+    if (!a) return;
+    if (playing) {
+      a.pause();
+      setPlaying(false);
+      return;
+    }
+    try { await a.play(); setPlaying(true); } catch (e) { console.error('preview play failed', e); }
+  };
+
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <IconButton size="small" onClick={toggle} sx={{ bgcolor: '#e8f4ff', color: '#1976d2' }}>
+          {playing ? <PauseIcon /> : <PlayArrowIcon />}
+        </IconButton>
+        <AudioWaveform spectrum={spectrum} width={260} height={36} dotted={true} progress={progress} isPlaying={playing} activeColor={'#6b6b6b'} inactiveColor={'#e6e6e6'} />
       </Box>
-    );
-  }
+      <Typography variant="caption" color="text.secondary">{Math.round(progress * 100)}%</Typography>
+    </Box>
+  );
+}

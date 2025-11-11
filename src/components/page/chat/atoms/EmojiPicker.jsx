@@ -21,7 +21,7 @@ export default function EmojiPicker({ onPick, anchorElProp, inputRef, text, setT
         setFullPicker(() => P);
         setEmojiDataState(dataMod && (dataMod.default || dataMod));
       } catch (e) {
-        console.debug('emoji-mart load failed, falling back to small emoji grid', e);
+        console.warn('emoji-mart load failed, falling back to small emoji grid', e);
         setPickerLoadError(true);
       }
     }
@@ -55,8 +55,8 @@ export default function EmojiPicker({ onPick, anchorElProp, inputRef, text, setT
 
   return (
     <>
-      <IconButton onClick={openEmojiPicker} sx={{ bgcolor: '#FFF6F6', mr: 1 }} title="Emojis">
-        <EmojiEmotionsIcon sx={{ color: '#ff9800' }} />
+      <IconButton onClick={openEmojiPicker} sx={{ bgcolor: '#F0F7FF', mr: 1 }} title="Emojis">
+        <EmojiEmotionsIcon sx={{ color: '#1976d2' }} />
       </IconButton>
       <Popover
         open={Boolean(anchor)}

@@ -18,8 +18,8 @@ export default function FileAttach({ onAttach, accept = 'image/*,audio/*,video/*
   return (
     <>
       <input ref={fileRef} type="file" accept={accept} style={{ display: 'none' }} onChange={handleFileChange} />
-      <IconButton onClick={onFileClick} sx={{ bgcolor: '#E8F6FF', mr: 1 }}>
-        <ImageIcon sx={{ color: '#2AABEE' }} />
+      <IconButton onClick={onFileClick} sx={{ bgcolor: '#F0F7FF', mr: 1, '&:hover': { bgcolor: '#D6F0FF' } }} aria-label="Adjuntar archivo">
+        <ImageIcon sx={{ color: '#1976d2' }} />
       </IconButton>
     </>
   );

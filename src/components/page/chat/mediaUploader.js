@@ -5,6 +5,12 @@
 export function uploadMediaFile(file, onProgress, meta = {}) {
   return new Promise((resolve, reject) => {
     try {
+      if (!file) {
+        try { console.error('[uploadMediaFile] called with undefined file'); } catch (e) {}
+        const err = new Error('uploadMediaFile: file is undefined');
+        reject(err);
+        return;
+      }
       // Resolve API base: prefer runtime override, otherwise default to backend host
       let apiOrigin = null;
       if (typeof window !== 'undefined' && window.__AGROVET_API_BASE) {
@@ -19,7 +25,7 @@ export function uploadMediaFile(file, onProgress, meta = {}) {
         apiOrigin = `${location.protocol}//127.0.0.1:8000`;
       }
   const url = `${apiOrigin}/api/media/media/`;
-  try { console.debug('[uploadMediaFile] starting upload', { url, name: file.name, size: file.size, type: file.type }); } catch (e) {}
+  try { console.info('[UPLOAD] starting', { url, name: file.name, size: file.size, type: file.type }); } catch (e) {}
       const xhr = new XMLHttpRequest();
       const form = new FormData();
       form.append('image', file, file.name);
@@ -37,7 +43,7 @@ export function uploadMediaFile(file, onProgress, meta = {}) {
           if (v && v instanceof File) entries.push({ key: k, filename: v.name, size: v.size, type: v.type });
           else entries.push({ key: k, value: String(v) });
         }
-        try { console.debug('[uploadMediaFile] form entries:', entries); } catch (e) {}
+  try { console.info('[UPLOAD] form entries', entries); } catch (e) {}
       } catch (e) {}
 
       xhr.open('POST', url, true);
@@ -47,10 +53,10 @@ export function uploadMediaFile(file, onProgress, meta = {}) {
         const raw = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
         if (raw) {
           const token = String(raw).replace(/^Token\s*/i, '').replace(/^Bearer\s*/i, '');
-          try { console.debug('[uploadMediaFile] setting Authorization header (masked):', String(token).slice(0,6) + '...'); } catch (e) {}
+          try { console.info('[UPLOAD] setting Authorization header (masked):', String(token).slice(0,6) + '...'); } catch (e) {}
           xhr.setRequestHeader('Authorization', `Token ${token}`);
         } else {
-          try { console.debug('[uploadMediaFile] no token found in localStorage'); } catch(e){}
+          try { console.info('[UPLOAD] no token found in localStorage'); } catch(e){}
         }
       } catch (e) {
         try { console.warn('[uploadMediaFile] failed reading token for header', e); } catch (err) {}
@@ -73,7 +79,7 @@ export function uploadMediaFile(file, onProgress, meta = {}) {
           data = { raw: xhr.responseText };
         }
         if (status >= 200 && status < 300) {
-          try { console.debug('[uploadMediaFile] upload success', data); } catch (e) {}
+          try { console.info('[UPLOAD] success', data); } catch (e) {}
           resolve(data);
         } else {
           // Attach response body to error and log for debugging

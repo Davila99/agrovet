@@ -36,21 +36,7 @@ export default function Chat() {
     }
   };
 
-  // Debug: print rooms state whenever it changes to trace propagation
-  useEffect(() => {
-    try {
-      console.log('[DEBUG] Estado actual de rooms:', (rooms || []).length, 'activeId:', activeId);
-      (rooms || []).forEach((room) => {
-        try {
-          console.log(`[DEBUG] Room ${room.id}:`, {
-            messages: (room.messages && room.messages.length) || 0,
-            lastMessage: room.lastMessage,
-            unread: room.unread,
-          });
-        } catch (e) {}
-      });
-    } catch (e) {}
-  }, [rooms, activeId]);
+  // Removed noisy debug logs to reduce console spam in production/dev.
 
   // Rooms hook: returns helper to open/create 1:1 and uses shared state
   const { openOneToOne } = useChatRooms(activeId, [rooms, setRooms]);
@@ -81,6 +67,7 @@ export default function Chat() {
     cancelPendingAttachment,
     confirmSendAttachment,
     handleKeyDown,
+    uploadingAttachment,
   } = useChatController({ activeId, setRooms, getCurrentUserId });
 
   const goBackToList = () => setActiveId(null);
@@ -120,24 +107,26 @@ export default function Chat() {
           getCurrentUserId={getCurrentUserId}
         />
 
-        {/* If there's a pending attachment, show a compact preview above the input box */}
-        {pendingAttachment && (
-          <Box sx={{ p: 1, borderTop: '1px solid rgba(0,0,0,0.04)', bgcolor: 'background.default' }}>
-            <AttachmentPreview pending={pendingAttachment} onConfirm={confirmSendAttachment} onCancel={cancelPendingAttachment} />
-          </Box>
-        )}
+        {/* When there's a pending attachment, replace the input with the preview UI (WhatsApp-like). */}
         {activeId && (
-          <ChatInput
-            text={text}
-            setText={setText}
-            handleSend={handleSend}
-            handleKeyDown={handleKeyDown}
-            onAttach={handleAttach}
-            pendingAttachment={pendingAttachment}
-            onCancelAttachment={cancelPendingAttachment}
-            onConfirmAttachment={confirmSendAttachment}
-            sending={sendingText}
-          />
+          pendingAttachment ? (
+            <Box sx={{ p: 1, borderTop: '1px solid rgba(0,0,0,0.04)', bgcolor: 'background.default' }}>
+              <AttachmentPreview pending={pendingAttachment} onConfirm={confirmSendAttachment} onCancel={cancelPendingAttachment} isUploading={uploadingAttachment} />
+            </Box>
+          ) : (
+            <ChatInput
+              text={text}
+              setText={setText}
+              handleSend={handleSend}
+              handleKeyDown={handleKeyDown}
+              onAttach={handleAttach}
+              pendingAttachment={pendingAttachment}
+              onCancelAttachment={cancelPendingAttachment}
+              onConfirmAttachment={confirmSendAttachment}
+              sending={sendingText}
+              uploadingAttachment={uploadingAttachment}
+            />
+          )
         )}
       </Box>
     </Box>
