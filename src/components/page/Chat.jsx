@@ -137,7 +137,10 @@ export default function Chat() {
       )}
 
       <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
-        {activeId && (
+        {/* Chat header temporarily hidden because its options menu was
+            overlapping important UI in the chat view. Uncomment the
+            block below to restore the header when needed. */}
+        {false && activeId && (
           <ChatHeader
             activeConv={activeConv}
             wsStatus="OPEN"

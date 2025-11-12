@@ -7,6 +7,7 @@ import MenuIcon from "@mui/icons-material/Menu";
 import logo from "../../../assets/logo.svg";
 import DesktopMenu from "./DesktopMenu";
 import UserMenu from "./UserMenu";
+import Avatar from '@mui/material/Avatar';
 import MobileDrawer from "./MobileDrawer";
 import { getProfile } from "../../../services/endpoints";
 import SearchIcon from "@mui/icons-material/Search";
@@ -171,8 +172,16 @@ const Navbar = () => {
                 display: { xs: "none", md: "flex" },
               }}
             >
-              {isLoggedIn ? (
+              {isLoggedIn && !location.pathname?.startsWith('/chat') ? (
+                // Hide the user menu when on the chat page because its popover
+                // overlapped important UI (requested by the user). If you want
+                // to re-enable the menu on chat, remove the pathname guard.
                 <UserMenu onLogout={handleLogout} user={user} />
+              ) : isLoggedIn ? (
+                // When logged in but on chat, show a simple avatar instead of the full menu
+                <Box>
+                  <AvatarPlaceholder user={user} />
+                </Box>
               ) : (
                 <>
                   <Button
@@ -229,3 +238,13 @@ const Navbar = () => {
 };
 
 export default Navbar;
+
+// Small lightweight avatar used when the full UserMenu is hidden (e.g. on chat)
+function AvatarPlaceholder({ user }) {
+  const initials = (user && `${user.full_name?.[0] || ''}${user.last_name?.[0] || ''}`) || '';
+  return (
+    <Avatar sx={{ width: 36, height: 36, bgcolor: '#103e68', color: '#fff', fontWeight: 600 }} src={user?.profile_picture || undefined}>
+      {!user?.profile_picture && initials}
+    </Avatar>
+  );
+}

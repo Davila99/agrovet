@@ -1,4 +1,5 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import './index.css';
 import Navbar from "./components/page/navigation/nav.jsx";
 import { ThemeProvider } from "@mui/material/styles";
 import { theme } from "./theme/theme.js";
@@ -16,6 +17,8 @@ import EditUser from "./components/page/profile/EditUser.jsx";
 import ProtectedRoute from "./middleware/ProtectedRoute.jsx";
 import Dashboard from "./components/page/Dashboard.jsx";
 import ChatPage from "./components/page/ChatPage";
+import { AddList, AddForm, AddDetail } from './components/page/add';
+
 
 function App() {
   return (
@@ -56,6 +59,11 @@ function App() {
             }
           />
           <Route path="/chat" element={<ChatPage />} />
+          {/* Alias: allow /add to redirect to /adds (common typo or short link) */}
+          <Route path="/add" element={<Navigate to="/adds" replace />} />
+          <Route path="/adds" element={<AddList />} />
+          <Route path="/adds/new" element={<AddForm />} />
+          <Route path="/adds/:id" element={<AddDetail />} />
         </Routes>
         <Footer />
       </Router>
