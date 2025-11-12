@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardMedia, CardContent, Typography, Box } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { styles } from '../styles/addStyles';
@@ -23,16 +23,66 @@ function getCurrencyFromLocale() {
   return { code: 'BOB', symbol: 'Bs' };
 }
 
+// cache for reverse-geocode currency determination
+const geoCurrencyCache = new Map();
+
+const COUNTRY_CURRENCY_MAP = {
+  'US': { code: 'USD', symbol: '$' },
+  'NI': { code: 'NIO', symbol: 'C$' },
+  'BO': { code: 'BOB', symbol: 'Bs' },
+  'AR': { code: 'ARS', symbol: '$' },
+  'CL': { code: 'CLP', symbol: '$' },
+  'PE': { code: 'PEN', symbol: 'S/' },
+  'UY': { code: 'UYU', symbol: '$U' },
+  'ES': { code: 'EUR', symbol: '€' },
+  'MX': { code: 'MXN', symbol: '$' },
+};
+
 export default function AddCard({ add }) {
   const imageUrl = add?.main_image?.file_url || add?.main_image?.url || (Array.isArray(add?.secondary_images) && (add.secondary_images[0]?.file_url || add.secondary_images[0]?.url)) || '/placeholder.png';
-  const currency = getCurrencyFromLocale();
+  const [currency, setCurrency] = useState(getCurrencyFromLocale());
   const price = typeof add.price === 'number' ? add.price : parseFloat(add.price || 0);
-  let priceStr = '';
-  try {
-    priceStr = new Intl.NumberFormat(navigator.language || 'es-BO', { style: 'currency', currency: currency.code, maximumFractionDigits: 2 }).format(price);
-  } catch (e) {
-    priceStr = `${currency.symbol} ${price}`;
-  }
+  const [priceStr, setPriceStr] = useState(() => {
+    try { return new Intl.NumberFormat(navigator.language || 'es-BO', { style: 'currency', currency: currency.code, maximumFractionDigits: 2 }).format(price); } catch (e) { return `${currency.symbol} ${price}`; }
+  });
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const lat = add.latitude;
+        const lon = add.longitude;
+        if (!lat || !lon) return;
+        const key = `${Number(lat).toFixed(4)},${Number(lon).toFixed(4)}`;
+        if (geoCurrencyCache.has(key)) {
+          const mapped = geoCurrencyCache.get(key);
+          if (mounted) {
+            setCurrency(mapped);
+            try { setPriceStr(new Intl.NumberFormat(undefined, { style: 'currency', currency: mapped.code, maximumFractionDigits: 2 }).format(price)); } catch (e) { setPriceStr(`${mapped.symbol} ${price}`); }
+          }
+          return;
+        }
+        // reverse geocode
+        const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&addressdetails=1`;
+        const r = await fetch(url);
+        if (!r.ok) return;
+        const j = await r.json();
+        const addr = j.address || {};
+        const cc = (addr.country_code || '').toString().toUpperCase();
+        const mapped = COUNTRY_CURRENCY_MAP[cc] || null;
+        if (mapped) {
+          geoCurrencyCache.set(key, mapped);
+          if (mounted) {
+            setCurrency(mapped);
+            try { setPriceStr(new Intl.NumberFormat(undefined, { style: 'currency', currency: mapped.code, maximumFractionDigits: 2 }).format(price)); } catch (e) { setPriceStr(`${mapped.symbol} ${price}`); }
+          }
+        }
+      } catch (e) {
+        console.warn('failed resolving currency for add', e);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [add.latitude, add.longitude, price]);
 
   const dateStr = add.created_at ? (() => {
     try { return new Date(add.created_at).toLocaleDateString(); } catch (e) { return add.created_at; }
@@ -49,7 +99,9 @@ export default function AddCard({ add }) {
         backgroundColor: '#fff',
         transition: 'all 0.25s ease',
         boxShadow: '0 8px 22px rgba(2,6,23,0.08)',
-        border: '1px solid rgba(16,24,40,0.04)',
+        border: '1px solid rgba(16,24,40,0.08)',
+        // subtle background tint to separate from white page on hover
+        '&.MuiPaper-root': { backgroundClip: 'padding-box' },
         '&:hover': { transform: 'translateY(-6px)', boxShadow: '0 18px 40px rgba(2,6,23,0.12)' },
         display: 'block',
       }}
@@ -66,13 +118,13 @@ export default function AddCard({ add }) {
         </Box>
       </Box>
       <CardContent sx={{ pt: 2 }}>
-        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 0.5, color: '#0f1724', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 0.5, color: '#0f1724', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', fontFamily: 'Inter, system-ui, sans-serif' }}>
           {add.title}
         </Typography>
-        <Typography sx={{ color: '#0b3b1f', fontWeight: 800, fontSize: '1.05rem' }}>
+        <Typography sx={{ color: '#0b3b1f', fontWeight: 800, fontSize: '1.05rem', fontFamily: 'Inter, system-ui, sans-serif' }}>
           {priceStr}
         </Typography>
-        <Typography variant="body2" color="text.secondary" mt={0.5}>
+        <Typography variant="body2" color="text.secondary" mt={0.5} sx={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
           {dateStr ? `Publicado ${dateStr}` : ''}
         </Typography>
       </CardContent>

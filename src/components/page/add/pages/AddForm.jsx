@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, TextField, MenuItem, Typography, Button, Snackbar, Alert, Card, CardContent, Stack, IconButton, InputAdornment, Chip } from '@mui/material';
 import ImageCarousel from '../atoms/ImageCarousel';
+import LocationPicker from '../atoms/LocationPicker';
 import AddAPhotoIcon from '@mui/icons-material/AddAPhoto';
 import { styles } from '../styles/addStyles';
 import { addService } from '../../../../services/endpoints/adds';
@@ -20,6 +21,9 @@ export default function AddForm({ onCreated }) {
     condition: 'new',
     main_image: null,
     secondary_images: [],
+    location_name: '',
+    latitude: null,
+    longitude: null,
   };
 
   const [form, setForm] = useState(initialForm);
@@ -49,13 +53,20 @@ export default function AddForm({ onCreated }) {
       try {
         const res = await addService.getCategories();
         // expecting an array of categories with id and name
-        if (mounted && Array.isArray(res) && res.length) {
-          setCategories(res);
-          setCategoriesLoaded(true);
-        } else if (mounted) {
-          // No data returned — fallback
-          setCategories(FALLBACK_CATEGORIES);
-          setCategoriesLoaded(false);
+        if (mounted) {
+          const list = Array.isArray(res) ? res : (res.results || []);
+          const CORE_NAMES = ['Medicamentos y salud animal','Alimentos y suplementos','Productos para ganado','Semillas y plantas','Fertilizantes y agroquímicos','Maquinaria e implementos','Herramientas e insumos','Servicios agropecuarios'];
+          const coreFound = list.filter(c => CORE_NAMES.includes((c.name || '').toString()));
+          if (coreFound.length) {
+            setCategories(coreFound);
+            setCategoriesLoaded(true);
+          } else if (Array.isArray(list) && list.length) {
+            setCategories(list);
+            setCategoriesLoaded(true);
+          } else {
+            setCategories(FALLBACK_CATEGORIES);
+            setCategoriesLoaded(false);
+          }
         }
       } catch (e) {
         console.error('failed to load categories, falling back to static list', e);
@@ -65,6 +76,55 @@ export default function AddForm({ onCreated }) {
       }
     })();
     return () => { mounted = false; };
+  }, []);
+
+  // Try to detect user's location on mount. Populate latitude/longitude and attempt a reverse geocode
+  useEffect(() => {
+    let cancelled = false;
+    if (!('geolocation' in navigator)) return;
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      if (cancelled) return;
+      const lat = pos.coords.latitude;
+      const lon = pos.coords.longitude;
+      // Best-effort reverse geocode using Nominatim (OpenStreetMap). If it fails, fallback to coords string.
+      let locationLabel = `Lat ${lat.toFixed(3)}, Lon ${lon.toFixed(3)}`;
+      try {
+        const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`;
+        // Don't set custom User-Agent header (browsers block it). Let the browser send default headers.
+        const r = await fetch(url);
+        if (r.ok) {
+          const j = await r.json();
+          // Try to pick a sensible display name: city, town, village, or name, then fallback to display_name
+          const addr = j.address || {};
+          // Prefer common locality fields, then broader administrative areas
+          locationLabel = addr.city || addr.town || addr.village || addr.hamlet || addr.municipality || addr.county || addr.state || addr.region || j.name || j.display_name || locationLabel;
+          // If reverse geocode provides country or country_code, try to choose a currency accordingly
+          try {
+            const cc = (addr.country_code || '').toString().toUpperCase();
+            const countryCurrencyMap = {
+              'US': { code: 'USD', symbol: '$' },
+              'NI': { code: 'NIO', symbol: 'C$' },
+              'BO': { code: 'BOB', symbol: 'Bs' },
+              'AR': { code: 'ARS', symbol: '$' },
+              'CL': { code: 'CLP', symbol: '$' },
+              'PE': { code: 'PEN', symbol: 'S/' },
+              'UY': { code: 'UYU', symbol: '$U' },
+              'ES': { code: 'EUR', symbol: '€' },
+              'MX': { code: 'MXN', symbol: '$' },
+            };
+            if (cc && countryCurrencyMap[cc]) {
+              setCurrency(countryCurrencyMap[cc]);
+            }
+          } catch (e) {}
+        }
+      } catch (e) {
+        console.warn('Reverse geocode failed', e);
+      }
+      setForm(prev => ({ ...prev, location_name: locationLabel, latitude: lat, longitude: lon }));
+    }, (err) => {
+      console.warn('geolocation error', err);
+    }, { timeout: 8000, maximumAge: 1000 * 60 * 5 });
+    return () => { cancelled = true; };
   }, []);
 
   // Detect currency from browser locale (best-effort fallback)
@@ -183,6 +243,9 @@ export default function AddForm({ onCreated }) {
         condition: form.condition,
         main_image_id: main_id,
         secondary_image_ids: secondary_ids,
+        location_name: form.location_name || null,
+        latitude: form.latitude || null,
+        longitude: form.longitude || null,
       };
 
       const res = await addService.createAdd(payload);
@@ -269,6 +332,20 @@ export default function AddForm({ onCreated }) {
           </TextField>
 
           <TextField fullWidth multiline rows={4} label="Descripción" name="description" value={form.description} onChange={handleChange} sx={{ mb: 2 }} />
+
+          {/* Location: show detected location (editable) and persist lat/lon in payload */}
+          {/* Location picker: default populated by geolocation reverse-geocode; user may change via search */}
+          <Box sx={{ mb: 2 }}>
+            <LocationPicker
+              value={form.location_name || ''}
+              onChange={(v) => setForm(prev => ({ ...prev, location_name: v }))}
+              onSelect={(place) => setForm(prev => ({ ...prev, location_name: place.display_name, latitude: place.lat, longitude: place.lon }))}
+              placeholder={form.location_name ? '' : 'Se intentará detectar tu ciudad por defecto'}
+            />
+            {form.latitude && form.longitude && (
+              <Typography variant="caption" color="text.secondary">Detectado • {form.latitude.toFixed ? form.latitude.toFixed(3) : form.latitude}, {form.longitude && form.longitude.toFixed ? form.longitude.toFixed(3) : form.longitude}</Typography>
+            )}
+          </Box>
 
           <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
             <Button
