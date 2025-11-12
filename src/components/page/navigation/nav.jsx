@@ -125,6 +125,7 @@ const Navbar = () => {
                 openComunidadMenu={openComunidadMenu}
                 closeComunidadMenu={closeComunidadMenu}
                 isLoggedIn={isLoggedIn}
+                user={user}
               />
 
               {/* Search (desktop) */}

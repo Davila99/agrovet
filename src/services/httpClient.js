@@ -1,5 +1,6 @@
   // Producción (sin espacio accidental)
 const BASE_URL = "https://agrovet.pythonanywhere.com/api";
+// const BASE_URL = "https://shante-klephtic-nahla.ngrok-free.dev/api";
 
 // const BASE_URL = "http://127.0.0.1:8000/api";
   // Allow runtime override (e.g. tests or embed) via window.__AGROVET_API_BASE

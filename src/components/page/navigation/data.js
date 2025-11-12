@@ -4,6 +4,7 @@ export const menuItems = [
   { text: "Mapa", path: "/mapa", icon: "map" },
   { text: "Acerca de", path: "/acerca-de", icon: "info" },
   { text: "AVA", path: "/chat", icon: "ava" },
+
 ];
 
 export const comunidadSubmenu = [];
