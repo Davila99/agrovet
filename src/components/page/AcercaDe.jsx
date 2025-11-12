@@ -10,6 +10,7 @@ import {
 } from "@mui/material";
 import Footer from "./Footer";
 import { motion } from "framer-motion";
+import Navbar from "./navigation/nav.jsx";
 
 // usar motion(Component) directamente
 const MotionBox = motion(Box);
@@ -84,6 +85,7 @@ const objectives = [
 const QuienesSomos = () => {
   return (
     <Box>
+      <Navbar />
       <MotionBox
         whileInView="show"
         viewport={{ once: true, amount: 0.15 }}
