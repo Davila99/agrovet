@@ -17,7 +17,8 @@ import EditUser from "./components/page/profile/EditUser.jsx";
 import ProtectedRoute from "./middleware/ProtectedRoute.jsx";
 import Dashboard from "./components/page/Dashboard.jsx";
 import ChatPage from "./components/page/ChatPage";
-import { AddList, AddForm, AddDetail } from './components/page/add';
+import AddPage from './components/page/AddPage';
+import { AddForm, AddDetail } from './components/page/add';
 
 
 function App() {
@@ -61,7 +62,7 @@ function App() {
           <Route path="/chat" element={<ChatPage />} />
           {/* Alias: allow /add to redirect to /adds (common typo or short link) */}
           <Route path="/add" element={<Navigate to="/adds" replace />} />
-          <Route path="/adds" element={<AddList />} />
+          <Route path="/adds" element={<AddPage />} />
           <Route path="/adds/new" element={<AddForm />} />
           <Route path="/adds/:id" element={<AddDetail />} />
         </Routes>

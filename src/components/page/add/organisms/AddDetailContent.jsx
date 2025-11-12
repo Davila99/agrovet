@@ -1,16 +1,21 @@
 import React from 'react';
 import { Box, Typography, Grid, Chip } from '@mui/material';
+import ImageCarousel from '../atoms/ImageCarousel';
 
 export default function AddDetailContent({ add }) {
   if (!add) return <Typography>Loading...</Typography>;
 
-  const imageUrl = add?.main_image?.file_url || add?.main_image?.url || '/placeholder.png';
+  const images = [];
+  if (add?.main_image) images.push(add.main_image.file_url || add.main_image.url || add.main_image);
+  if (Array.isArray(add?.secondary_images)) {
+    add.secondary_images.forEach(si => images.push(si.file_url || si.url || si));
+  }
 
   return (
     <Box sx={{ p: 2 }}>
       <Grid container spacing={3}>
         <Grid item xs={12} md={6}>
-          <Box component="img" src={imageUrl} alt={add.title} sx={{ width: '100%', borderRadius: 2 }} />
+          <ImageCarousel images={images} height={420} />
         </Grid>
         <Grid item xs={12} md={6}>
           <Typography variant="h5" sx={{ fontWeight: 700 }}>{add.title}</Typography>
