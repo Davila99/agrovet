@@ -162,9 +162,12 @@ export default function ChatList({
                   </ListItemAvatar>
                   <ListItemText
                     primary={cleanName(displayName)}
+                    // Render secondary content as inline elements to avoid nesting block <div> inside
+                    // the internal <p> that MUI may use for ListItemText secondary.
                     secondary={
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+                      <Box component="span" sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
                         <Typography
+                          component="span"
                           variant="body2"
                           sx={{
                             color: "text.secondary",
@@ -176,7 +179,7 @@ export default function ChatList({
                           {c.lastMessage}
                         </Typography>
                         {online && (
-                          <Typography variant="caption" sx={{ color: 'success.main', fontWeight: 600 }}>
+                          <Typography component="span" variant="caption" sx={{ color: 'success.main', fontWeight: 600 }}>
                             En línea
                           </Typography>
                         )}

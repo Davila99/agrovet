@@ -265,6 +265,14 @@ export function chatServiceFactory() {
   const send = (msg) => {
     try {
       if (!ws) return;
+      // Only attempt send if socket is fully open to avoid DOMException
+      try {
+        const isOpen = typeof ws.readyState !== 'undefined' ? ws.readyState === WebSocket.OPEN : true;
+        if (!isOpen) {
+          try { console.warn('[chatService] send called but WS not open, readyState=', ws.readyState); } catch (e) {}
+          return;
+        }
+      } catch (e) {}
       const payload = typeof msg === "string" ? msg : JSON.stringify(msg);
       ws.send(payload);
     } catch (e) {

@@ -26,12 +26,12 @@ export default function AddFilterBar({
           size="small"
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') onSearch(); }}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); onSearch(); } }}
           sx={{ width: '100%' }}
           InputProps={{
             endAdornment: (
               <InputAdornment position="end">
-                <IconButton size="small" onClick={onSearch} aria-label="buscar">
+                <IconButton size="small" onClick={() => onSearch()} aria-label="buscar">
                   <SearchIcon fontSize="small" />
                 </IconButton>
               </InputAdornment>
@@ -41,7 +41,16 @@ export default function AddFilterBar({
         {suggestions && suggestions.length > 0 && (
           <Box sx={{ position: 'absolute', left: 0, right: 0, mt: 0.5, bgcolor: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 1, zIndex: 40, maxHeight: 220, overflow: 'auto' }}>
             {suggestions.map(s => (
-              <Box key={s.id || s.title} onClick={() => onSelectSuggestion(s)} sx={{ p: 1, cursor: 'pointer', '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' } }}>
+              <Box
+                key={s.id || s.title}
+                onClick={() => {
+                  try { onSelectSuggestion(s); } catch (e) {}
+                  // if suggestion has text, trigger search immediately
+                  const text = s?.title || s?.name || '';
+                  if (text) onSearch(text);
+                }}
+                sx={{ p: 1, cursor: 'pointer', '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' } }}
+              >
                 {s.title || s.name}
               </Box>
             ))}

@@ -53,16 +53,7 @@ const MessageItem = memo(({ m, index, userId, activeConv, activeId }) => {
 
   const key = String(m.uid || m.id || `${m.timestamp || ''}_${index}`);
 
-  // Development render logging removed to reduce noise. Keep memoization above to limit re-renders.
-  // Small diagnostic log: when a message lacks a usable media URL, log key fields
-  try {
-    const debugShouldLog = !mediaUrl || (typeof mediaUrl === 'string' && mediaUrl.startsWith('blob:'));
-    if (debugShouldLog) {
-      try {
-        console.info('[MSG_RENDER] media-missing-or-blob', { id: m.id, uid: m.uid, client_msg_id: m.client_msg_id || m.clientMsgId, media_url: m.media_url || null, preview_data_url: m.preview_data_url || null, previewUrl: m.previewUrl || null, media_uploading: Boolean(m.media_uploading), status: m.status || null, fromMe });
-      } catch (e) {}
-    }
-  } catch (e) {}
+  // Removed noisy render-time diagnostics to reduce console noise in production.
 
     return (
     <Box key={key} data-msg-id={m.id} data-fromme={fromMe} sx={{ display: 'flex', justifyContent: fromMe ? 'flex-end' : 'flex-start', mb: 0.75 }}>

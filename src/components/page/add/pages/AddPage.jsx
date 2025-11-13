@@ -119,7 +119,7 @@ export default function AddPage() {
         categories={categories}
         search={search}
         onSearchChange={setSearch}
-        onSearch={() => { setSearchQuery(search); }}
+    onSearch={(text) => { const t = (typeof text === 'string' && text.length) ? text : search; setSearch(t); setSearchQuery(t); }}
         suggestions={suggestions}
         onSelectSuggestion={(s) => {
           // Apply suggestion as a filter (do not redirect to detail)
