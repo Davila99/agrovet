@@ -18,6 +18,7 @@ import {
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import MenuIcon from "@mui/icons-material/Menu";
 import Chat from "./Chat";
+import AddPage from "./add/pages/AddPage";
 import { getProfile } from "../../services/endpoints/auth";
 import { useNavigate } from "react-router-dom";
 
@@ -219,11 +220,7 @@ const Dashboard = () => {
           }}
         >
           {selected === "chat" && <Chat />}
-          {selected === "ads" && (
-            <Typography variant="h6" color="text.secondary">
-              Sección Ads en construcción 🚧
-            </Typography>
-          )}
+          {selected === "ads" && <AddPage />}
           {selected === "products" && (
             <Typography variant="h6" color="text.secondary">
               Sección Products en construcción 📦

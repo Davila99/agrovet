@@ -187,7 +187,10 @@ const LandingAgrovetsAnim = () => {
                 WebkitTextFillColor: "transparent",
               }}
             />
-            <Typography variant="body1" sx={{ mb: 3, lineHeight: 1.6 }}>
+            <Typography
+              variant="body1"
+              sx={{ mb: 3, lineHeight: 1.6, color: "#445660" }}
+            >
               Conecta con especialistas, negocios y productores para impulsar el
               desarrollo agropecuario. Agrovets facilita la colaboración y el
               conocimiento compartido.
@@ -245,7 +248,7 @@ const LandingAgrovetsAnim = () => {
           speed={45}
           sx={{ fontWeight: "bold", mb: 2, color: "#103E68" }}
         />
-        <Typography variant="body1" sx={{ mb: 3 }}>
+        <Typography variant="body1" sx={{ mb: 3, color: "#445660" }}>
           Algunos datos relevantes:
         </Typography>
 
@@ -293,112 +296,115 @@ const LandingAgrovetsAnim = () => {
       <Divider sx={{ my: 8 }} />
 
       {/* PARTICIPACIÓN (fluido, sin cards) */}
-{/* PARTICIPACIÓN — versión narrativa fluida */}
-<Box
-  sx={{
-    mt: 10,
-    py: 8,
-    px: { xs: 2, md: 6 },
-    background: "linear-gradient(180deg,#ffffff 0%,#f7faf8 100%)",
-  }}
->
-  <Stack spacing={8}>
-    {[
-      {
-        key: "specialist",
-        text: "¿Eres especialista? En Agrovets puedes crear tu perfil profesional, conectar con productores y ofrecer tus servicios directamente.",
-        icon: <PersonSearchIcon sx={{ fontSize: 56, color: "#103E68" }} />,
-        cta: "Crear perfil profesional",
-        color: "#103E68",
-        action: () => navigate("/profile/create?role=specialist"),
-      },
-      {
-        key: "business",
-        text: "¿Tienes un negocio? Regístralo en Agrovets y llega a más clientes agropecuarios que buscan tus productos y servicios.",
-        icon: <BusinessCenterIcon sx={{ fontSize: 56, color: "#35722b" }} />,
-        cta: "Registrar mi negocio",
-        color: "#35722b",
-        action: () => navigate("/profile/create?role=business"),
-      },
-      {
-        key: "forum",
-        text: "Únete a la comunidad. Publica tus dudas, comparte experiencias o novedades del sector en nuestro foro colaborativo.",
-        icon: <ForumIcon sx={{ fontSize: 56, color: "#6b4fdb" }} />,
-        cta: "Ir al foro",
-        color: "#6b4fdb",
-        action: () => navigate("/forum"),
-      },
-      {
-        key: "ava",
-        text: "Consulta con AVA, el asistente virtual de Agrovets. Recibe orientación inmediata sobre servicios, perfiles o temas del sector.",
-        icon: <ChatIcon sx={{ fontSize: 56, color: "#e07a5f" }} />,
-        cta: "Hablar con AVA",
-        color: "#e07a5f",
-        action: () => navigate("/chat"),
-      },
-    ].map((section, idx) => (
-      <motion.div
-        key={section.key}
-        initial={{ opacity: 0, y: 30 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ delay: idx * 0.15, duration: 0.6, type: "spring" }}
+      {/* PARTICIPACIÓN — versión narrativa fluida */}
+      <Box
+        sx={{
+          mt: 10,
+          py: 8,
+          px: { xs: 2, md: 6 },
+          background: "linear-gradient(180deg,#ffffff 0%,#f7faf8 100%)",
+        }}
       >
-        <Stack
-          direction={{ xs: "column", md: "row" }}
-          spacing={4}
-          alignItems="center"
-          sx={{
-            pl: { md: 4 },
-            pr: { md: 6 },
-            py: 3,
-            borderLeft: { md: `5px solid ${section.color}` },
-            borderRadius: 2,
-            transition: "all 0.3s ease",
-            "&:hover": {
-              backgroundColor: "rgba(16,62,104,0.04)",
-              transform: "translateY(-3px)",
+        <Stack spacing={8}>
+          {[
+            {
+              key: "specialist",
+              text: "¿Eres especialista? En Agrovets puedes crear tu perfil profesional, conectar con productores y ofrecer tus servicios directamente.",
+              icon: (
+                <PersonSearchIcon sx={{ fontSize: 56, color: "#103E68" }} />
+              ),
+              cta: "Crear perfil profesional",
+              color: "#103E68",
+              action: () => navigate("/profile/create?role=specialist"),
             },
-          }}
-        >
-          {section.icon}
-          <Box sx={{ flex: 1 }}>
-            <Typography
-              variant="h6"
-              fontWeight={700}
-              sx={{
-                color: section.color,
-                mb: 1,
-              }}
+            {
+              key: "business",
+              text: "¿Tienes un negocio? Regístralo en Agrovets y llega a más clientes agropecuarios que buscan tus productos y servicios.",
+              icon: (
+                <BusinessCenterIcon sx={{ fontSize: 56, color: "#35722b" }} />
+              ),
+              cta: "Registrar mi negocio",
+              color: "#35722b",
+              action: () => navigate("/profile/create?role=business"),
+            },
+            {
+              key: "forum",
+              text: "Únete a la comunidad. Publica tus dudas, comparte experiencias o novedades del sector en nuestro foro colaborativo.",
+              icon: <ForumIcon sx={{ fontSize: 56, color: "#6b4fdb" }} />,
+              cta: "Ir al foro",
+              color: "#6b4fdb",
+              action: () => navigate("/forum"),
+            },
+            {
+              key: "ava",
+              text: "Consulta con AVA, el asistente virtual de Agrovets. Recibe orientación inmediata sobre servicios, perfiles o temas del sector.",
+              icon: <ChatIcon sx={{ fontSize: 56, color: "#e07a5f" }} />,
+              cta: "Hablar con AVA",
+              color: "#e07a5f",
+              action: () => navigate("/chat"),
+            },
+          ].map((section, idx) => (
+            <motion.div
+              key={section.key}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: idx * 0.15, duration: 0.6, type: "spring" }}
             >
-              {section.text.split("?")[0]}?
-            </Typography>
-            <Typography variant="body1" sx={{ color: "#445660", mb: 2 }}>
-              {section.text.split("?")[1]}
-            </Typography>
-            <Button
-              variant="outlined"
-              onClick={section.action}
-              sx={{
-                color: section.color,
-                borderColor: section.color,
-                fontWeight: 600,
-                px: 3,
-                "&:hover": {
-                  bgcolor: section.color,
-                  color: "#fff",
-                },
-              }}
-            >
-              {section.cta}
-            </Button>
-          </Box>
+              <Stack
+                direction={{ xs: "column", md: "row" }}
+                spacing={4}
+                alignItems="center"
+                sx={{
+                  pl: { md: 4 },
+                  pr: { md: 6 },
+                  py: 3,
+                  borderLeft: { md: `5px solid ${section.color}` },
+                  borderRadius: 2,
+                  transition: "all 0.3s ease",
+                  "&:hover": {
+                    backgroundColor: "rgba(16,62,104,0.04)",
+                    transform: "translateY(-3px)",
+                  },
+                }}
+              >
+                {section.icon}
+                <Box sx={{ flex: 1 }}>
+                  <Typography
+                    variant="h6"
+                    fontWeight={700}
+                    sx={{
+                      color: section.color,
+                      mb: 1,
+                    }}
+                  >
+                    {section.text.split("?")[0]}?
+                  </Typography>
+                  <Typography variant="body1" sx={{ color: "#445660", mb: 2 }}>
+                    {section.text.split("?")[1]}
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    onClick={section.action}
+                    sx={{
+                      color: section.color,
+                      borderColor: section.color,
+                      fontWeight: 600,
+                      px: 3,
+                      "&:hover": {
+                        bgcolor: section.color,
+                        color: "#fff",
+                      },
+                    }}
+                  >
+                    {section.cta}
+                  </Button>
+                </Box>
+              </Stack>
+            </motion.div>
+          ))}
         </Stack>
-      </motion.div>
-    ))}
-  </Stack>
-</Box>
-
+      </Box>
     </Box>
   );
 };
