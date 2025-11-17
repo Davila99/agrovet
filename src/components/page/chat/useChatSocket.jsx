@@ -174,7 +174,7 @@ export default function useChatSocket({
                                             }
                                         }
                                     }
-                                    try { console.log('[ROOM_UPDATE] (updateMessage) completed scan, changed=', changed); } catch (e) {}
+                                    // suppressed noisy debug log: room update completed
                                     return changed ? copy : prev;
                                 } catch (e) { return prev; }
                             });

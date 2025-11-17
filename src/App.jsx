@@ -1,4 +1,10 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import "./index.css";
 import Navbar from "./components/page/navigation/nav.jsx";
 import { ThemeProvider } from "@mui/material/styles";
 import { theme } from "./theme/theme.js";
@@ -17,7 +23,11 @@ import ProtectedRoute from "./middleware/ProtectedRoute.jsx";
 import RoleProtectedRoute from "./middleware/RoleProtectedRoute.jsx";
 import Dashboard from "./components/page/Dashboard.jsx";
 import ChatPage from "./components/page/ChatPage";
+
 import Chat from "./components/page/Chat.jsx";
+
+import AddPage from "./components/page/AddPage";
+import { AddForm, AddDetail } from "./components/page/add";
 
 function App() {
   return (
@@ -57,7 +67,13 @@ function App() {
             }
           />
           <Route path="/chat" element={<ChatPage />} />
+
           <Route path="/chats" element={<Chat />} />
+          {/* Alias: allow /add to redirect to /adds (common typo or short link) */}
+          <Route path="/add" element={<Navigate to="/adds" replace />} />
+          <Route path="/adds" element={<AddPage />} />
+          <Route path="/adds/new" element={<AddForm />} />
+          <Route path="/adds/:id" element={<AddDetail />} />
         </Routes>
       </Router>
     </ThemeProvider>

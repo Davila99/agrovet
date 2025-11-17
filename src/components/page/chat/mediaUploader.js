@@ -24,7 +24,9 @@ export function uploadMediaFile(file, onProgress, meta = {}) {
         // default to local backend at port 8000 (matches httpClient BASE_URL)
         apiOrigin = `${location.protocol}//127.0.0.1:8000`;
       }
-  const url = `${apiOrigin}/api/media/media/`;
+  // The router is mounted at /api/ and registers the 'media' prefix, so
+  // the full collection endpoint is /api/media/ (not /api/media/media/).
+  const url = `${apiOrigin}/api/media/`;
   try { console.info('[UPLOAD] starting', { url, name: file.name, size: file.size, type: file.type }); } catch (e) {}
       const xhr = new XMLHttpRequest();
       const form = new FormData();

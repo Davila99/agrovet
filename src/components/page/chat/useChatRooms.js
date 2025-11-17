@@ -140,12 +140,78 @@ export default function useChatRooms(activeId, externalSetRooms = null) {
           timestamp: m.timestamp || m.created_at,
           receipts: m.receipts || [],
         }));
-        setRooms((prev) => {
+          setRooms((prev) => {
           const found = prev.find((r) => String(r.id) === String(activeId));
           if (!found) return prev;
           const merged = mergeRooms(prev, [{ id: activeId, messages: normMsgs }]);
           return merged;
         });
+          // After populating messages, attempt to enrich any messages that have a media_id but lack media_url
+          (async () => {
+            try {
+              const mediaIds = Array.from(new Set(normMsgs.filter(m => m.media_id && !m.media_url).map(m => String(m.media_id))));
+              if (!mediaIds.length) return;
+              const apiBase = typeof window !== 'undefined' && window.__AGROVET_API_BASE ? String(window.__AGROVET_API_BASE).replace(/\/$/, '') : `${location.protocol}//${location.hostname}${location.port ? ':' + location.port : ''}`;
+              const raw = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+              const token = raw ? raw.replace(/^Token\s*/i, '').replace(/^Bearer\s*/i, '') : null;
+              const headers = token ? { Authorization: `Token ${token}` } : {};
+              for (const mid of mediaIds) {
+                try {
+                  const url = `${apiBase}/api/media/${encodeURIComponent(mid)}/`;
+                  const resp = await fetch(url, { headers });
+                  if (!resp.ok) {
+                    try { console.warn('[useChatRooms] media fetch failed', { mid, status: resp.status }); } catch (e) {}
+                    continue;
+                  }
+                  const data = await resp.json();
+                  const finalMediaUrl = data && (data.url || data.file_url || data.media_url || data.path || null);
+                  const descr = data && (data.description || data.desc || null);
+                  let parsedSpectrum = null;
+                  try { parsedSpectrum = descr ? (typeof descr === 'string' ? JSON.parse(descr) : descr) : null; } catch (e) { parsedSpectrum = null; }
+                  if (finalMediaUrl || parsedSpectrum) {
+                    setRooms(prevRooms => {
+                      try {
+                        const copy = prevRooms.slice();
+                        for (let ri = 0; ri < copy.length; ri++) {
+                          const r = { ...(copy[ri] || {}) };
+                          const msgs = Array.isArray(r.messages) ? r.messages.slice() : [];
+                          let changed = false;
+                          for (let mi = 0; mi < msgs.length; mi++) {
+                            const mm = msgs[mi] || {};
+                            if (String(mm.media_id) === String(mid) && (!mm.media_url || mm.media_url === null)) {
+                              const updated = { ...(mm || {}) };
+                              if (finalMediaUrl) {
+                                updated.media_url = finalMediaUrl;
+                                updated.mediaUrl = updated.mediaUrl || finalMediaUrl;
+                                updated.previewUrl = updated.previewUrl || finalMediaUrl;
+                                updated.media_uploading = false;
+                                updated.media_upload_percent = null;
+                              }
+                              if (Array.isArray(parsedSpectrum)) {
+                                updated.media_spectrum = parsedSpectrum;
+                                updated.__spectrum_updated_at = new Date().toISOString();
+                              }
+                              msgs[mi] = updated;
+                              changed = true;
+                            }
+                          }
+                          if (changed) {
+                            r.messages = msgs;
+                            copy[ri] = r;
+                          }
+                        }
+                        return copy;
+                      } catch (e) {
+                        return prevRooms;
+                      }
+                    });
+                  }
+                } catch (e) {
+                  try { console.warn('[useChatRooms] error fetching media detail', { mid, err: String(e) }); } catch (ee) {}
+                }
+              }
+            } catch (e) {}
+          })();
       } catch (e) {
         console.warn("getLastMessages failed", e);
       }

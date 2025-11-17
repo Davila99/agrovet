@@ -692,7 +692,8 @@ export function createOnMessageHandler({
                   : `${location.protocol}//${location.hostname}${
                       location.port ? ":" + location.port : ""
                     }`;
-              const url = `${apiBase}/api/media/media/${encodeURIComponent(
+              // Request the media detail at /api/media/<id>/ (router mounted at /api/)
+              const url = `${apiBase}/api/media/${encodeURIComponent(
                 msg.media_id
               )}/`;
               const raw = localStorage.getItem("token");
@@ -701,7 +702,12 @@ export function createOnMessageHandler({
                 : null;
               const headers = token ? { Authorization: `Token ${token}` } : {};
               const resp = await fetch(url, { headers });
-              if (!resp.ok) return;
+              if (!resp.ok) {
+                try {
+                  console.warn('[chatSocketHandlers] failed fetching media', { url, status: resp.status, statusText: resp.statusText });
+                } catch (e) {}
+                return;
+              }
               const data = await resp.json();
               let descr = data && (data.description || data.desc || null);
               // Also try to extract a canonical public URL for the media if provided by the media API

@@ -191,17 +191,22 @@ export default function useChatController({ activeId, setRooms, getCurrentUserId
     try {
       if (typeof window !== 'undefined' && window._agrovet_chat_service && typeof window._agrovet_chat_service.send === 'function') {
         try {
+          // Avoid sending very large base64/data URLs over the WebSocket which
+          // can cause the server or proxies to drop the connection (CloseEvent 1006).
+          // Only include a small preview_data_url when it's present and under a safe size.
+          const PREVIEW_WS_MAX_BYTES = 64 * 1024; // 64KB
+          const safePreviewDataUrl = previewDataUrl && String(previewDataUrl).length <= PREVIEW_WS_MAX_BYTES ? previewDataUrl : null;
           const tempPayload = {
             type: 'chat.message',
             message: {
               id: tempId,
               room: activeId,
               client_msg_id: clientMsgId,
-              // include a cross-client-friendly preview if available (data URL)
-              preview_data_url: previewDataUrl || null,
-              // for compatibility, include media_url/previewUrl fields but prefer data URL
-              media_url: previewDataUrl ? previewDataUrl : previewUrl,
-              previewUrl: previewDataUrl ? previewDataUrl : previewUrl,
+              // include a cross-client-friendly preview only when small
+              preview_data_url: safePreviewDataUrl,
+              // for compatibility, include media_url/previewUrl fields but prefer small data URL
+              media_url: safePreviewDataUrl ? safePreviewDataUrl : previewUrl,
+              previewUrl: safePreviewDataUrl ? safePreviewDataUrl : previewUrl,
               media_uploading: true,
               status: 'uploading',
               sender_id: getCurrentUserId(),

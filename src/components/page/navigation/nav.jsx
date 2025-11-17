@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { AppBar, Toolbar, Box, IconButton, Link, Stack } from "@mui/material";
+import { AppBar, Toolbar, Box, IconButton, Stack } from "@mui/material";
 import Button from "../../atoms/Button";
 import { TextField, InputAdornment, Paper } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import logo from "../../../assets/logo.svg";
 import DesktopMenu from "./DesktopMenu";
 import UserMenu from "./UserMenu";
+import Avatar from '@mui/material/Avatar';
 import MobileDrawer from "./MobileDrawer";
 import { getProfile } from "../../../services/endpoints";
+import { Link as RouterLink } from "react-router-dom";
 import SearchIcon from "@mui/icons-material/Search";
 
 const Navbar = () => {
@@ -35,6 +37,8 @@ const Navbar = () => {
     };
   }, []);
   const location = useLocation();
+  const hideHeaderFor = ['/adds', '/add'];
+  const shouldHideHeader = hideHeaderFor.some(p => location.pathname.startsWith(p));
   useEffect(() => {
     setToken(localStorage.getItem("token"));
   }, [location]);
@@ -69,31 +73,30 @@ const Navbar = () => {
 
   return (
     <>
-      <AppBar
-        position="fixed"
-        elevation={0}
-        sx={{
-          bgcolor: "transparent",
-
-          zIndex: (theme) => theme.zIndex.appBar,
-        }}
-      >
-        <Box
+      {!shouldHideHeader && (
+        <AppBar
+          position="fixed"
+          elevation={0}
           sx={{
-            margin: 1,
-            bgcolor: "#ffffff",
-            borderRadius: 4,
-            boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-            px: { xs: 1, sm: 3 },
+            bgcolor: "transparent",
+            zIndex: (theme) => theme.zIndex.appBar,
           }}
         >
-          <Toolbar
+          <Box
             sx={{
-              justifyContent: "space-between",
-
-              px: { xs: 0, sm: 2 },
+              margin: 1,
+              bgcolor: "#ffffff",
+              borderRadius: 4,
+              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+              px: { xs: 1, sm: 3 },
             }}
           >
+            <Toolbar
+              sx={{
+                justifyContent: "space-between",
+                px: { xs: 0, sm: 2 },
+              }}
+            >
             {/* Logo */}
             <Box
               sx={{
@@ -102,14 +105,14 @@ const Navbar = () => {
                 flex: { xs: 1, md: "none" },
               }}
             >
-              <Link to="/" style={{ display: "flex", alignItems: "center" }}>
+              <RouterLink to="/" style={{ display: "flex", alignItems: "center" }}>
                 <img
                   src={logo}
                   alt="Logo AgroVets"
                   width="90"
                   style={{ height: 48 }}
                 />
-              </Link>
+              </RouterLink>
             </Box>
 
             {/* Desktop Menu */}
@@ -129,7 +132,7 @@ const Navbar = () => {
               />
 
               {/* Search (desktop) */}
-              <Box sx={{ ml: 2, width: 300 }}>
+              <Box sx={{ ml: 2, width: 320 }}>
                 <TextField
                   size="small"
                   fullWidth
@@ -142,6 +145,7 @@ const Navbar = () => {
                       setSearchQuery("");
                     }
                   }}
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
                   InputProps={{
                     endAdornment: (
                       <InputAdornment position="end">
@@ -172,23 +176,33 @@ const Navbar = () => {
                 display: { xs: "none", md: "flex" },
               }}
             >
-              {isLoggedIn ? (
+              {isLoggedIn && !location.pathname?.startsWith('/chat') ? (
+                // Hide the user menu when on the chat page because its popover
+                // overlapped important UI (requested by the user). If you want
+                // to re-enable the menu on chat, remove the pathname guard.
                 <UserMenu onLogout={handleLogout} user={user} />
+              ) : isLoggedIn ? (
+                // When logged in but on chat, show a simple avatar instead of the full menu
+                <Box>
+                  <AvatarPlaceholder user={user} />
+                </Box>
               ) : (
                 <>
                   <Button
                     variant="outline"
                     size="md"
-                    LinkComponent={Link}
+                    LinkComponent={RouterLink}
                     to="/login"
+                    sx={{ borderRadius: 3 }}
                   >
                     Iniciar sesión
                   </Button>
                   <Button
                     variant="primaryBlue"
                     size="md"
-                    LinkComponent={Link}
+                    LinkComponent={RouterLink}
                     to="/register"
+                    sx={{ borderRadius: 3 }}
                   >
                     Registrarse
                   </Button>
@@ -213,9 +227,10 @@ const Navbar = () => {
                 <MenuIcon />
               </IconButton>
             </Box>
-          </Toolbar>
-        </Box>
-      </AppBar>
+            </Toolbar>
+          </Box>
+        </AppBar>
+      )}
       <MobileDrawer
         open={drawerOpen}
         onClose={toggleDrawer(false)}
@@ -230,3 +245,13 @@ const Navbar = () => {
 };
 
 export default Navbar;
+
+// Small lightweight avatar used when the full UserMenu is hidden (e.g. on chat)
+function AvatarPlaceholder({ user }) {
+  const initials = (user && `${user.full_name?.[0] || ''}${user.last_name?.[0] || ''}`) || '';
+  return (
+    <Avatar sx={{ width: 36, height: 36, bgcolor: '#103e68', color: '#fff', fontWeight: 600 }} src={user?.profile_picture || undefined}>
+      {!user?.profile_picture && initials}
+    </Avatar>
+  );
+}

@@ -3,3 +3,4 @@ export * from "./endpoints/auth";
 export * from "./endpoints/profiles";
 export * from "./endpoints/chat";
 export * from "./endpoints/utils";
+export * from "./endpoints/adds";
