@@ -41,6 +41,14 @@ const DesktopMenu = ({
     role === "specialist" || role === "businessman" || role === "business";
   const isConsumer = role === "consumer";
 
+  // Construir items de navegación, inyectando "Comunidad" para consumers
+  const computedMenuItems = isConsumer
+    ? [
+        { text: "Comunidad", path: "/chats", submenu: true, icon: "chat" },
+        ...menuItems,
+      ]
+    : menuItems;
+
   return (
     <Box
       sx={{
@@ -50,7 +58,7 @@ const DesktopMenu = ({
         alignItems: "center",
       }}
     >
-      {menuItems.map(({ text, path, submenu, icon }) =>
+      {computedMenuItems.map(({ text, path, submenu, icon }) =>
         submenu ? (
           <Box
             key={text}
@@ -214,6 +222,16 @@ const DesktopMenu = ({
                           />
                         </ListItemButton>
 
+                        <ListItemButton component={RouterLink} to="/foro">
+                          <ListItemIcon>
+                            <ChatBubbleOutlineIcon fontSize="small" />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary="Foro"
+                            secondary="Temas y discusiones de la comunidad"
+                          />
+                        </ListItemButton>
+
                         <ListItemButton
                           component={RouterLink}
                           to="/dashboard?tab=ava"
@@ -310,13 +328,6 @@ const DesktopMenu = ({
               </Grow>
             </Popper>
           </Box>
-        ) : isConsumer ? (
-          <RouterLink to="/chats" style={{ textDecoration: "none" }}>
-            <Button variant="outline" size="md">
-              <ChatBubbleOutlineIcon sx={{ marginRight: 1 }} fontSize="small" />
-              Chats
-            </Button>
-          </RouterLink>
         ) : null)}
     </Box>
   );

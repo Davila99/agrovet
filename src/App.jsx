@@ -25,6 +25,7 @@ import Dashboard from "./components/page/Dashboard.jsx";
 import ChatPage from "./components/page/ChatPage";
 
 import Chat from "./components/page/Chat.jsx";
+import ForoPage from "./components/page/ForoPage.jsx";
 
 import AddPage from "./components/page/AddPage";
 import { AddForm, AddDetail } from "./components/page/add";
@@ -67,6 +68,8 @@ function App() {
             }
           />
           <Route path="/chat" element={<ChatPage />} />
+
+          <Route path="/foro" element={<ForoPage />} />
 
           <Route path="/chats" element={<Chat />} />
           {/* Alias: allow /add to redirect to /adds (common typo or short link) */}

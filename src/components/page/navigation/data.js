@@ -7,4 +7,8 @@ export const menuItems = [
 
 ];
 
-export const comunidadSubmenu = [];
+// Submenú para la sección "Comunidad" (utilizado por consumers)
+export const comunidadSubmenu = [
+  { text: "Chats", path: "/chats" },
+  { text: "Foro", path: "/foro" },
+];

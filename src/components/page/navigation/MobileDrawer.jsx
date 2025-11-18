@@ -41,6 +41,14 @@ const MobileDrawer = ({
     role === "specialist" || role === "businessman" || role === "business";
   const isConsumer = role === "consumer";
 
+  // Construir items de navegación, inyectando "Comunidad" para consumers
+  const computedMenuItems = isConsumer
+    ? [
+        { text: "Comunidad", path: "/chats", submenu: true, icon: "chat" },
+        ...menuItems,
+      ]
+    : menuItems;
+
   return (
     <Drawer
       anchor="right"
@@ -86,7 +94,7 @@ const MobileDrawer = ({
           </Box>
         )}
         <List>
-          {menuItems.map((item) =>
+          {computedMenuItems.map((item) =>
             item.submenu ? (
               <React.Fragment key={item.text}>
                 <ListItemButton
@@ -197,6 +205,21 @@ const MobileDrawer = ({
                       }}
                     >
                       <ListItemText primary="Ir al dashboard" />
+                    </ListItemButton>
+                  </ListItem>
+
+                  <ListItem disablePadding>
+                    <ListItemButton
+                      component={Link}
+                      to="/foro"
+                      onClick={onClose}
+                      sx={{
+                        borderRadius: 2,
+                        mb: 0.5,
+                        "&:hover": { bgcolor: hoverBg },
+                      }}
+                    >
+                      <ListItemText primary="Foro" />
                     </ListItemButton>
                   </ListItem>
 
