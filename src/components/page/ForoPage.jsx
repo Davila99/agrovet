@@ -1,401 +1,577 @@
-import React, { useMemo, useState } from "react";
-import Navbar from "./navigation/nav.jsx";
+import React, { useEffect, useState } from "react";
 import {
-  Avatar,
   Box,
+  Container,
+  Grid,
+  Paper,
+  Typography,
+  Avatar,
+  Stack,
+  Chip,
   Button,
   Card,
-  CardActions,
-  CardContent,
   CardHeader,
-  Chip,
-  Container,
-  Divider,
-  Grid,
+  CardContent,
+  CardActions,
   IconButton,
-  InputAdornment,
-  Paper,
   Skeleton,
-  Stack,
-  Tab,
-  Tabs,
   TextField,
-  Typography,
+  Divider,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from "@mui/material";
+
+import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import ThumbUpOffAltIcon from "@mui/icons-material/ThumbUpOffAlt";
-import ThumbDownOffAltIcon from "@mui/icons-material/ThumbDownOffAlt";
-import ShareIcon from "@mui/icons-material/Share";
 import BookmarkBorderIcon from "@mui/icons-material/BookmarkBorder";
-import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
-import SearchIcon from "@mui/icons-material/Search";
+import Navbar from "./navigation/nav.jsx";
+import { fetchUsers } from "../../data/users";
+import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
+import MicNoneIcon from "@mui/icons-material/MicNone";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 
-const fakeSpecialists = [
-  { id: 1, name: "Dra. Ana López", role: "Veterinaria", online: true },
-  { id: 2, name: "Ing. Carlos Rivas", role: "Agroindustrial", online: false },
-  { id: 3, name: "Dr. Julio Méndez", role: "Zootecnista", online: true },
-  { id: 4, name: "MSc. María Téllez", role: "Suelo y cultivos", online: true },
-  { id: 5, name: "Lic. Pedro Ruiz", role: "Nutrición animal", online: false },
-];
+export default function ForoTuani() {
+  // Datos dinámicos desde backend
+  const [especialistas, setEspecialistas] = useState([]);
+  const [negocios, setNegocios] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
+  const [postText, setPostText] = useState("");
 
-const fakePosts = [
-  {
-    id: 1,
-    author: "Dra. Ana López",
-    title: "Parásitos comunes en bovinos: prevención y manejo",
-    excerpt:
-      "Buenas prácticas, calendario de desparasitación y señales de alerta en el hato...",
-    tags: ["Bovinos", "Salud"],
-    comments: 42,
-    votes: 215,
-  },
-  {
-    id: 2,
-    author: "Ing. Carlos Rivas",
-    title: "Riego eficiente en sequía: goteo y sensores de humedad",
-    excerpt:
-      "Compartimos kit básico, costos aproximados y recomendaciones para pequeñas parcelas...",
-    tags: ["Riego", "Sequía"],
-    comments: 18,
-    votes: 129,
-  },
-  {
-    id: 3,
-    author: "Comunidad",
-    title: "¿Qué vacuna recomiendan para brote de Newcastle?",
-    excerpt:
-      "Veo síntomas en aves de traspatio en la zona. Consejos y experiencias.",
-    tags: ["Avicultura"],
-    comments: 61,
-    votes: 301,
-  },
-  {
-    id: 4,
-    author: "CHEYOS",
-    title: "¿Porque Cheyo es retrasado con las mujeres?",
-    excerpt:
-      "Cheyos es una persona que le gustan los hombres por eso no le gustan las mujeres",
-    tags: ["Avicultura"],
-    comments: 61,
-    votes: 301,
-  },
-];
+  const posts = [
+    {
+      id: 1,
+      author: "Comunidad",
+      title: "Parásitos comunes en bovinos: prevención y manejo",
+      text: "Guía completa, calendario de desparasitación y señales de alerta...",
+      tags: ["Bovinos", "Salud"],
+      likes: 40,
+      comments: 12,
+    },
+    {
+      id: 2,
+      author: "Ing. Carlos Rivas",
+      title: "Riego eficiente en tiempo de sequía",
+      text: "Costos, sensores de humedad y recomendaciones para pequeñas parcelas...",
+      tags: ["Riego"],
+      likes: 18,
+      comments: 4,
+    },
+    {
+      id: 3,
+      author: "Comunidad",
+      title: "¿Qué vacuna recomiendan para brote de Newcastle?",
+      text: "En mi zona hay síntomas. ¿Qué recomiendan ustedes?",
+      tags: ["Avicultura"],
+      likes: 91,
+      comments: 32,
+    },
+  ];
 
-const fakeAds = [
-  { id: 1, name: "VetPlus Clínicas", cta: "Agendar", desc: "Atención 24/7" },
-  {
-    id: 2,
-    name: "AgroInsumos La Finca",
-    cta: "Visitar",
-    desc: "Fertilizantes y semillas",
-  },
-  {
-    id: 3,
-    name: "LabTec Análisis",
-    cta: "Contactar",
-    desc: "Análisis de suelos",
-  },
-];
-
-export default function ForoPage() {
-  const [tab, setTab] = useState("populares");
-  const [query, setQuery] = useState("");
-
-  const filteredPosts = useMemo(() => {
-    if (!query.trim()) return fakePosts;
-    const q = query.toLowerCase();
-    return fakePosts.filter(
-      (p) =>
-        p.title.toLowerCase().includes(q) ||
-        p.excerpt.toLowerCase().includes(q) ||
-        p.tags.some((t) => t.toLowerCase().includes(q))
-    );
-  }, [query]);
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        setLoadingUsers(true);
+        const users = await fetchUsers();
+        if (!mounted) return;
+        const list = Array.isArray(users) ? users : [];
+        const specs = list.filter(
+          (u) => String(u.role || "").toLowerCase() === "specialist"
+        );
+        const buss = list.filter((u) => {
+          const r = String(u.role || "").toLowerCase();
+          return r === "businessman" || r === "business";
+        });
+        setEspecialistas(
+          specs.map((u, i) => ({
+            id: u.id,
+            name: u.full_name || u.user_display || "Especialista",
+            role: "Especialista",
+            profile_picture: u.profile_picture,
+            online: [true, false, true, true, false][i % 5],
+          }))
+        );
+        setNegocios(
+          buss.map((b) => ({
+            id: b.id,
+            nombre:
+              b.businessman_profile?.business_name ||
+              b.full_name ||
+              b.user_display ||
+              "Negocio",
+            detalle: b.businessman_profile?.descriptions || b.bio || "",
+            profile_picture: b.profile_picture,
+          }))
+        );
+      } catch (e) {
+        setEspecialistas([]);
+        setNegocios([]);
+      } finally {
+        if (mounted) setLoadingUsers(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <>
       <Navbar />
-      <Box sx={{ bgcolor: "#f7f9fb" }}>
-        <Container maxWidth="lg" sx={{ pt: { xs: 12, md: 14 }, pb: 6 }}>
-          <Grid container spacing={2}>
-            {/* Columna izquierda: especialistas */}
-            <Grid item xs={12} md={3} order={{ xs: 3, md: 1 }}>
-              <Box sx={{ position: { md: "sticky" }, top: { md: 96 } }}>
-                <Paper
-                  elevation={0}
-                  sx={{
-                    p: 2,
-                    borderRadius: 3,
-                    bgcolor: "#fff",
-                    border: "1px solid #e6edf3",
-                  }}
-                >
-                  <Typography
-                    variant="h6"
-                    sx={{ fontWeight: 800, color: "#103E68", mb: 1 }}
-                  >
-                    Especialistas
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{ color: "#5b6b7c", mb: 1.5 }}
-                  >
-                    Conecta con profesionales de la comunidad
-                  </Typography>
-                  <Divider sx={{ mb: 1.5 }} />
-                  <Stack spacing={1.25}>
-                    {fakeSpecialists.map((s) => (
-                      <Stack
-                        key={s.id}
-                        direction="row"
-                        spacing={1.2}
-                        alignItems="center"
-                      >
-                        <Avatar
-                          sx={{ width: 36, height: 36, bgcolor: "#103E68" }}
-                        >
-                          {s.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .slice(0, 2)
-                            .join("")}
-                        </Avatar>
-                        <Box sx={{ flex: 1, minWidth: 0 }}>
-                          <Typography
-                            noWrap
-                            sx={{ fontWeight: 600, fontSize: 14 }}
-                          >
-                            {s.name}
-                          </Typography>
-                          <Stack
-                            direction="row"
-                            spacing={1}
-                            alignItems="center"
-                          >
-                            <Typography
-                              variant="caption"
-                              sx={{ color: "#66788a" }}
-                            >
-                              {s.role}
-                            </Typography>
-                            <Chip
-                              size="small"
-                              label={s.online ? "En línea" : "Ocupado"}
-                              color={s.online ? "success" : "default"}
-                              variant={s.online ? "filled" : "outlined"}
-                            />
-                          </Stack>
-                        </Box>
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          sx={{ textTransform: "none", borderRadius: 2 }}
-                        >
-                          Ver
-                        </Button>
-                      </Stack>
-                    ))}
-                  </Stack>
-                </Paper>
-              </Box>
-            </Grid>
-
-            {/* Columna central: foros/noticias */}
-            <Grid item xs={12} md={6} order={{ xs: 1, md: 2 }}>
-              {/* Barra superior: búsqueda + tabs */}
+      <Box sx={{ bgcolor: "#f4f6fc", minHeight: "100vh", pt: 10, pb: 6 }}>
+        <Container maxWidth="lg">
+          <Grid container spacing={3}>
+            {/* ======= COLUMNA IZQUIERDA – ESPECIALISTAS ======= */}
+            <Grid
+              item
+              xs={12}
+              md={3}
+              sx={{ display: { xs: "none", md: "block" } }}
+            >
               <Paper
                 elevation={0}
                 sx={{
-                  p: 1.2,
-                  mb: 2,
-                  borderRadius: 3,
-                  bgcolor: "#ffffff",
+                  p: 3,
+                  borderRadius: 4,
                   border: "1px solid #e6edf3",
+                  bgcolor: "#ffffff",
                 }}
               >
-                <Stack
-                  direction={{ xs: "column", sm: "row" }}
-                  spacing={1}
-                  alignItems={{ xs: "stretch", sm: "center" }}
-                >
-                  <TextField
-                    size="small"
-                    fullWidth
-                    placeholder="Buscar temas, etiquetas o autores"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <SearchIcon fontSize="small" />
-                        </InputAdornment>
-                      ),
-                    }}
-                    sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
-                  />
-                  <Tabs
-                    value={tab}
-                    onChange={(_, v) => setTab(v)}
-                    textColor="primary"
-                    indicatorColor="primary"
-                    sx={{
-                      minHeight: 36,
-                      "& .MuiTab-root": {
-                        minHeight: 36,
-                        textTransform: "none",
-                      },
-                    }}
-                  >
-                    <Tab value="populares" label="Populares" />
-                    <Tab value="recientes" label="Recientes" />
-                    <Tab value="sin_resolver" label="Sin resolver" />
-                  </Tabs>
+                <Typography variant="h6" sx={{ fontWeight: 800, mb: 2 }}>
+                  Especialistas
+                </Typography>
+
+                <Stack spacing={1.8}>
+                  {loadingUsers && (
+                    <>
+                      {[...Array(4)].map((_, i) => (
+                        <Stack
+                          key={i}
+                          direction="row"
+                          spacing={2}
+                          alignItems="center"
+                        >
+                          <Skeleton variant="circular" width={40} height={40} />
+                          <Box sx={{ flex: 1 }}>
+                            <Skeleton variant="text" width={140} />
+                            <Skeleton variant="text" width={100} />
+                          </Box>
+                          <Skeleton variant="rounded" width={72} height={28} />
+                        </Stack>
+                      ))}
+                    </>
+                  )}
+                  {!loadingUsers &&
+                    especialistas.map((e, i) => (
+                      <Stack
+                        key={i}
+                        direction="row"
+                        spacing={2}
+                        alignItems="center"
+                      >
+                        <Avatar src={e.profile_picture || undefined}>
+                          {!e.profile_picture && e.name ? e.name[0] : null}
+                        </Avatar>
+                        <Box>
+                          <Typography sx={{ fontWeight: 700 }}>
+                            {e.name}
+                          </Typography>
+                          <Typography variant="body2" sx={{ opacity: 0.7 }}>
+                            {e.role}
+                          </Typography>
+                        </Box>
+                        <Chip
+                          label={e.online ? "En línea" : "Ocupado"}
+                          color={e.online ? "success" : "default"}
+                          size="small"
+                        />
+                      </Stack>
+                    ))}
                 </Stack>
               </Paper>
+            </Grid>
 
-              <Stack spacing={2}>
-                {filteredPosts.map((p) => (
+            {/* ======= CENTRO – FORO NOTICIAS ======= */}
+            <Grid item xs={12} md={6}>
+              <Stack spacing={3}>
+                {/* Composer de publicación */}
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 2.5,
+                    borderRadius: 4,
+                    border: "1px solid #e6edf3",
+                    bgcolor: "#ffffff",
+                  }}
+                >
+                  <Stack direction="row" spacing={2} alignItems="flex-start">
+                    <Avatar sx={{ bgcolor: "#6a4df4" }}>T</Avatar>
+                    <Box sx={{ flex: 1 }}>
+                      <TextField
+                        value={postText}
+                        onChange={(e) => setPostText(e.target.value)}
+                        placeholder="¿Qué quieres publicar en el foro?"
+                        fullWidth
+                        multiline
+                        minRows={2}
+                        variant="outlined"
+                      />
+                      <Stack
+                        direction="row"
+                        alignItems="center"
+                        spacing={1.5}
+                        sx={{ mt: 1.5 }}
+                      >
+                        <Button
+                          size="small"
+                          startIcon={<ImageOutlinedIcon />}
+                          sx={{ textTransform: "none" }}
+                        >
+                          Imagen
+                        </Button>
+                        <Button
+                          size="small"
+                          startIcon={<MicNoneIcon />}
+                          sx={{ textTransform: "none" }}
+                        >
+                          Audio
+                        </Button>
+                        <Box sx={{ flex: 1 }} />
+                        <Button
+                          variant="contained"
+                          disabled={!postText.trim()}
+                          onClick={() => setPostText("")}
+                          sx={{ textTransform: "none", borderRadius: 2 }}
+                        >
+                          Publicar
+                        </Button>
+                      </Stack>
+                    </Box>
+                  </Stack>
+                </Paper>
+
+                {posts.map((p) => (
                   <Card
                     key={p.id}
-                    variant="outlined"
-                    sx={{ borderRadius: 3, borderColor: "#e6edf3" }}
+                    sx={{
+                      borderRadius: 4,
+                      border: "1px solid #e8e8ef",
+                      boxShadow: "0 4px 8px rgba(0,0,0,0.06)",
+                    }}
                   >
                     <CardHeader
-                      avatar={
-                        <Avatar sx={{ bgcolor: "#103E68" }}>
-                          {(p.author || "?").split(" ")[0][0]}
-                        </Avatar>
-                      }
+                      avatar={<Avatar>{p.author[0]}</Avatar>}
                       action={
                         <IconButton>
                           <MoreHorizIcon />
                         </IconButton>
                       }
                       title={
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          <Typography
-                            variant="body2"
-                            sx={{ fontWeight: 700, color: "#103E68" }}
-                          >
-                            {p.author}
-                          </Typography>
-                          <Stack direction="row" spacing={0.5}>
-                            {p.tags.map((t) => (
-                              <Chip
-                                key={t}
-                                size="small"
-                                label={t}
-                                variant="outlined"
-                              />
-                            ))}
-                          </Stack>
-                        </Stack>
-                      }
-                      subheader={
-                        <Typography variant="caption" sx={{ color: "#6b7c8f" }}>
-                          Comunidad • hace 3 h
+                        <Typography sx={{ fontWeight: 700 }}>
+                          {p.author}
                         </Typography>
                       }
+                      subheader="hace 2 horas"
                     />
-                    <CardContent sx={{ pt: 0 }}>
-                      <Typography
-                        variant="h6"
-                        sx={{ fontWeight: 800, mb: 0.5 }}
-                      >
+
+                    <CardContent>
+                      <Typography variant="h6" sx={{ fontWeight: 800, mb: 1 }}>
                         {p.title}
                       </Typography>
-                      <Typography variant="body2" sx={{ color: "#4a5a6a" }}>
-                        {p.excerpt}
+                      <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                        {p.text}
                       </Typography>
+
+                      <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
+                        {p.tags.map((t) => (
+                          <Chip
+                            key={t}
+                            label={t}
+                            color="primary"
+                            size="small"
+                          />
+                        ))}
+                      </Stack>
                     </CardContent>
-                    <CardActions sx={{ pt: 0.5, pb: 1.5, px: 2, gap: 1 }}>
+
+                    <CardActions>
                       <Chip
                         icon={<ThumbUpOffAltIcon />}
-                        label={p.votes}
-                        size="small"
+                        label={p.likes}
                         variant="outlined"
                       />
-                      <IconButton size="small" color="default">
-                        <ThumbDownOffAltIcon />
-                      </IconButton>
                       <Button
-                        size="small"
                         startIcon={<ChatBubbleOutlineIcon />}
+                        sx={{ textTransform: "none" }}
                       >
-                        {" "}
                         {p.comments} comentarios
                       </Button>
-                      <IconButton size="small">
-                        <ShareIcon />
-                      </IconButton>
-                      <IconButton size="small">
+                      <IconButton>
                         <BookmarkBorderIcon />
                       </IconButton>
                     </CardActions>
                   </Card>
                 ))}
 
-                {/* Placeholders para carga */}
-                {filteredPosts.length === 0 && (
-                  <Paper
-                    variant="outlined"
-                    sx={{ p: 2, borderRadius: 3, borderColor: "#e6edf3" }}
-                  >
-                    <Stack spacing={1}>
-                      <Skeleton variant="text" width={180} />
-                      <Skeleton variant="rounded" height={72} />
-                    </Stack>
-                  </Paper>
-                )}
+                {/* Secciones móviles para Especialistas y Negocios */}
+                <Box sx={{ display: { xs: "block", md: "none" } }}>
+                  <Accordion sx={{ borderRadius: 3 }}>
+                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                      <Typography sx={{ fontWeight: 800 }}>
+                        Especialistas
+                      </Typography>
+                    </AccordionSummary>
+                    <AccordionDetails>
+                      <Stack spacing={1.8}>
+                        {loadingUsers && (
+                          <>
+                            {[...Array(4)].map((_, i) => (
+                              <Stack
+                                key={i}
+                                direction="row"
+                                spacing={2}
+                                alignItems="center"
+                              >
+                                <Skeleton
+                                  variant="circular"
+                                  width={40}
+                                  height={40}
+                                />
+                                <Box sx={{ flex: 1 }}>
+                                  <Skeleton variant="text" width={140} />
+                                  <Skeleton variant="text" width={100} />
+                                </Box>
+                                <Skeleton
+                                  variant="rounded"
+                                  width={72}
+                                  height={28}
+                                />
+                              </Stack>
+                            ))}
+                          </>
+                        )}
+                        {!loadingUsers &&
+                          especialistas.map((e, i) => (
+                            <Stack
+                              key={i}
+                              direction="row"
+                              spacing={2}
+                              alignItems="center"
+                            >
+                              <Avatar src={e.profile_picture || undefined}>
+                                {!e.profile_picture && e.name
+                                  ? e.name[0]
+                                  : null}
+                              </Avatar>
+                              <Box>
+                                <Typography sx={{ fontWeight: 700 }}>
+                                  {e.name}
+                                </Typography>
+                                <Typography
+                                  variant="body2"
+                                  sx={{ opacity: 0.7 }}
+                                >
+                                  {e.role}
+                                </Typography>
+                              </Box>
+                              <Chip
+                                label={e.online ? "En línea" : "Ocupado"}
+                                color={e.online ? "success" : "default"}
+                                size="small"
+                              />
+                            </Stack>
+                          ))}
+                      </Stack>
+                    </AccordionDetails>
+                  </Accordion>
+
+                  <Accordion sx={{ borderRadius: 3, mt: 2 }}>
+                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                      <Typography sx={{ fontWeight: 800 }}>Negocios</Typography>
+                    </AccordionSummary>
+                    <AccordionDetails>
+                      <Stack spacing={2}>
+                        {loadingUsers && (
+                          <>
+                            {[...Array(3)].map((_, i) => (
+                              <Paper
+                                key={`mb-biz-skel-${i}`}
+                                variant="outlined"
+                                sx={{
+                                  p: 2,
+                                  borderRadius: 3,
+                                  border: "1px solid #e6edf3",
+                                  bgcolor: "#fafbff",
+                                }}
+                              >
+                                <Stack
+                                  direction="row"
+                                  spacing={2}
+                                  alignItems="center"
+                                >
+                                  <Skeleton
+                                    variant="circular"
+                                    width={40}
+                                    height={40}
+                                  />
+                                  <Box sx={{ flex: 1 }}>
+                                    <Skeleton variant="text" width={160} />
+                                    <Skeleton variant="text" width={120} />
+                                  </Box>
+                                  <Skeleton
+                                    variant="rounded"
+                                    width={64}
+                                    height={28}
+                                  />
+                                </Stack>
+                              </Paper>
+                            ))}
+                          </>
+                        )}
+                        {!loadingUsers &&
+                          negocios.map((n, i) => (
+                            <Paper
+                              key={i}
+                              variant="outlined"
+                              sx={{
+                                p: 2,
+                                borderRadius: 3,
+                                border: "1px solid #e6edf3",
+                                bgcolor: "#fafbff",
+                              }}
+                            >
+                              <Stack
+                                direction="row"
+                                spacing={2}
+                                alignItems="center"
+                              >
+                                <Avatar
+                                  src={n.profile_picture || undefined}
+                                  sx={{ bgcolor: "#6a4df4" }}
+                                >
+                                  {!n.profile_picture && n.nombre
+                                    ? n.nombre[0]
+                                    : null}
+                                </Avatar>
+                                <Box>
+                                  <Typography sx={{ fontWeight: 700 }}>
+                                    {n.nombre}
+                                  </Typography>
+                                  <Typography
+                                    variant="body2"
+                                    sx={{ opacity: 0.7 }}
+                                  >
+                                    {n.detalle}
+                                  </Typography>
+                                </Box>
+                                <Button
+                                  size="small"
+                                  variant="contained"
+                                  sx={{
+                                    textTransform: "none",
+                                    borderRadius: 2,
+                                    bgcolor: "#6a4df4",
+                                  }}
+                                >
+                                  Ver
+                                </Button>
+                              </Stack>
+                            </Paper>
+                          ))}
+                      </Stack>
+                    </AccordionDetails>
+                  </Accordion>
+                </Box>
               </Stack>
             </Grid>
 
-            {/* Columna derecha: ads/negocios */}
-            <Grid item xs={12} md={3} order={{ xs: 2, md: 3 }}>
-              <Box sx={{ position: { md: "sticky" }, top: { md: 96 } }}>
-                <Paper
-                  elevation={0}
-                  sx={{
-                    p: 2,
-                    borderRadius: 3,
-                    bgcolor: "#fff",
-                    border: "1px solid #e6edf3",
-                  }}
-                >
-                  <Typography
-                    variant="h6"
-                    sx={{ fontWeight: 800, color: "#103E68", mb: 1 }}
-                  >
-                    Negocios y anuncios
-                  </Typography>
-                  <Divider sx={{ mb: 1.5 }} />
-                  <Stack spacing={1.25}>
-                    {fakeAds.map((ad) => (
-                      <Paper
-                        key={ad.id}
-                        variant="outlined"
-                        sx={{ p: 1.5, borderRadius: 2, borderColor: "#e6edf3" }}
-                      >
-                        <Stack
-                          direction="row"
-                          spacing={1.2}
-                          alignItems="center"
+            {/* ======= COLUMNA DERECHA – NEGOCIOS ======= */}
+            <Grid
+              item
+              xs={12}
+              md={3}
+              sx={{ display: { xs: "none", md: "block" } }}
+            >
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 3,
+                  borderRadius: 4,
+                  border: "1px solid #e6edf3",
+                  bgcolor: "#ffffff",
+                }}
+              >
+                <Typography variant="h6" sx={{ fontWeight: 800, mb: 2 }}>
+                  Negocios
+                </Typography>
+
+                <Stack spacing={2}>
+                  {loadingUsers && (
+                    <>
+                      {[...Array(3)].map((_, i) => (
+                        <Paper
+                          key={`biz-skel-${i}`}
+                          variant="outlined"
+                          sx={{
+                            p: 2,
+                            borderRadius: 3,
+                            border: "1px solid #e6edf3",
+                            bgcolor: "#fafbff",
+                          }}
                         >
-                          <Avatar sx={{ bgcolor: "#00c6a7" }}>
-                            {ad.name[0]}
+                          <Stack
+                            direction="row"
+                            spacing={2}
+                            alignItems="center"
+                          >
+                            <Skeleton
+                              variant="circular"
+                              width={40}
+                              height={40}
+                            />
+                            <Box sx={{ flex: 1 }}>
+                              <Skeleton variant="text" width={160} />
+                              <Skeleton variant="text" width={120} />
+                            </Box>
+                            <Skeleton
+                              variant="rounded"
+                              width={64}
+                              height={28}
+                            />
+                          </Stack>
+                        </Paper>
+                      ))}
+                    </>
+                  )}
+                  {!loadingUsers &&
+                    negocios.map((n, i) => (
+                      <Paper
+                        key={i}
+                        variant="outlined"
+                        sx={{
+                          p: 2,
+                          borderRadius: 3,
+                          border: "1px solid #e6edf3",
+                          bgcolor: "#fafbff",
+                        }}
+                      >
+                        <Stack direction="row" spacing={2} alignItems="center">
+                          <Avatar
+                            src={n.profile_picture || undefined}
+                            sx={{ bgcolor: "#6a4df4" }}
+                          >
+                            {!n.profile_picture && n.nombre
+                              ? n.nombre[0]
+                              : null}
                           </Avatar>
-                          <Box sx={{ flex: 1, minWidth: 0 }}>
-                            <Typography
-                              noWrap
-                              sx={{ fontWeight: 700, fontSize: 14 }}
-                            >
-                              {ad.name}
+                          <Box>
+                            <Typography sx={{ fontWeight: 700 }}>
+                              {n.nombre}
                             </Typography>
-                            <Typography
-                              variant="caption"
-                              sx={{ color: "#66788a" }}
-                            >
-                              {ad.desc}
+                            <Typography variant="body2" sx={{ opacity: 0.7 }}>
+                              {n.detalle}
                             </Typography>
                           </Box>
                           <Button
@@ -404,17 +580,16 @@ export default function ForoPage() {
                             sx={{
                               textTransform: "none",
                               borderRadius: 2,
-                              bgcolor: "#103E68",
+                              bgcolor: "#6a4df4",
                             }}
                           >
-                            {ad.cta}
+                            Ver
                           </Button>
                         </Stack>
                       </Paper>
                     ))}
-                  </Stack>
-                </Paper>
-              </Box>
+                </Stack>
+              </Paper>
             </Grid>
           </Grid>
         </Container>
