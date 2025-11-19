@@ -1,0 +1,25 @@
+.wave-container {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 4px;
+  height: clamp(48px, 8vw, 84px);
+  margin: 18px 0;
+}
+
+.wave-bar {
+  width: 6px;
+  background: linear-gradient(180deg, rgba(110,242,229,0.95), rgba(16,183,161,0.95));
+  border-radius: 20px;
+  filter: drop-shadow(0 0 6px #00ffe6aa);
+  transform-origin: bottom;
+
+  /* curva */
+  transform: rotate(calc((var(--i) - 21) * 1.3deg));
+  transition: height 140ms cubic-bezier(.2,.9,.3,1), opacity 200ms linear, box-shadow 140ms linear;
+}
+
+@media (max-width: 520px) {
+  .wave-bar { width: 4px; }
+  .wave-container { gap: 3px; }
+}

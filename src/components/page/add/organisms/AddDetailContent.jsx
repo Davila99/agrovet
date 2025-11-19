@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Grid, Chip, Avatar, Button, Stack, Card, CardContent } from '@mui/material';
+import { Box, Typography, Chip, Avatar, Button, Stack, Card, CardContent } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { authAPI } from '../../../../services/endpoints';
 import ImageCarousel from '../atoms/ImageCarousel';
@@ -102,16 +102,16 @@ export default function AddDetailContent({ add }) {
 
   return (
     <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={6}>
+      <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' } }}>
+        <Box sx={{ gridColumn: { xs: '1/-1', md: '1/2' } }}>
           <Card sx={{ borderRadius: 2, overflow: 'hidden', boxShadow: '0 12px 30px rgba(2,6,23,0.08)', bgcolor: '#f8fbff', border: '1px solid rgba(2,6,23,0.03)' }}>
             <Box sx={{ width: '100%', height: { xs: 320, sm: 380, md: 420 } }}>
               <ImageCarousel images={images} height={420} />
             </Box>
           </Card>
-        </Grid>
+        </Box>
 
-        <Grid item xs={12} md={6}>
+        <Box sx={{ gridColumn: { xs: '1/-1', md: '2/3' } }}>
           <Card
             sx={{
               borderRadius: 3,
@@ -183,8 +183,8 @@ export default function AddDetailContent({ add }) {
 
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
+        </Box>
+      </Box>
     </Box>
   );
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { IconButton, Popover, Box, Grid } from '@mui/material';
+import { IconButton, Popover, Box } from '@mui/material';
 import EmojiEmotionsIcon from '@mui/icons-material/EmojiEmotions';
 
 export default function EmojiPicker({ onPick, anchorElProp, inputRef, text, setText }) {
@@ -69,17 +69,17 @@ export default function EmojiPicker({ onPick, anchorElProp, inputRef, text, setT
           {FullPicker && emojiDataState ? (
             <FullPicker data={emojiDataState} onEmojiSelect={onEmojiSelect} theme="light" />
           ) : (
-            <Grid container spacing={1} sx={{ maxWidth: 320 }}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, maxWidth: 320 }}>
               {[
                 '😀','😃','😄','😁','😆','😊','😍','😘','😎','🤩',
                 '🤔','😅','😇','😉','😭','😴','😡','👍','👎','🙏',
                 '🎉','❤️','🔥','✨','😜','🤗','😬','🤝','💯','✅'
               ].map((e) => (
-                <Grid item key={e}>
+                <Box key={e} sx={{ display: 'inline-flex' }}>
                   <IconButton size="small" onClick={() => onEmojiSelect({ native: e })}>{e}</IconButton>
-                </Grid>
+                </Box>
               ))}
-            </Grid>
+            </Box>
           )}
         </Box>
       </Popover>

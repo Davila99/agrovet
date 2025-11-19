@@ -4,3 +4,4 @@ export * from "./endpoints/profiles";
 export * from "./endpoints/chat";
 export * from "./endpoints/utils";
 export * from "./endpoints/adds";
+export * from "./endpoints/foro";

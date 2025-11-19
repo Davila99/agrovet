@@ -100,7 +100,6 @@ export default function useChatSocket({
                         }
                     } catch (e) {}
                 },
-                onOpen: () => {},
                 onClose: () => {},
             });
         } catch (e) {}

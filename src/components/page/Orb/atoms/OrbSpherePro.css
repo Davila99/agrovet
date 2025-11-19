@@ -1,0 +1,23 @@
+.orb-pro-wrapper{ width:100%; max-width:420px; aspect-ratio:1/1; display:block; position:relative; margin:0 auto; }
+.orb-pro-canvas{ width:100%; height:100%; display:block; border-radius:50%; box-shadow: 0 20px 40px rgba(2,16,18,0.45); background:transparent; }
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce){ .orb-pro-canvas{ animation: none; } }
+
+.orb-pro-controls{
+	position: absolute;
+	right: 10px;
+	top: 10px;
+	background: rgba(0,6,8,0.55);
+	color: #dff; 
+	padding: 8px;
+	border-radius: 8px;
+	font-size: 12px;
+	line-height: 1.3;
+	backdrop-filter: blur(6px);
+	max-width: 180px;
+}
+.orb-pro-controls label{ display:block; margin:6px 0; }
+.orb-pro-controls input[type="range"]{ width: 140px; display:block; }
+
+@media (prefers-reduced-motion: reduce){ .orb-pro-controls{ display:none; } }

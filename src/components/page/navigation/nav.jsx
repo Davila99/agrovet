@@ -37,7 +37,7 @@ const Navbar = () => {
     };
   }, []);
   const location = useLocation();
-  const hideHeaderFor = ['/adds', '/add'];
+  const hideHeaderFor = ['/adds', '/add', '/foro'];
   const shouldHideHeader = hideHeaderFor.some(p => location.pathname.startsWith(p));
   useEffect(() => {
     setToken(localStorage.getItem("token"));

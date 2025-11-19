@@ -3,6 +3,9 @@ import './index.css';
 import Navbar from "./components/page/navigation/nav.jsx";
 import { ThemeProvider } from "@mui/material/styles";
 import { theme } from "./theme/theme.js";
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import ForoRoutes from './pages/Foro';
+import Box from '@mui/material/Box';
 
 // Páginas
 import HomePage from "./components/page/Inicio";
@@ -19,18 +22,23 @@ import Dashboard from "./components/page/Dashboard.jsx";
 import ChatPage from "./components/page/ChatPage";
 import AddPage from './components/page/AddPage';
 import { AddForm, AddDetail } from './components/page/add';
+import OrbPage from './components/page/Orb/index.jsx';
 
 
 function App() {
+  const queryClient = new QueryClient();
+  // Development helpers: mock server is optional. To use mock, call
+  // import('./pages/Foro/mocks/foroMockServer').then(m => m.startForoMock()) from the console.
   return (
-    <ThemeProvider theme={theme}>
-      <Router>
-        <Navbar />
-        <Routes>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider theme={theme}>
+        <Router>
+          <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+            <Navbar />
+            <Box component="main" sx={{ flex: 1 }}>
+              <Routes>
           <Route path="/" element={<HomePage />} />
-
           <Route path="/mapa" element={<NicaraguaMap />} />
-
           <Route path="/login" element={<LoginPage />} />
           <Route path="/auth/reset-phone" element={<ResetByPhone />} />
           <Route path="/register" element={<RegisterPage />} />
@@ -60,15 +68,21 @@ function App() {
             }
           />
           <Route path="/chat" element={<ChatPage />} />
+          <Route path="/orb" element={<OrbPage />} />
           {/* Alias: allow /add to redirect to /adds (common typo or short link) */}
           <Route path="/add" element={<Navigate to="/adds" replace />} />
           <Route path="/adds" element={<AddPage />} />
           <Route path="/adds/new" element={<AddForm />} />
           <Route path="/adds/:id" element={<AddDetail />} />
-        </Routes>
-        <Footer />
-      </Router>
+          {/* Foro mounted as nested route to avoid multiple Routes mismatch warnings */}
+          <Route path="/foro/*" element={<ForoRoutes />} />
+              </Routes>
+            </Box>
+            <Footer />
+          </Box>
+        </Router>
     </ThemeProvider>
+    </QueryClientProvider>
   );
 }
 

@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
-import { Box, Button, Grid, IconButton, Typography } from '@mui/material';
+import { Box, Button, IconButton, Typography } from '@mui/material';
+import Grid from '@mui/material/Unstable_Grid2';
 import PhotoCamera from '@mui/icons-material/PhotoCamera';
 
 /**
@@ -22,7 +23,7 @@ export default function ImageUploader({ label, maxCount = 1, onUpload, showPrevi
     <Box sx={{ my: 1 }}>
       <Typography variant="subtitle2" sx={{ mb: 1 }}>{label}</Typography>
       <Grid container spacing={1} alignItems="center">
-        <Grid item>
+        <Grid>
           <input
             ref={inputRef}
             type="file"
@@ -35,7 +36,7 @@ export default function ImageUploader({ label, maxCount = 1, onUpload, showPrevi
             <PhotoCamera />
           </IconButton>
         </Grid>
-        <Grid item xs>
+        <Grid xs>
           {showPreview && (
             <Box sx={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {files.map((f, i) => (
