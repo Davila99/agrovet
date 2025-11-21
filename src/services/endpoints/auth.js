@@ -4,7 +4,13 @@ import { authHeaders } from "./utils";
 export const authAPI = {
   register: (data) => httpClient("/auth/register/", { method: "POST", body: data }),
 
-  login: (data) => httpClient("/auth/login/", { method: "POST", body: data }),
+  // Login por número de teléfono + contraseña
+  // Acepta aliases: phone, phone_number o username
+  login: (data = {}) => {
+    const phone_number = (data.phone_number || data.phone || data.username || "").toString().trim();
+    const payload = { phone_number, password: data.password };
+    return httpClient("/auth/login/", { method: "POST", body: payload });
+  },
 
   userById: (id, token) =>
     httpClient(`/auth/users/${id}/`, {

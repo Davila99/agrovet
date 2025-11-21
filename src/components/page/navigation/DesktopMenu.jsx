@@ -20,9 +20,9 @@ import MapIcon from "@mui/icons-material/Map";
 import InfoIcon from "@mui/icons-material/Info";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import DashboardIcon from "@mui/icons-material/Dashboard";
-import SmartToyIcon from "@mui/icons-material/SmartToy";
 import PeopleIcon from "@mui/icons-material/People";
 import BusinessIcon from "@mui/icons-material/Business";
+import { RiChatVoiceAiFill } from "react-icons/ri";
 
 import { menuItems, comunidadSubmenu } from "./data";
 
@@ -31,9 +31,23 @@ const DesktopMenu = ({
   openComunidadMenu,
   closeComunidadMenu,
   isLoggedIn,
+  user,
 }) => {
   const [adminAnchor, setAdminAnchor] = useState(null);
   const [adminOpen, setAdminOpen] = useState(false);
+
+  const role = (user?.role || "").toString().toLowerCase();
+  const canSeeDashboard =
+    role === "specialist" || role === "businessman" || role === "business";
+  const isConsumer = role === "consumer";
+
+  // Construir items de navegación, inyectando "Comunidad" para consumers
+  const computedMenuItems = isConsumer
+    ? [
+        { text: "Comunidad", path: "/chats", submenu: true, icon: "chat" },
+        ...menuItems,
+      ]
+    : menuItems;
 
   return (
     <Box
@@ -44,7 +58,7 @@ const DesktopMenu = ({
         alignItems: "center",
       }}
     >
-      {menuItems.map(({ text, path, submenu, icon }) =>
+      {computedMenuItems.map(({ text, path, submenu, icon }) =>
         submenu ? (
           <Box
             key={text}
@@ -67,7 +81,10 @@ const DesktopMenu = ({
                   />
                 )}
                 {icon === "ava" && (
-                  <SmartToyIcon sx={{ marginRight: 1 }} fontSize="small" />
+                  <RiChatVoiceAiFill
+                    style={{ marginRight: 8, color: "#103e68" }}
+                    size={16}
+                  />
                 )}
                 {icon === "info" && (
                   <InfoIcon sx={{ marginRight: 1 }} fontSize="small" />
@@ -110,6 +127,12 @@ const DesktopMenu = ({
                   fontSize="small"
                 />
               )}
+              {icon === "ava" && (
+                <RiChatVoiceAiFill
+                  style={{ marginRight: 8, color: "#103e68" }}
+                  size={16}
+                />
+              )}
               {icon === "info" && (
                 <InfoIcon sx={{ marginRight: 1 }} fontSize="small" />
               )}
@@ -119,165 +142,193 @@ const DesktopMenu = ({
         )
       )}
 
-      {isLoggedIn && (
-        <Box sx={{ position: "relative" }}>
-          <Box
-            onMouseEnter={(e) => {
-              setAdminAnchor(e.currentTarget);
-              setAdminOpen(true);
-            }}
-            onMouseLeave={() => {
-              setAdminOpen(false);
-            }}
-            sx={{ display: "inline-block" }}
-          >
-            <Button
-              variant="outline"
-              size="md"
-              aria-haspopup="true"
-              aria-expanded={adminOpen}
+      {isLoggedIn &&
+        (canSeeDashboard ? (
+          <Box sx={{ position: "relative" }}>
+            <Box
+              onMouseEnter={(e) => {
+                setAdminAnchor(e.currentTarget);
+                setAdminOpen(true);
+              }}
+              onMouseLeave={() => {
+                setAdminOpen(false);
+              }}
+              sx={{ display: "inline-block" }}
             >
-              <DashboardIcon fontSize="small" sx={{ marginRight: 1 }} />
-              Dashboard
-            </Button>
-          </Box>
-
-          <Popper
-            open={adminOpen}
-            anchorEl={adminAnchor}
-            placement="bottom-start"
-            modifiers={[{ name: "offset", options: { offset: [0, 8] } }]}
-            sx={{ zIndex: 1300 }}
-          >
-            <Grow in={adminOpen} timeout={220}>
-              <Paper
-                elevation={3}
-                onMouseEnter={() => setAdminOpen(true)}
-                onMouseLeave={() => setAdminOpen(false)}
-                sx={{
-                  width: 720,
-                  p: 2,
-                  backgroundColor: "rgba(255,255,255,0.82)",
-                  backdropFilter: "blur(6px)",
-                  WebkitBackdropFilter: "blur(6px)",
-                  boxShadow: "0 10px 30px rgba(16,62,104,0.12)",
-                  borderRadius: 2,
-                }}
+              <Button
+                variant="outline"
+                size="md"
+                aria-haspopup="true"
+                aria-expanded={adminOpen}
               >
-                <Box sx={{ display: "flex", gap: 2 }}>
-                  <Box sx={{ flex: 1 }}>
-                    <Typography variant="h6" sx={{ mb: 1 }}>
-                      Dashboard
-                    </Typography>
-                    <Divider sx={{ mb: 1 }} />
-                    <List>
-                      <ListItemButton
-                        component={RouterLink}
-                        to="/dashboard?tab=chat"
-                      >
-                        <ListItemIcon>
-                          <ChatBubbleOutlineIcon fontSize="small" />
-                        </ListItemIcon>
-                        <ListItemText
-                          primary="Chats"
-                          secondary="Mensajería y conversaciones"
-                        />
-                      </ListItemButton>
+                <DashboardIcon fontSize="small" sx={{ marginRight: 1 }} />
+                Dashboard
+              </Button>
+            </Box>
 
-                      <ListItemButton
-                        component={RouterLink}
-                        to="/dashboard?tab=ava"
-                      >
-                        <ListItemIcon>
-                          <SmartToyIcon fontSize="small" />
-                        </ListItemIcon>
-                        <ListItemText
-                          primary="AVA IA"
-                          secondary="Asistente virtual y sugerencias"
-                        />
-                      </ListItemButton>
-
-                      <ListItemButton
-                        component={RouterLink}
-                        to="/dashboard?tab=specialists"
-                      >
-                        <ListItemIcon>
-                          <PeopleIcon fontSize="small" />
-                        </ListItemIcon>
-                        <ListItemText
-                          primary="Especialistas"
-                          secondary="Directorio y perfiles"
-                        />
-                      </ListItemButton>
-
-                      <ListItemButton component={RouterLink} to="/mapa">
-                        <ListItemIcon>
-                          <MapIcon fontSize="small" />
-                        </ListItemIcon>
-                        <ListItemText
-                          primary="Mapa"
-                          secondary="Ubica negocios y veterinarias"
-                        />
-                      </ListItemButton>
-
-                      <ListItemButton component={RouterLink} to="/search">
-                        <ListItemIcon>
-                          <BusinessIcon fontSize="small" />
-                        </ListItemIcon>
-                        <ListItemText
-                          primary="Negocios"
-                          secondary="Explora y conecta"
-                        />
-                      </ListItemButton>
-                    </List>
-                  </Box>
-
+            <Popper
+              open={adminOpen}
+              anchorEl={adminAnchor}
+              placement="bottom-start"
+              modifiers={[{ name: "offset", options: { offset: [0, 8] } }]}
+              sx={{ zIndex: 1300 }}
+            >
+              <Grow in={adminOpen} timeout={220}>
+                <Paper
+                  elevation={3}
+                  onMouseEnter={() => setAdminOpen(true)}
+                  onMouseLeave={() => setAdminOpen(false)}
+                  sx={{
+                    width: 720,
+                    p: 2,
+                    backgroundColor: "rgba(255,255,255,0.82)",
+                    backdropFilter: "blur(6px)",
+                    WebkitBackdropFilter: "blur(6px)",
+                    boxShadow: "0 10px 30px rgba(16,62,104,0.12)",
+                    borderRadius: 2,
+                  }}
+                >
+                  {/* Quick link to go to dashboard main page */}
                   <Box
-                    sx={{
-                      width: 260,
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 1,
-                    }}
+                    sx={{ display: "flex", justifyContent: "flex-end", mb: 1 }}
                   >
-                    <Box
-                      sx={{
-                        bgcolor: "#f0f6f4",
-                        borderRadius: 1,
-                        height: 140,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
+                    <Button
+                      component={RouterLink}
+                      to="/dashboard"
+                      variant="contained"
+                      size="small"
+                      sx={{ textTransform: "none", bgcolor: "#103e68" }}
                     >
-                      {/* Placeholder image area - puedes reemplazar por una imagen real */}
-                      <Typography sx={{ color: "#103e68", fontWeight: 700 }}>
-                        Panel rápido
+                      Ir al dashboard
+                    </Button>
+                  </Box>
+                  <Box sx={{ display: "flex", gap: 2 }}>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="h6" sx={{ mb: 1 }}>
+                        Dashboard
                       </Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="subtitle2">
-                        Accesos rápidos
-                      </Typography>
+                      <Divider sx={{ mb: 1 }} />
                       <List>
                         <ListItemButton
                           component={RouterLink}
-                          to="/dashboard?tab=notifications"
+                          to="/dashboard?tab=chats"
                         >
-                          <ListItemText primary="Notificaciones" />
+                          <ListItemIcon>
+                            <ChatBubbleOutlineIcon fontSize="small" />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary="Chats"
+                            secondary="Mensajería y conversaciones"
+                          />
                         </ListItemButton>
-                        <ListItemButton component={RouterLink} to="/perfil">
-                          <ListItemText primary="Mi perfil" />
+
+                        <ListItemButton component={RouterLink} to="/foro">
+                          <ListItemIcon>
+                            <ChatBubbleOutlineIcon fontSize="small" />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary="Foro"
+                            secondary="Temas y discusiones de la comunidad"
+                          />
+                        </ListItemButton>
+
+                        <ListItemButton
+                          component={RouterLink}
+                          to="/dashboard?tab=ava"
+                        >
+                          <ListItemIcon>
+                            <RiChatVoiceAiFill
+                              style={{ marginRight: 8, color: "#103e68" }}
+                              size={16}
+                            />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary="AVA IA"
+                            secondary="Asistente virtual y sugerencias"
+                          />
+                        </ListItemButton>
+
+                        <ListItemButton
+                          component={RouterLink}
+                          to="/dashboard?tab=specialists"
+                        >
+                          <ListItemIcon>
+                            <PeopleIcon fontSize="small" />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary="Especialistas"
+                            secondary="Directorio y perfiles"
+                          />
+                        </ListItemButton>
+
+                        <ListItemButton component={RouterLink} to="/mapa">
+                          <ListItemIcon>
+                            <MapIcon fontSize="small" />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary="Mapa"
+                            secondary="Ubica negocios y veterinarias"
+                          />
+                        </ListItemButton>
+
+                        <ListItemButton component={RouterLink} to="/search">
+                          <ListItemIcon>
+                            <BusinessIcon fontSize="small" />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary="Negocios"
+                            secondary="Explora y conecta"
+                          />
                         </ListItemButton>
                       </List>
                     </Box>
+
+                    <Box
+                      sx={{
+                        width: 260,
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 1,
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          bgcolor: "#f0f6f4",
+                          borderRadius: 1,
+                          height: 140,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        {/* Placeholder image area - puedes reemplazar por una imagen real */}
+                        <Typography sx={{ color: "#103e68", fontWeight: 700 }}>
+                          Panel rápido
+                        </Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="subtitle2">
+                          Accesos rápidos
+                        </Typography>
+                        <List>
+                          <ListItemButton
+                            component={RouterLink}
+                            to="/dashboard?tab=notifications"
+                          >
+                            <ListItemText primary="Notificaciones" />
+                          </ListItemButton>
+                          <ListItemButton component={RouterLink} to="/perfil">
+                            <ListItemText primary="Mi perfil" />
+                          </ListItemButton>
+                        </List>
+                      </Box>
+                    </Box>
                   </Box>
-                </Box>
-              </Paper>
-            </Grow>
-          </Popper>
-        </Box>
-      )}
+                </Paper>
+              </Grow>
+            </Popper>
+          </Box>
+        ) : null)}
     </Box>
   );
 };

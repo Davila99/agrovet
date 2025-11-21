@@ -44,32 +44,39 @@ export default function Chat() {
   // NOTE: useMemo removed intentionally for debugging: ensure activeConv
   // is recalculated whenever `rooms` or `activeId` change. If this fixes
   // the missing render it indicates `rooms` reference was not updating.
-  const activeConv = rooms.find((c) => String(c.id) === String(activeId)) || null;
+  const activeConv =
+    rooms.find((c) => String(c.id) === String(activeId)) || null;
 
   // WS hook
   // Track presence of online users locally and pass handlers into the socket
   const [onlineUsers, setOnlineUsers] = useState(() => new Set());
-  const markUserOnline = useCallback((id) => {
-    try {
-      setOnlineUsers((prev) => {
-        const copy = new Set(Array.from(prev || []));
-        if (id === null || id === undefined) return copy;
-        copy.add(String(id));
-        return copy;
-      });
-    } catch (e) {}
-  }, [setOnlineUsers]);
+  const markUserOnline = useCallback(
+    (id) => {
+      try {
+        setOnlineUsers((prev) => {
+          const copy = new Set(Array.from(prev || []));
+          if (id === null || id === undefined) return copy;
+          copy.add(String(id));
+          return copy;
+        });
+      } catch (e) {}
+    },
+    [setOnlineUsers]
+  );
 
-  const markUserOffline = useCallback((id) => {
-    try {
-      setOnlineUsers((prev) => {
-        const copy = new Set(Array.from(prev || []));
-        if (id === null || id === undefined) return copy;
-        copy.delete(String(id));
-        return copy;
-      });
-    } catch (e) {}
-  }, [setOnlineUsers]);
+  const markUserOffline = useCallback(
+    (id) => {
+      try {
+        setOnlineUsers((prev) => {
+          const copy = new Set(Array.from(prev || []));
+          if (id === null || id === undefined) return copy;
+          copy.delete(String(id));
+          return copy;
+        });
+      } catch (e) {}
+    },
+    [setOnlineUsers]
+  );
 
   useChatSocket({
     activeId,
@@ -83,10 +90,13 @@ export default function Chat() {
   // expose active room globally for auxiliary helpers (sound, legacy code)
   useEffect(() => {
     try {
-      if (typeof window !== 'undefined') window.__AGROVET_ACTIVE_ROOM = activeId || null;
+      if (typeof window !== "undefined")
+        window.__AGROVET_ACTIVE_ROOM = activeId || null;
     } catch (e) {}
     return () => {
-      try { if (typeof window !== 'undefined') window.__AGROVET_ACTIVE_ROOM = null; } catch (e) {}
+      try {
+        if (typeof window !== "undefined") window.__AGROVET_ACTIVE_ROOM = null;
+      } catch (e) {}
     };
   }, [activeId]);
 
@@ -156,13 +166,25 @@ export default function Chat() {
           activeId={activeId}
           messagesEndRef={messagesEndRef}
           getCurrentUserId={getCurrentUserId}
+          isMd={isMd}
         />
 
         {/* When there's a pending attachment, replace the input with the preview UI (WhatsApp-like). */}
-        {activeId && (
-          pendingAttachment ? (
-            <Box sx={{ p: 1, borderTop: '1px solid rgba(0,0,0,0.04)', bgcolor: 'background.default' }}>
-              <AttachmentPreview pending={pendingAttachment} onConfirm={confirmSendAttachment} onCancel={cancelPendingAttachment} isUploading={uploadingAttachment} />
+        {activeId &&
+          (pendingAttachment ? (
+            <Box
+              sx={{
+                p: 1,
+                borderTop: "1px solid rgba(0,0,0,0.04)",
+                bgcolor: "background.default",
+              }}
+            >
+              <AttachmentPreview
+                pending={pendingAttachment}
+                onConfirm={confirmSendAttachment}
+                onCancel={cancelPendingAttachment}
+                isUploading={uploadingAttachment}
+              />
             </Box>
           ) : (
             <ChatInput
@@ -177,8 +199,7 @@ export default function Chat() {
               sending={sendingText}
               uploadingAttachment={uploadingAttachment}
             />
-          )
-        )}
+          ))}
       </Box>
     </Box>
   );

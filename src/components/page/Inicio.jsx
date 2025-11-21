@@ -1,313 +1,261 @@
 import React, { useState, useEffect } from "react";
-import { Container, Typography, Button, Box, CardMedia } from "@mui/material";
+import { Container, Typography, Button, Box } from "@mui/material";
 import { motion } from "framer-motion";
-import { getProfile } from "../../services/endpoints";
 import { useNavigate } from "react-router-dom";
+import { getProfile } from "../../services/endpoints";
+import Footer from "./Footer";
+import Navbar from "./navigation/nav.jsx";
 
 import banner1 from "../../assets/image/banner1.webp";
 import banner2 from "../../assets/image/banner2.webp";
 import banner3 from "../../assets/image/banner3.webp";
-import LandingAgrovets from "./HomePage/LandingAgrovets";
-import NotificationsSection from "./HomePage/NotificationsSection";
-
-const fadeInUp = {
-  hidden: { opacity: 0, y: 50 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.8 } },
-};
+import LandingAgrovetsAnim from "./HomePage/LandingAgrovets.jsx";
 
 const WelcomePage = () => {
   const banners = [banner1, banner2, banner3];
+  const phrases = [
+    "La inteligencia artificial llega al campo 🌾",
+    "Conectando ciencia y naturaleza 🌿",
+    "Tu aliado digital en veterinaria y agricultura 🤖",
+  ];
+
+  const titleText = "Bienvenido a AgroVets";
+  const [displayedTitle, setDisplayedTitle] = useState("");
+  const [displayedPhrase, setDisplayedPhrase] = useState("");
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [textIndex, setTextIndex] = useState(0);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [avaQuestion, setAvaQuestion] = useState("");
   const navigate = useNavigate();
 
-  useEffect(() => {
-    let mounted = true;
-    const check = async () => {
-      try {
-        const raw = localStorage.getItem("token");
-        if (!raw) {
-          if (mounted) setIsLoggedIn(false);
-          return;
-        }
-        const token = String(raw)
-          .replace(/^Token\s*/i, "")
-          .replace(/^Bearer\s*/i, "")
-          .trim();
-        if (!token) {
-          if (mounted) setIsLoggedIn(false);
-          return;
-        }
-        try {
-          const profile = await getProfile(token);
-          if (mounted && profile && profile.id) setIsLoggedIn(true);
-          else if (mounted) setIsLoggedIn(false);
-        } catch (e) {
-          if (mounted) setIsLoggedIn(false);
-        }
-      } catch (e) {
-        if (mounted) setIsLoggedIn(false);
-      }
-    };
-    check();
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
+  // Carrusel de banners
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % banners.length);
-    }, 2000);
+    }, 4000);
     return () => clearInterval(interval);
   }, [banners.length]);
 
-  const handleExplore = () => {
-    navigate("/comunidad/explorar");
-  };
+  // Validar sesión
+  useEffect(() => {
+    const check = async () => {
+      try {
+        const token = (localStorage.getItem("token") || "")
+          .replace(/^Token\s*/i, "")
+          .replace(/^Bearer\s*/i, "")
+          .trim();
+        if (!token) return setIsLoggedIn(false);
+        const profile = await getProfile(token);
+        setIsLoggedIn(!!profile?.id);
+      } catch {
+        setIsLoggedIn(false);
+      }
+    };
+    check();
+  }, []);
+
+  // Efecto escribir título
+  useEffect(() => {
+    let index = 0;
+    const interval = setInterval(() => {
+      setDisplayedTitle((prev) => titleText.slice(0, index));
+      index++;
+      if (index > titleText.length) clearInterval(interval);
+    }, 100);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Efecto escribir frases
+  useEffect(() => {
+    let phrase = phrases[textIndex];
+    let i = 0;
+    setDisplayedPhrase("");
+    const interval = setInterval(() => {
+      setDisplayedPhrase(phrase.slice(0, i));
+      i++;
+      if (i > phrase.length) {
+        clearInterval(interval);
+        setTimeout(
+          () => setTextIndex((prev) => (prev + 1) % phrases.length),
+          2500
+        );
+      }
+    }, 70);
+    return () => clearInterval(interval);
+  }, [textIndex]);
 
   return (
-    <Box sx={{ bgcolor: "#f8f9fa" }}>
-      <Box
-        sx={{
-          position: "relative",
-          color: "white",
-          backgroundImage: `url(${banners[currentIndex]})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundRepeat: "no-repeat",
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          textAlign: "center",
-          transition: "background-image 2s ease-in-out",
-        }}
-      >
+    <>
+      <Navbar />
+      <Box sx={{ color: "#fff", overflow: "hidden" }}>
         <Box
           sx={{
-            position: "absolute",
-            inset: 0,
-            background:
-              "linear-gradient(180deg, rgba(0, 25, 94, 0.65) 0%, rgba(0, 0, 0, 0.55) 50%, rgba(0, 0, 0, 0.43) 100%)",
-            backdropFilter: "blur(2px)",
-            zIndex: 1,
+            position: "relative",
+            backgroundImage: `url(${banners[currentIndex]})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            minHeight: "100vh",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transition: "background-image 1.5s ease-in-out",
           }}
-        />
-        <Box sx={{ position: "relative", zIndex: 2, mt: 25 }}>
+        >
+          {/* Capa oscura + blur */}
+          <Box
+            sx={{
+              position: "absolute",
+              inset: 0,
+              background:
+                "linear-gradient(120deg, rgba(0,0,0,0.7) 20%, rgba(16,62,104,0.65) 100%)",
+              backdropFilter: "blur(10px)",
+              zIndex: 1,
+            }}
+          />
+
+          {/* Burbujas flotantes “liquid glass” */}
+          <Box
+            sx={{
+              position: "absolute",
+              inset: 0,
+              overflow: "hidden",
+              zIndex: 1,
+            }}
+          >
+            {[...Array(10)].map((_, i) => (
+              <motion.div
+                key={i}
+                initial={{ y: "100vh", x: Math.random() * window.innerWidth }}
+                animate={{ y: "-10vh", opacity: [0, 0.6, 0] }}
+                transition={{
+                  duration: 10 + Math.random() * 8,
+                  repeat: Infinity,
+                  delay: Math.random() * 5,
+                }}
+                style={{
+                  position: "absolute",
+                  width: 40 + Math.random() * 40,
+                  height: 40 + Math.random() * 40,
+                  borderRadius: "50%",
+                  background:
+                    "radial-gradient(circle at 30% 30%, rgba(255,255,255,0.3), rgba(255,255,255,0.08))",
+                  backdropFilter: "blur(12px)",
+                }}
+              />
+            ))}
+          </Box>
+
+          {/* Contenido principal */}
           <Container
             maxWidth="md"
             sx={{
-              mb: 10,
-            }}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 1 }}
-            >
-              <Typography
-                variant="h2"
-                sx={{
-                  fontWeight: 800,
-                  mb: 2,
-                  textShadow: "0 4px 20px rgba(0,0,0,0.5)",
-                  color: "#fff",
-                }}
-              >
-                Bienvenido a{" "}
-                <Box component="span" sx={{ color: "#9EF01A" }}>
-                  AgroVets
-                </Box>
-              </Typography>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.8 }}
-            >
-              <Typography
-                variant="h6"
-                sx={{
-                  opacity: 0.9,
-                  mb: 4,
-                  fontWeight: 400,
-                  lineHeight: 1.6,
-                  maxWidth: 600,
-                  mx: "auto",
-                }}
-              >
-                La comunidad donde agrónomos y veterinarios se unen para
-                resolver problemas reales del campo, compartir conocimiento y
-                potenciar su crecimiento profesional.
-              </Typography>
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.8 }}
-            >
-              <Box
-                sx={{
-                  mt: 4,
-                  display: "flex",
-                  justifyContent: "center",
-                }}
-              >
-                <Box
-                  component="input"
-                  value={avaQuestion}
-                  onChange={(e) => setAvaQuestion(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      console.log("Pregunta a AVA:", avaQuestion);
-                      setAvaQuestion("");
-                    }
-                  }}
-                  placeholder="💡 Pregúntale a AVA..."
-                  aria-label="Pregúntale a AVA"
-                  sx={{
-                    width: { xs: "90%", sm: "400px" },
-                    px: 3,
-                    py: 2,
-                    fontSize: 15,
-                    borderRadius: 999,
-                    outline: "none",
-                    border: "2px solid #35722b",
-                    background: "rgba(16, 62, 104, 0.1)",
-                    color: "#fff",
-
-                    marginBottom: 3,
-                    boxShadow:
-                      "0 0 6px rgba(158, 240, 26, 0.5), 0 0 12px rgba(158, 240, 26, 0.3)",
-                    transition: "all 0.3s ease",
-                    "&::placeholder": {
-                      color: "#9EF01A",
-                      opacity: 0.7,
-                      fontWeight: 500,
-                    },
-                    "&:focus": {
-                      px: 5,
-                      py: 2.2,
-                      borderColor: "#9EF01A",
-
-                      boxShadow:
-                        "0 0 10px rgba(158, 240, 26, 0.8), 0 0 20px rgba(158, 240, 26, 0.6)",
-                      background: "rgba(16, 62, 104, 0.2)",
-                    },
-                  }}
-                />
-              </Box>
-            </motion.div>
-          </Container>
-        </Box>
-      </Box>
-
-      <Container
-        maxWidth="lg"
-        sx={{
-          py: 10,
-          borderTopLeftRadius: 16,
-          borderTopRightRadius: 16,
-        }}
-      >
-        <NotificationsSection />
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          variants={fadeInUp}
-        >
-          <Typography
-            variant="h4"
-            textAlign="center"
-            fontWeight="bold"
-            sx={{ color: "#103E68", mb: 6 }}
-          >
-            ¿Por qué unirte a AgroVets?
-          </Typography>
-        </motion.div>
-        <LandingAgrovets />
-      </Container>
-
-      <motion.div
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true }}
-        variants={fadeInUp}
-      >
-        <Box
-          sx={{
-            bgcolor: "#35722b",
-            py: 8,
-            textAlign: "center",
-            color: "#fff",
-          }}
-        >
-          <Typography variant="h4" fontWeight="bold" gutterBottom>
-            Mejora la salud de tu ganado y cultivos
-          </Typography>
-          <Typography variant="body1" sx={{ mb: 3 }}>
-            Únete a la revolución agropecuaria de Nicaragua con Agrovets y
-            potencia tu producción.
-          </Typography>
-
-          {isLoggedIn && (
-            <Button
-              variant="contained"
-              color="primary"
-              size="large"
-              onClick={handleExplore}
-            >
-              Explorar
-            </Button>
-          )}
-        </Box>
-        <Box sx={{ py: 6 }}>
-          <Container
-            maxWidth="sm"
-            sx={{
-              bgcolor: "#fff",
-              p: 4,
-              borderRadius: 2,
-              boxShadow: 3,
+              position: "relative",
+              zIndex: 3,
               textAlign: "center",
+              px: 4,
+            }}
+          >
+            {/* Título con efecto escribir */}
+            <Typography
+              variant="h2"
+              sx={{
+                fontWeight: 800,
+                mb: 2,
+                background: "linear-gradient(90deg, #00C6A7, #9EF01A)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                fontFamily: "'Fira Code', monospace",
+              }}
+            >
+              {displayedTitle}
+              <Box
+                component="span"
+                sx={{
+                  display: "inline-block",
+                  width: "10px",
+                  bgcolor: "#9EF01A",
+                  ml: 0.5,
+                  height: "1em",
+                  animation: "blink 0.8s infinite",
+                  "@keyframes blink": {
+                    "0%, 50%": { opacity: 1 },
+                    "51%, 100%": { opacity: 0 },
+                  },
+                }}
+              />
+            </Typography>
+
+            {/* Descripción con efecto escribir */}
+            <Typography
+              variant="h6"
+              sx={{
+                mb: 4,
+                opacity: 0.9,
+                fontWeight: 400,
+                lineHeight: 1.6,
+                fontFamily: "'Fira Code', monospace",
+              }}
+            >
+              {displayedPhrase}
+            </Typography>
+
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button
+                variant="contained"
+                size="large"
+                onClick={() => navigate("/chat")}
+                sx={{
+                  bgcolor: "#00c6a7",
+                  px: 6,
+                  py: 1.6,
+                  fontWeight: 700,
+                  color: "#fff",
+                  borderRadius: "30px",
+                  backdropFilter: "blur(8px)",
+                  boxShadow: "0 10px 30px rgba(0, 198, 167, 0.4)",
+                }}
+              >
+                Hablar con AVA 🤖
+              </Button>
+            </motion.div>
+          </Container>
+
+          {/* Burbuja de chat fija abajo a la derecha */}
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1 }}
+            style={{
+              position: "fixed",
+              bottom: 30,
+              right: 30,
+              background: "rgba(255,255,255,0.15)",
+              backdropFilter: "blur(18px)",
+              borderRadius: "25px",
+              padding: "14px 20px",
+              boxShadow: "0 8px 30px rgba(0,0,0,0.3)",
+              fontSize: "0.95rem",
+              color: "#fff",
+              zIndex: 10,
+              maxWidth: "260px",
+              border: "1px solid rgba(255,255,255,0.2)",
             }}
           >
             <motion.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              variants={fadeInUp}
+              key={textIndex}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
             >
-              <Typography
-                variant="h6"
-                fontWeight="bold"
-                sx={{ mb: 1, color: "#000" }}
-              >
-                Reseña de usuario satisfecho
-              </Typography>
-
-              <Typography
-                variant="body1"
-                sx={{ fontStyle: "italic", mb: 2, color: "#000" }}
-              >
-                "AgroVets me ayudó a identificar y resolver problemas en mi hato
-                en tiempo récord. La comunidad y los consejos profesionales
-                marcaron una gran diferencia en mi producción. ¡Muy
-                recomendable!"
-              </Typography>
-
-              <Typography variant="subtitle2" color="text.secondary">
-                — María López, productora
-              </Typography>
+              💬 <strong>AVA:</strong> {phrases[textIndex]}
             </motion.div>
-          </Container>
+          </motion.div>
         </Box>
-      </motion.div>
-    </Box>
+
+        {/* Sección informativa */}
+        <LandingAgrovetsAnim />
+        <Footer />
+      </Box>
+    </>
   );
 };
 

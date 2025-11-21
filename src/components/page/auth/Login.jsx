@@ -37,8 +37,9 @@ const LoginPage = () => {
 
     setLoading(true);
     try {
+      const sanitizedPhone = String(form.phone_number).replace(/\D/g, "");
       const res = await authAPI.login({
-        phone_number: form.phone_number,
+        phone_number: sanitizedPhone,
         password: form.password,
       });
 

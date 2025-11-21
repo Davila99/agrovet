@@ -1,0 +1,138 @@
+/* Enhanced orb scene scoped under .enhanced-orb-wrapper */
+.enhanced-orb-wrapper {
+  position: relative;
+  /* allow glows to extend beyond the circular visual */
+  overflow: visible;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  /* rendering hints to avoid subpixel distortion */
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  will-change: transform, opacity;
+}
+
+/* ensure inner container matches the wrapper size and acts as positioning context */
+.enhanced-orb-wrapper > .orb-clip {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  border-radius: 50%;
+  overflow: hidden; /* clip inner content to circle */
+  -webkit-clip-path: circle(50% at 50% 50%);
+  clip-path: circle(50% at 50% 50%);
+}
+
+.enhanced-orb-wrapper .background {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(ellipse at center, #1b0f2f 0%, #0b0717 45%, #03020a 100%);
+}
+
+.enhanced-orb-wrapper .background::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: radial-gradient(ellipse at top, rgba(138,43,226,0.15), transparent 60%);
+}
+
+.enhanced-orb-wrapper .background::after {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: radial-gradient(ellipse at bottom, rgba(0,255,255,0.1), transparent 60%);
+}
+
+.enhanced-orb-wrapper .stars { position: absolute; width: 100%; height: 100%; overflow: hidden; }
+.enhanced-orb-wrapper .star { position: absolute; background: white; border-radius: 50%; animation: twinkle 3s infinite; }
+.enhanced-orb-wrapper .star.small { width: 1px; height: 1px; }
+.enhanced-orb-wrapper .star.medium { width: 2px; height: 2px; }
+.enhanced-orb-wrapper .star.large { width: 3px; height: 3px; box-shadow: 0 0 4px rgba(255,255,255,0.8); }
+.enhanced-orb-wrapper .star:nth-child(1) { top:10%; left:20%; animation-delay:0s; }
+.enhanced-orb-wrapper .star:nth-child(2) { top:20%; left:80%; animation-delay:0.5s; }
+.enhanced-orb-wrapper .star:nth-child(3) { top:30%; left:40%; animation-delay:1s; }
+.enhanced-orb-wrapper .star:nth-child(4) { top:50%; left:90%; animation-delay:1.5s; }
+.enhanced-orb-wrapper .star:nth-child(5) { top:70%; left:15%; animation-delay:2s; }
+.enhanced-orb-wrapper .star:nth-child(6) { top:80%; left:60%; animation-delay:0.8s; }
+.enhanced-orb-wrapper .star:nth-child(7) { top:15%; left:70%; animation-delay:1.2s; }
+.enhanced-orb-wrapper .star:nth-child(8) { top:60%; left:30%; animation-delay:1.8s; }
+.enhanced-orb-wrapper .star:nth-child(9) { top:40%; left:10%; animation-delay:2.5s; }
+.enhanced-orb-wrapper .star:nth-child(10) { top:85%; left:85%; animation-delay:0.3s; }
+.enhanced-orb-wrapper .star:nth-child(11) { top:25%; left:55%; animation-delay:1.7s; }
+.enhanced-orb-wrapper .star:nth-child(12) { top:5%; left:45%; animation-delay:2.2s; }
+
+.enhanced-orb-wrapper .nebula { position: absolute; border-radius: 50%; filter: blur(60px); opacity: 0.3; animation: drift 20s ease-in-out infinite; }
+.enhanced-orb-wrapper .nebula:nth-child(1) { top:10%; left:10%; width:300px; height:200px; background: radial-gradient(ellipse, rgba(138,43,226,0.4), transparent); animation-delay:0s; }
+.enhanced-orb-wrapper .nebula:nth-child(2) { top:20%; right:15%; width:250px; height:180px; background: radial-gradient(ellipse, rgba(0,255,255,0.3), transparent); animation-delay:5s; }
+.enhanced-orb-wrapper .nebula:nth-child(3) { bottom:15%; left:20%; width:280px; height:190px; background: radial-gradient(ellipse, rgba(75,0,130,0.35), transparent); animation-delay:10s; }
+
+.enhanced-orb-wrapper .landscape { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+.enhanced-orb-wrapper .mountain-layer { position: absolute; bottom:0; width:100%; height:100%; }
+.enhanced-orb-wrapper .mountain { position: absolute; bottom:0; }
+.enhanced-orb-wrapper .mountain-back { left:-5%; width:0; height:0; border-left:250px solid transparent; border-right:250px solid transparent; border-bottom:350px solid rgba(20,10,35,0.6); filter: blur(2px); }
+.enhanced-orb-wrapper .mountain-mid { right:10%; width:0; height:0; border-left:200px solid transparent; border-right:200px solid transparent; border-bottom:280px solid rgba(30,15,45,0.7); filter: blur(1px); }
+.enhanced-orb-wrapper .mountain-front { left:25%; width:0; height:0; border-left:180px solid transparent; border-right:180px solid transparent; border-bottom:220px solid rgba(40,20,60,0.8); }
+.enhanced-orb-wrapper .mountain-small { right:35%; width:0; height:0; border-left:120px solid transparent; border-right:120px solid transparent; border-bottom:160px solid rgba(35,18,50,0.75); }
+.enhanced-orb-wrapper .ground { position:absolute; bottom:0; width:100%; height:200px; background: linear-gradient(to top, rgba(10,5,20,0.9), transparent); }
+.enhanced-orb-wrapper .ground-reflection { position:absolute; bottom:0; width:100%; height:150px; background: radial-gradient(ellipse 800px 150px at center bottom, rgba(138,43,226,0.25), rgba(0,255,255,0.15) 40%, transparent 70%); }
+
+.enhanced-orb-wrapper .orb-container { position: absolute; left:0; top:0; width: 100%; height: 100%; display:flex; justify-content:center; align-items:center; z-index:10; pointer-events: none; }
+.enhanced-orb-wrapper .outer-aura { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:220%; height:220%; border-radius:50%; background: radial-gradient(circle, rgba(138,43,226,0.18), transparent 70%); animation: aura-pulse 4s ease-in-out infinite; z-index: 2; pointer-events: none; filter: blur(12px); }
+.enhanced-orb-wrapper .energy-ring { position:absolute; border-radius:50%; border:1px solid rgba(140,60,220,0.28); box-shadow:0 0 18px rgba(140,60,220,0.15); animation: ring-expand 3.2s ease-out infinite; }
+.enhanced-orb-wrapper .energy-ring:nth-of-type(1) { width:65%; height:65%; left:50%; top:50%; transform:translate(-50%,-50%); animation-delay:0s; }
+.enhanced-orb-wrapper .energy-ring:nth-of-type(2) { width:80%; height:80%; left:50%; top:50%; transform:translate(-50%,-50%); animation-delay:0.6s; }
+.enhanced-orb-wrapper .energy-ring:nth-of-type(3) { width:95%; height:95%; left:50%; top:50%; transform:translate(-50%,-50%); animation-delay:1.2s; }
+.enhanced-orb-wrapper .energy-ring:nth-of-type(4) { width:110%; height:110%; left:50%; top:50%; transform:translate(-50%,-50%); animation-delay:1.9s; }
+
+
+.enhanced-orb-wrapper .orb { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:58%; height:58%; border-radius:50%; background: radial-gradient(circle at 30% 30%, rgba(0,220,255,0.95), rgba(120,40,220,0.92) 38%, rgba(80,10,140,0.95) 68%, rgba(18,6,40,1)); box-shadow: 0 0 80px rgba(0,200,255,0.6), 0 0 140px rgba(140,40,220,0.5), inset 0 0 50px rgba(255,255,255,0.12), inset -16px -16px 50px rgba(120,40,220,0.3); animation: orb-pulse 3s ease-in-out infinite; z-index: 3; pointer-events: none; transform-origin: center center; will-change: transform, opacity, filter; }
+
+.enhanced-orb-wrapper .orb::before { content:""; position:absolute; top:8%; left:12%; width:48%; height:48%; border-radius:50%; background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.75), rgba(255,255,255,0.18) 40%, transparent 70%); filter: blur(6px); animation: shine 3s ease-in-out infinite; opacity:0.95; }
+.enhanced-orb-wrapper .orb::after { content:""; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:110px; height:2px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.9) 20%, rgba(0,220,255,1) 50%, rgba(255,255,255,0.9) 80%, transparent); box-shadow: 0 0 18px rgba(0,200,255,0.7),0 0 36px rgba(0,200,255,0.4); animation: beam-rotate 6s linear infinite; opacity:0.9; }
+
+.enhanced-orb-wrapper .core { position:absolute; width:20%; height:20%; border-radius:50%; background: radial-gradient(circle, rgba(255,255,255,1), rgba(0,255,255,0.8) 30%, transparent 70%); animation: core-pulse 2s ease-in-out infinite; box-shadow:0 0 40px rgba(0,255,255,0.8),0 0 60px rgba(138,43,226,0.6); }
+
+.enhanced-orb-wrapper .orb-svg { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; mix-blend-mode: overlay; opacity: 0.6; transform: translateZ(0); }
+.enhanced-orb-wrapper .orb-triangle { filter: blur(2px); }
+
+.enhanced-orb-wrapper .particle { position:absolute; border-radius:50%; background: radial-gradient(circle, rgba(0,255,255,1), rgba(138,43,226,0.5)); box-shadow:0 0 15px rgba(0,255,255,0.8); animation: particle-float 8s ease-in-out infinite; }
+.enhanced-orb-wrapper .particle:nth-child(5) { width:8px; height:8px; top:15%; left:20%; animation-delay:0s; }
+.enhanced-orb-wrapper .particle:nth-child(6) { width:6px; height:6px; top:70%; right:25%; animation-delay:2s; }
+.enhanced-orb-wrapper .particle:nth-child(7) { width:7px; height:7px; top:30%; left:15%; animation-delay:4s; }
+.enhanced-orb-wrapper .particle:nth-child(8) { width:5px; height:5px; top:80%; right:18%; animation-delay:6s; }
+.enhanced-orb-wrapper .particle:nth-child(9) { width:6px; height:6px; top:45%; left:8%; animation-delay:1s; }
+.enhanced-orb-wrapper .particle:nth-child(10) { width:7px; height:7px; top:55%; right:10%; animation-delay:3s; }
+
+.enhanced-orb-wrapper .orbital-ring { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:140%; height:140%; border-radius:50%; border:1px solid rgba(138,43,226,0.2); box-shadow: 0 0 60px rgba(80,20,160,0.08); animation: orbital-rotate 12s linear infinite; pointer-events: none; z-index: 2; }
+.enhanced-orb-wrapper .orbital-ring::before { content:""; position:absolute; top:0; left:50%; transform:translateX(-50%); width:8px; height:8px; background: radial-gradient(circle, rgba(0,255,255,1), rgba(138,43,226,0.5)); border-radius:50%; box-shadow:0 0 18px rgba(0,255,255,0.9); }
+.enhanced-orb-wrapper .orbital-ring.small { width:85%; height:85%; animation-duration:15s; animation-direction:reverse; }
+
+@keyframes orb-pulse { 0%,100% { transform: scale(1); box-shadow: 0 0 60px rgba(0,255,255,0.6), 0 0 100px rgba(138,43,226,0.5), 0 0 140px rgba(138,43,226,0.3), inset 0 0 60px rgba(255,255,255,0.1), inset -20px -20px 60px rgba(138,43,226,0.3); } 50% { transform: scale(1.03); box-shadow: 0 0 80px rgba(0,255,255,0.8), 0 0 120px rgba(138,43,226,0.7), 0 0 160px rgba(138,43,226,0.4), inset 0 0 80px rgba(255,255,255,0.15), inset -20px -20px 80px rgba(138,43,226,0.4); } }
+
+@keyframes shine { 0%,100% { opacity:0.6; transform:scale(1); } 50% { opacity:0.9; transform:scale(1.1); } }
+
+@keyframes beam-rotate { 0% { transform: translate(-50%,-50%) rotate(0deg); } 100% { transform: translate(-50%,-50%) rotate(360deg); } }
+
+@keyframes core-pulse { 0%,100% { transform: scale(1); opacity:0.8; } 50% { transform: scale(1.2); opacity:1; } }
+
+@keyframes ring-expand { 0% { width: 60%; height:60%; opacity:0.6; } 100% { width: 100%; height:100%; opacity:0; } }
+
+@keyframes aura-pulse { 0%,100% { transform: scale(0.9); opacity:0.3; } 50% { transform: scale(1.1); opacity:0.5; } }
+
+@keyframes particle-float { 0%,100% { transform: translate(0,0); opacity:0.4; } 25% { transform: translate(30px,-40px); opacity:1; } 50% { transform: translate(-20px,-80px); opacity:0.6; } 75% { transform: translate(-40px,-40px); opacity:1; } }
+
+@keyframes orbital-rotate { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+@keyframes twinkle { 0%,100% { opacity:0.3; transform:scale(1); } 50% { opacity:1; transform:scale(1.2); } }
+
+@keyframes drift { 0%,100% { transform: translate(0,0); } 50% { transform: translate(30px,20px); } }
+
+/* Overlay / centered orb variant kept for compatibility */
+.orb-overlay { position: fixed; inset:0; display:flex; justify-content:center; align-items:center; background: rgba(4,8,18,0.55); backdrop-filter: blur(8px) brightness(0.6); z-index:9999; }
+.orb-overlay .orb-container { position: relative; border-radius: 50%; rotate:0deg; filter: drop-shadow(0 0 80px rgba(40,120,255,0.18)) drop-shadow(0 0 60px rgba(255,60,30,0.12)); }
+.orb-overlay .orb { filter: blur(10px); transition: transform 0.4s ease, filter 0.3s ease; }
+
+

@@ -94,7 +94,7 @@ const SpecialistsList = ({ onSelectSpecialist, searchQuery }) => {
       <Box
         sx={{
           width: "100%",
-          p: 2,
+          marginTop: 80,
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
