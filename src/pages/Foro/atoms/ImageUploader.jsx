@@ -25,11 +25,13 @@ export default function ImageUploader({ onUploaded, returnFile = false }) {
     if (!file) return;
     try {
       const res = await upload.mutateAsync(file);
-      // TODO: adapt to backend response shape; assume { id }
-      const id = res.id || res.media_id || res.data?.id;
+      console.debug('[ImageUploader] upload response:', res);
+      // Attempt to extract id and url from multiple possible shapes
+      const id = res && (res.id || res.media_id || res.data?.id);
+      const url = res && (res.url || res.data?.url || res.data?.path || res.public_url || res.data?.publicURL);
       if (onUploaded) {
         if (returnFile) onUploaded(file);
-        else onUploaded(id);
+        else onUploaded({ id, url });
       }
     } catch (e) {
       setError({ upload: 'Error al subir archivo' });
@@ -52,6 +54,10 @@ export default function ImageUploader({ onUploaded, returnFile = false }) {
         </Button>
       </div>
       {error && <div style={{ color: 'red' }}>{error.type || error.size || error.upload}</div>}
+      {/* Show uploaded url for debugging */}
+      {upload.isLoading === false && upload && upload.error && (
+        <div style={{ color: 'red' }}>Upload failed</div>
+      )}
     </div>
   );
 }

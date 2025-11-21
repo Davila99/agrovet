@@ -3,6 +3,7 @@ import ImageUploader from '../atoms/ImageUploader';
 import Button from '../atoms/Button';
 import { validatePost } from '../utils/validators';
 import { useCreatePost, useUploadMedia } from '../hooks/useForoApi';
+import foroService from '../../../services/endpoints/foro';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
 import Paper from '@mui/material/Paper';
@@ -27,12 +28,43 @@ export default function PostComposer({ onCreated, communityId = null }) {
     const v = validatePost({ title, content });
     if (Object.keys(v).length) return setErrors(v);
     try {
-      const payload = { title, content, media_id: mediaId, community_id: communityId };
+      // Build payload with only present fields and normalize types
+      const payload = { title, content };
+      if (mediaId !== null && mediaId !== undefined && mediaId !== '') {
+        // mediaId may be a plain id, an array, or an object {id, url}
+        let mid = mediaId;
+        if (Array.isArray(mid)) mid = mid[0];
+        if (typeof mid === 'object' && mid !== null) mid = mid.id || mid.media_id || mid[0];
+        payload.media_id = Number(mid) || mid;
+      }
+      if (communityId !== null && communityId !== undefined && communityId !== '') {
+        const cid = Array.isArray(communityId) ? communityId[0] : communityId;
+        payload.community_id = Number(cid) || cid;
+      }
+
       const res = await create.mutateAsync(payload);
       setTitle(''); setContent(''); setMediaId(null);
-      if (onCreated) onCreated(res);
+      // Prefer to forward the created object if available. If backend returns only minimal data,
+      // fetch full post detail as fallback so feed can render media/author.
+      let created = res;
+      try {
+        if (res && res.id && (!res.title || !res.author || !res.created_at)) {
+          const full = await foroService.getPostDetail(res.id);
+          if (full) created = full;
+        }
+      } catch (e) {
+        // ignore fallback failure; use whatever we have
+        console.debug('fallback getPostDetail failed', e);
+      }
+      if (onCreated) onCreated(created);
     } catch (err) {
-      setErrors({ submit: 'Error al crear el post' });
+      // Try to show server validation details when available
+      const body = err && err.body;
+      if (body && typeof body === 'object') {
+        setErrors(body);
+      } else {
+        setErrors({ submit: 'Error al crear el post' });
+      }
     }
   }
 

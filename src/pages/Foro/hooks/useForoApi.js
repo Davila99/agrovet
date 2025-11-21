@@ -119,8 +119,12 @@ export function useUploadMedia() {
   async function mutateAsync(file) {
     setLoading(true); setError(null);
     try {
-      const fd = new FormData(); fd.append('file', file);
+      const fd = new FormData();
+      // Backend expects field 'image' (MediaViewSet looks for 'image')
+      fd.append('image', file);
       const res = await foroService.uploadMedia(fd);
+      // log for debugging in dev
+      try { console.debug('[useUploadMedia] upload response', res); } catch (e) {}
       setLoading(false);
       return res;
     } catch (e) {
