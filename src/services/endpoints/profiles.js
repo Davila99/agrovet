@@ -44,7 +44,12 @@ export const profilesAPI = {
     const localToken = token || (typeof window !== "undefined" ? authClient.getAccessToken() : null);
     const url = env.buildUrl('PROFILES', `/profiles/specialists/${userId}/`);
     try {
-      console.log('[profilesAPI] PUT specialist by user:', { userId, url, data, hasToken: !!localToken });
+      console.log('🔵 [profilesAPI] PUT specialist by user:', { 
+        userId, 
+        url, 
+        data: JSON.stringify(data, null, 2), 
+        hasToken: !!localToken 
+      });
     } catch (e) {}
     const res = await httpClient(url, {
       method: "PUT",
@@ -58,7 +63,12 @@ export const profilesAPI = {
     const localToken = token || (typeof window !== "undefined" ? authClient.getAccessToken() : null);
     const url = env.buildUrl('PROFILES', `/profiles/specialists/${userId}/`);
     try {
-      console.log('[profilesAPI] PATCH specialist by user:', { userId, url, data, hasToken: !!localToken });
+      console.log('🔵 [profilesAPI] PATCH specialist by user:', { 
+        userId, 
+        url, 
+        data: JSON.stringify(data, null, 2), 
+        hasToken: !!localToken 
+      });
     } catch (e) {}
     const res = await httpClient(url, {
       method: "PATCH",
@@ -66,6 +76,25 @@ export const profilesAPI = {
       body: data,
     });
     return profileAdapter.normalizeProfile(res);
+  },
+
+  getSpecialistByUser: async (userId, token) => {
+    const localToken = token || (typeof window !== "undefined" ? authClient.getAccessToken() : null);
+    const url = env.buildUrl('PROFILES', `/profiles/specialists/${userId}/`);
+    console.log('🔵 [profilesAPI] GET specialist by user:', { userId, url, hasToken: !!localToken });
+    try {
+      const res = await httpClient(url, {
+        method: "GET",
+        headers: authHeaders(localToken),
+      });
+      console.log('🔵 [profilesAPI] GET response raw:', res);
+      const normalized = profileAdapter.normalizeProfile(res);
+      console.log('🔵 [profilesAPI] GET response normalized:', normalized);
+      return normalized;
+    } catch (e) {
+      console.error('❌ [profilesAPI] Error en GET specialist by user:', e);
+      throw e;
+    }
   },
 };
 

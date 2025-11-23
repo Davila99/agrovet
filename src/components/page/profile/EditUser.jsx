@@ -122,71 +122,145 @@ const EditUser = () => {
         await authAPI.updateUser(id, payload, token);
         // Si hay specialist_profile, intentar actualizarlo por user id
         if (user.specialist_profile) {
-          // use the fetched user's id (authoritative) instead of the route param
-          // this avoids 404s when the route id doesn't match the authenticated user
-          const profileUserId = Number(user.id || id);
-          // Limpiar specialist_profile para enviar solo los campos editables
-          const specialistData = {
-            user_display: user.specialist_profile.user_display || '',
-            profession: user.specialist_profile.profession || '',
-            experience_years: user.specialist_profile.experience_years !== undefined && user.specialist_profile.experience_years !== null 
-              ? Number(user.specialist_profile.experience_years) 
-              : undefined,
-            about_us: user.specialist_profile.about_us || '',
-            can_give_consultations: Boolean(user.specialist_profile.can_give_consultations),
-            can_offer_online_services: Boolean(user.specialist_profile.can_offer_online_services),
-          };
-          // Eliminar campos undefined/null/vacíos (excepto booleanos y números)
-          Object.keys(specialistData).forEach(key => {
-            const value = specialistData[key];
-            if (value === undefined || value === null || (typeof value === 'string' && value.trim() === '')) {
-              delete specialistData[key];
+          // Intentar usar el ID del perfil de especialista si está disponible, sino usar user_id
+          const specialistProfileId = user.specialist_profile.id || user.specialist_profile.pk;
+          const profileUserId = specialistProfileId ? Number(specialistProfileId) : Number(user.id || id);
+          
+          console.log('[EditUser] Specialist profile ID:', specialistProfileId, 'User ID:', user.id, 'Using:', profileUserId);
+          
+          // Construir specialistData solo con campos que tienen valores válidos
+          const specialistData = {};
+          
+          // Solo incluir campos que existen y tienen valores válidos
+          if (user.specialist_profile.user_display !== undefined && user.specialist_profile.user_display !== null) {
+            const userDisplay = String(user.specialist_profile.user_display).trim();
+            if (userDisplay !== '') {
+              specialistData.user_display = userDisplay;
             }
-          });
-          console.log('[EditUser] Sending specialist data (with file):', specialistData, 'to user ID:', profileUserId);
-          try {
-            await profilesAPI.patchSpecialistByUser(
-              profileUserId,
-              specialistData,
-              token
-            );
-          } catch (e) {
-            console.error('[EditUser] Error updating specialist profile (PATCH):', {
-              error: e.message,
-              status: e.status,
-              body: e.body,
-              raw: e.raw
-            });
-            // fallback to PUT if PATCH is not supported for this endpoint
+          }
+          
+          if (user.specialist_profile.profession !== undefined && user.specialist_profile.profession !== null) {
+            const profession = String(user.specialist_profile.profession).trim();
+            if (profession !== '') {
+              specialistData.profession = profession;
+            }
+          }
+          
+          if (user.specialist_profile.experience_years !== undefined && user.specialist_profile.experience_years !== null) {
+            const expYears = Number(user.specialist_profile.experience_years);
+            if (!isNaN(expYears) && expYears >= 0) {
+              specialistData.experience_years = expYears;
+            }
+          }
+          
+          if (user.specialist_profile.about_us !== undefined && user.specialist_profile.about_us !== null) {
+            const aboutUs = String(user.specialist_profile.about_us).trim();
+            if (aboutUs !== '') {
+              specialistData.about_us = aboutUs;
+            }
+          }
+          
+          // Los booleanos siempre se incluyen si están definidos
+          if (user.specialist_profile.can_give_consultations !== undefined) {
+            specialistData.can_give_consultations = Boolean(user.specialist_profile.can_give_consultations);
+          }
+          
+          if (user.specialist_profile.can_offer_online_services !== undefined) {
+            specialistData.can_offer_online_services = Boolean(user.specialist_profile.can_offer_online_services);
+          }
+          
+          // Solo intentar actualizar si hay datos para enviar
+          if (Object.keys(specialistData).length === 0) {
+            console.warn('[EditUser] No specialist data to send, skipping update');
+          } else {
+            console.log('🔵 [EditUser] Sending specialist data (with file):', JSON.stringify(specialistData, null, 2));
+            console.log('🔵 [EditUser] User ID to use:', profileUserId);
+            
+            // Intentar incluir el campo 'user' si el backend lo requiere
+            // Algunos backends esperan el user_id en el payload, no solo en la URL
+            const payloadWithUser = { ...specialistData };
+            // Solo incluir 'user' si no está ya en specialistData y si tenemos el user_id
+            if (!payloadWithUser.user && !payloadWithUser.user_id && profileUserId) {
+              // Intentar con 'user' primero (formato común en Django REST)
+              payloadWithUser.user = profileUserId;
+              console.log('🔵 [EditUser] Added "user" field to payload:', profileUserId);
+            } else {
+              console.log('🔵 [EditUser] "user" field already exists or profileUserId is missing');
+            }
+            
+            console.log('🔵 [EditUser] Final payload to send:', JSON.stringify(payloadWithUser, null, 2));
+            
             try {
-              await profilesAPI.putSpecialistByUser(
+              await profilesAPI.patchSpecialistByUser(
                 profileUserId,
-                specialistData,
+                payloadWithUser,
                 token
               );
-            } catch (e2) {
-              console.error('[EditUser] Error with PUT fallback:', {
-                error: e2.message,
-                status: e2.status,
-                body: e2.body,
-                raw: e2.raw
+            } catch (e) {
+              console.error('[EditUser] Error updating specialist profile (PATCH):', {
+                error: e.message,
+                status: e.status,
+                body: e.body,
+                raw: e.raw
               });
-              // Si ambos fallan, puede que el perfil no exista, intentar crearlo
-              if (e2.status === 404 || e.status === 404) {
-                try {
-                  await profilesAPI.createSpecialist(specialistData, token);
-                } catch (e3) {
-                  console.error('[EditUser] Error creating specialist profile:', {
-                    error: e3.message,
-                    status: e3.status,
-                    body: e3.body
-                  });
-                  throw new Error('No se pudo actualizar el perfil de especialista');
+              
+              // Intentar extraer más información del error
+              let errorDetails = '';
+              if (e.body) {
+                if (typeof e.body === 'object') {
+                  errorDetails = JSON.stringify(e.body, null, 2);
+                } else {
+                  errorDetails = String(e.body);
                 }
-              } else {
-                // Si es error 500, mostrar mensaje más descriptivo
-                const errorMsg = e2.body?.detail || e2.body?.error || e2.body?.message || e2.message || 'Error del servidor al actualizar el perfil';
-                throw new Error(errorMsg);
+              }
+              if (e.raw && typeof e.raw === 'string' && e.raw.length < 500) {
+                console.error('[EditUser] Raw error response:', e.raw);
+              }
+              
+              // fallback to PUT if PATCH is not supported for this endpoint
+              try {
+                await profilesAPI.putSpecialistByUser(
+                  profileUserId,
+                  payloadWithUser,
+                  token
+                );
+              } catch (e2) {
+                console.error('[EditUser] Error with PUT fallback:', {
+                  error: e2.message,
+                  status: e2.status,
+                  body: e2.body,
+                  raw: e2.raw
+                });
+                
+                // Intentar extraer más información del error PUT
+                if (e2.body) {
+                  if (typeof e2.body === 'object') {
+                    console.error('[EditUser] PUT error details:', JSON.stringify(e2.body, null, 2));
+                  } else {
+                    console.error('[EditUser] PUT error details:', String(e2.body));
+                  }
+                }
+                
+                // Si ambos fallan, puede que el perfil no exista, intentar crearlo
+                if (e2.status === 404 || e.status === 404) {
+                  try {
+                    await profilesAPI.createSpecialist(specialistData, token);
+                  } catch (e3) {
+                    console.error('[EditUser] Error creating specialist profile:', {
+                      error: e3.message,
+                      status: e3.status,
+                      body: e3.body
+                    });
+                    throw new Error('No se pudo actualizar el perfil de especialista');
+                  }
+                } else {
+                  // Si es error 500, mostrar mensaje más descriptivo con detalles
+                  const errorMsg = e2.body?.detail || e2.body?.error || e2.body?.message || 
+                                 e.body?.detail || e.body?.error || e.body?.message || 
+                                 e2.message || e.message || 
+                                 'Error del servidor al actualizar el perfil. Verifica los logs del servidor.';
+                  throw new Error(errorMsg);
+                }
               }
             }
           }
@@ -203,74 +277,165 @@ const EditUser = () => {
         await authAPI.updateUser(id, payload, token);
         // actualizar specialist_profile por separado si existe
         if (user.specialist_profile) {
-          const profileUserId = Number(user.id || id);
-          // Limpiar specialist_profile para enviar solo los campos editables
-          const specialistData = {
-            user_display: user.specialist_profile.user_display || '',
-            profession: user.specialist_profile.profession || '',
-            experience_years: user.specialist_profile.experience_years !== undefined && user.specialist_profile.experience_years !== null 
-              ? Number(user.specialist_profile.experience_years) 
-              : undefined,
-            about_us: user.specialist_profile.about_us || '',
-            can_give_consultations: Boolean(user.specialist_profile.can_give_consultations),
-            can_offer_online_services: Boolean(user.specialist_profile.can_offer_online_services),
-          };
-          // Eliminar campos undefined/null/vacíos (excepto booleanos y números)
-          Object.keys(specialistData).forEach(key => {
-            const value = specialistData[key];
-            if (value === undefined || value === null || (typeof value === 'string' && value.trim() === '')) {
-              delete specialistData[key];
+          // Intentar usar el ID del perfil de especialista si está disponible, sino usar user_id
+          const specialistProfileId = user.specialist_profile.id || user.specialist_profile.pk;
+          const profileUserId = specialistProfileId ? Number(specialistProfileId) : Number(user.id || id);
+          
+          console.log('🔵 [EditUser] Specialist profile ID:', specialistProfileId, 'User ID:', user.id, 'Using:', profileUserId);
+          console.log('🔵 [EditUser] Full specialist_profile:', JSON.stringify(user.specialist_profile, null, 2));
+          
+          // Construir specialistData solo con campos que tienen valores válidos
+          const specialistData = {};
+          
+          // Solo incluir campos que existen y tienen valores válidos
+          if (user.specialist_profile.user_display !== undefined && user.specialist_profile.user_display !== null) {
+            const userDisplay = String(user.specialist_profile.user_display).trim();
+            if (userDisplay !== '') {
+              specialistData.user_display = userDisplay;
             }
-          });
-          console.log('[EditUser] Sending specialist data (no file):', specialistData, 'to user ID:', profileUserId);
+          }
+          
+          if (user.specialist_profile.profession !== undefined && user.specialist_profile.profession !== null) {
+            const profession = String(user.specialist_profile.profession).trim();
+            if (profession !== '') {
+              specialistData.profession = profession;
+            }
+          }
+          
+          if (user.specialist_profile.experience_years !== undefined && user.specialist_profile.experience_years !== null) {
+            const expYears = Number(user.specialist_profile.experience_years);
+            if (!isNaN(expYears) && expYears >= 0) {
+              specialistData.experience_years = expYears;
+            }
+          }
+          
+          if (user.specialist_profile.about_us !== undefined && user.specialist_profile.about_us !== null) {
+            const aboutUs = String(user.specialist_profile.about_us).trim();
+            if (aboutUs !== '') {
+              specialistData.about_us = aboutUs;
+            }
+          }
+          
+          // Los booleanos siempre se incluyen si están definidos
+          if (user.specialist_profile.can_give_consultations !== undefined) {
+            specialistData.can_give_consultations = Boolean(user.specialist_profile.can_give_consultations);
+          }
+          
+          if (user.specialist_profile.can_offer_online_services !== undefined) {
+            specialistData.can_offer_online_services = Boolean(user.specialist_profile.can_offer_online_services);
+          }
+          
+          // Solo intentar actualizar si hay datos para enviar
+          if (Object.keys(specialistData).length === 0) {
+            console.warn('[EditUser] No specialist data to send, skipping update');
+          } else {
+          console.log('🔵 [EditUser] Sending specialist data (no file):', JSON.stringify(specialistData, null, 2));
+          console.log('🔵 [EditUser] User ID to use:', profileUserId);
+          
+          // Intentar incluir el campo 'user' si el backend lo requiere
+          // Algunos backends esperan el user_id en el payload, no solo en la URL
+          const payloadWithUser = { ...specialistData };
+          // Solo incluir 'user' si no está ya en specialistData y si tenemos el user_id
+          if (!payloadWithUser.user && !payloadWithUser.user_id && profileUserId) {
+            // Intentar con 'user' primero (formato común en Django REST)
+            payloadWithUser.user = profileUserId;
+            console.log('🔵 [EditUser] Added "user" field to payload:', profileUserId);
+          } else {
+            console.log('🔵 [EditUser] "user" field already exists or profileUserId is missing');
+          }
+          
+          console.log('🔵 [EditUser] Final payload to send:', JSON.stringify(payloadWithUser, null, 2));
+          
           try {
             await profilesAPI.patchSpecialistByUser(
               profileUserId,
-              specialistData,
+              payloadWithUser,
               token
             );
-          } catch (e) {
-            console.error('[EditUser] Error updating specialist profile (PATCH):', {
-              error: e.message,
-              status: e.status,
-              body: e.body,
-              raw: e.raw
-            });
+            } catch (e) {
+              console.error('❌ [EditUser] Error updating specialist profile (PATCH):');
+              console.error('   Error:', e.message);
+              console.error('   Status:', e.status);
+              
+              // Intentar extraer más información del error HTML
+              if (e.body && e.body.htmlError) {
+                console.error('❌ [EditUser] HTML Error Details:');
+                console.error('   Error Title:', e.body.error);
+                console.error('   Detail:', e.body.detail);
+                if (e.body.traceback) {
+                  console.error('   Backend Traceback (last 15 lines):');
+                  console.error(e.body.traceback);
+                }
+              } else if (e.body) {
+                console.error('❌ [EditUser] Error body:');
+                if (typeof e.body === 'object') {
+                  console.error(JSON.stringify(e.body, null, 2));
+                } else {
+                  console.error(String(e.body));
+                }
+              }
+              
             try {
               await profilesAPI.putSpecialistByUser(
                 profileUserId,
-                specialistData,
+                payloadWithUser,
                 token
               );
-            } catch (e2) {
-              console.error('[EditUser] Error with PUT fallback:', {
-                error: e2.message,
-                status: e2.status,
-                body: e2.body,
-                raw: e2.raw
-              });
-              // Si ambos fallan, puede que el perfil no exista, intentar crearlo
-              if (e2.status === 404 || e.status === 404) {
-                try {
-                  await profilesAPI.createSpecialist(specialistData, token);
-                } catch (e3) {
-                  console.error('[EditUser] Error creating specialist profile:', {
-                    error: e3.message,
-                    status: e3.status,
-                    body: e3.body
-                  });
-                  throw new Error('No se pudo actualizar el perfil de especialista');
+              } catch (e2) {
+                console.error('❌ [EditUser] Error with PUT fallback:');
+                console.error('   Error:', e2.message);
+                console.error('   Status:', e2.status);
+                
+                // Intentar extraer más información del error HTML
+                if (e2.body && e2.body.htmlError) {
+                  console.error('❌ [EditUser] PUT HTML Error Details:');
+                  console.error('   Error Title:', e2.body.error);
+                  console.error('   Detail:', e2.body.detail);
+                  if (e2.body.traceback) {
+                    console.error('   Backend Traceback (last 15 lines):');
+                    console.error(e2.body.traceback);
+                  }
+                } else if (e2.body) {
+                  console.error('❌ [EditUser] PUT Error body:');
+                  if (typeof e2.body === 'object') {
+                    console.error(JSON.stringify(e2.body, null, 2));
+                  } else {
+                    console.error(String(e2.body));
+                  }
                 }
-              } else {
-                // Si es error 500, mostrar mensaje más descriptivo
-                const errorMsg = e2.body?.detail || e2.body?.error || e2.body?.message || e2.message || 'Error del servidor al actualizar el perfil';
-                throw new Error(errorMsg);
+                
+                // Si ambos fallan, puede que el perfil no exista, intentar crearlo
+                if (e2.status === 404 || e.status === 404) {
+                  try {
+                    await profilesAPI.createSpecialist(specialistData, token);
+                  } catch (e3) {
+                    console.error('[EditUser] Error creating specialist profile:', {
+                      error: e3.message,
+                      status: e3.status,
+                      body: e3.body
+                    });
+                    throw new Error('No se pudo actualizar el perfil de especialista');
+                  }
+                } else {
+                  // Si es error 500, mostrar mensaje más descriptivo con detalles
+                  const errorMsg = e2.body?.detail || e2.body?.error || e2.body?.message || 
+                                 e.body?.detail || e.body?.error || e.body?.message || 
+                                 e2.message || e.message || 
+                                 'Error del servidor al actualizar el perfil. Verifica los logs del servidor.';
+                  throw new Error(errorMsg);
+                }
               }
             }
           }
         }
       }
-      navigate("/perfil");
+      // Recargar la página para mostrar los cambios actualizados
+      console.log('[EditUser] ✅ Guardado exitoso, redirigiendo a /perfil');
+      // Forzar recarga completa de la página con cache busting
+      const timestamp = Date.now();
+      console.log('[EditUser] 🔄 Redirigiendo a /perfil con timestamp:', timestamp);
+      // Usar window.location.replace para evitar que se pueda volver atrás
+      window.location.replace(`/perfil?refresh=${timestamp}&t=${timestamp}`);
     } catch (e) {
       setError(e.message || "Error al guardar");
     } finally {

@@ -17,13 +17,21 @@ const FieldRow = ({ label, value }) => (
 
 const SpecialistProfile = ({ user }) => {
   // Seguridad: si no hay usuario, mostrar nada
-  if (!user) return null;
+  if (!user) {
+    console.log('[Specialist] ❌ No hay usuario');
+    return null;
+  }
 
   // Comparar role case-insensitive (el backend puede devolver 'Specialist')
-  if ((user.role || "").toString().toLowerCase() !== "specialist") return null;
+  const userRole = (user.role || "").toString().toLowerCase();
+  if (userRole !== "specialist") {
+    console.log('[Specialist] ❌ Usuario no es especialista, role:', user.role);
+    return null;
+  }
 
   // Los datos específicos del especialista vienen en user.specialist_profile
   const profile = user.specialist_profile || {};
+  console.log('[Specialist] 📋 Datos del perfil recibidos:', JSON.stringify(profile, null, 2));
   const {
     user_display,
     profession,
@@ -34,6 +42,15 @@ const SpecialistProfile = ({ user }) => {
     puntuations,
     point,
   } = profile;
+  
+  console.log('[Specialist] 📊 Valores extraídos:', {
+    user_display,
+    profession,
+    experience_years,
+    about_us,
+    can_give_consultations,
+    can_offer_online_services
+  });
 
   return (
     <Box>

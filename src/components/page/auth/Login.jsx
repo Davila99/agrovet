@@ -60,6 +60,18 @@ const LoginPage = () => {
     } catch (err) {
       // Si es un error de servidor (5xx) o el servicio fue marcado como caído, mostrar alerta especial
       const status = err && err.status ? err.status : null;
+      
+      // Manejar errores de timeout/abort
+      if (err && (err.name === 'AbortError' || err.isTimeout)) {
+        const errorMsg = err.message || "El servidor no está respondiendo. Verifica que el servicio de autenticación esté corriendo en http://127.0.0.1:8002";
+        setError(errorMsg);
+        await showSweetAlert(
+          "Error de conexión",
+          errorMsg
+        );
+        return;
+      }
+      
       if (status && status >= 500) {
         await showSweetAlert(
           "Sistema fuera de servicio",
