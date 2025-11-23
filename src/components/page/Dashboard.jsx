@@ -18,7 +18,7 @@ import {
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import MenuIcon from "@mui/icons-material/Menu";
 import Chat from "./Chat";
-import AddPage from "./add/pages/AddPage";
+import AddPage from './AddPage';
 import { getProfile } from "../../services/endpoints/auth";
 import { useNavigate } from "react-router-dom";
 
@@ -37,7 +37,7 @@ const Dashboard = () => {
       try {
         const p = await getProfile(token.replace(/^Bearer\s*/i, ""));
         setUser(p);
-      } catch (e) {}
+      } catch (e) { }
     })();
   }, []);
 

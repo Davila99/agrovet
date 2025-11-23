@@ -1,0 +1,87 @@
+{
+  "generated_at": "2025-11-21T00:00:00Z",
+  "notes": "Inventory of frontend endpoints and suggested microservice mapping. Review before applying changes.",
+  "entries": [
+    {
+      "file": "src/services/endpoints/auth.js",
+      "function": "register",
+      "method": "POST",
+      "endpoint": "/auth/register/",
+      "suggested_service": "AUTH",
+      "body": "{ ...user data }",
+      "response_expected": "user object / token"
+    },
+    {
+      "file": "src/services/endpoints/auth.js",
+      "function": "login",
+      "method": "POST",
+      "endpoint": "/auth/login/",
+      "suggested_service": "AUTH",
+      "body": "{ phone_number, password }",
+      "response_expected": "{ token, refresh, user } or { access, refresh, user }"
+    },
+    {
+      "file": "src/services/endpoints/auth.js",
+      "function": "userById",
+      "method": "GET",
+      "endpoint": "/auth/users/:id/",
+      "suggested_service": "AUTH",
+      "auth_required": true
+    },
+    {
+      "file": "src/services/endpoints/auth.js",
+      "function": "profile",
+      "method": "GET",
+      "endpoint": "/auth/users/me/",
+      "suggested_service": "AUTH",
+      "auth_required": true
+    },
+    {
+      "file": "src/services/endpoints/foro.js",
+      "function": "getPosts",
+      "method": "GET",
+      "endpoint": "/foro/posts/",
+      "suggested_service": "FORUM"
+    },
+    {
+      "file": "src/services/endpoints/foro.js",
+      "function": "createPost",
+      "method": "POST",
+      "endpoint": "/foro/posts/",
+      "suggested_service": "FORUM",
+      "body": "{ title, content, media_id, community_id }",
+      "notes": "If backend returns only id, frontend will fetch detail as fallback"
+    },
+    {
+      "file": "src/services/endpoints/foro.js",
+      "function": "uploadMedia",
+      "method": "POST",
+      "endpoint": "/media/",
+      "suggested_service": "MEDIA",
+      "body": "FormData (image)",
+      "response_expected": "{ id, url }"
+    },
+    {
+      "file": "src/services/endpoints/adds.js",
+      "function": "getAdds",
+      "method": "GET",
+      "endpoint": "/adds/",
+      "suggested_service": "ADDS"
+    },
+    {
+      "file": "src/services/endpoints/adds.js",
+      "function": "getCategories",
+      "method": "GET",
+      "endpoint": "/categories/",
+      "suggested_service": "ADDS"
+    },
+    {
+      "file": "src/services/endpoints/profiles.js",
+      "function": "getSpecialistsByObjectId",
+      "method": "GET",
+      "endpoint": "/profiles/specialists/",
+      "suggested_service": "PROFILES",
+      "auth_required": false
+    }
+  ]
+}

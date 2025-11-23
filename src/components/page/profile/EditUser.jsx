@@ -11,6 +11,8 @@ import {
 } from "@mui/material";
 import { useParams, useNavigate } from "react-router-dom";
 import { authAPI, profilesAPI } from "../../../services/endpoints";
+import mediaAPI from "../../../services/endpoints/media";
+import authClient from "../../../services/authClient";
 
 const EditUser = () => {
   const { id } = useParams();
@@ -25,7 +27,7 @@ const EditUser = () => {
     const load = async () => {
       setLoading(true);
       try {
-        const token = localStorage.getItem("token");
+        const token = authClient.getAccessToken();
         const data = await authAPI.userById(id, token);
         setUser(data);
       } catch (e) {
@@ -86,10 +88,15 @@ const EditUser = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const token = localStorage.getItem("token");
+      const token = authClient.getAccessToken();
       if (profileFile) {
-        const fd = new FormData();
-        // campos simples al FormData
+        // First upload the image to media service using field name 'image'
+        const mediaFd = new FormData();
+        mediaFd.append('image', profileFile);
+        const uploaded = await mediaAPI.uploadMedia(mediaFd, token);
+
+        // Build JSON payload for user update (no multipart)
+        const payload = {};
         [
           "full_name",
           "last_name",
@@ -101,37 +108,87 @@ const EditUser = () => {
           "latitude",
           "longitude",
         ].forEach((k) => {
-          if (user[k] !== undefined && user[k] !== null) fd.append(k, user[k]);
+          if (user[k] !== undefined && user[k] !== null) payload[k] = user[k];
         });
 
-        fd.append("profile_picture", profileFile);
-
-        if (user.specialist_profile) {
-          fd.append(
-            "specialist_profile",
-            JSON.stringify(user.specialist_profile)
-          );
+        // Attach the profile picture as URL when available, otherwise fallback to id
+        if (uploaded) {
+          if (uploaded.url) payload.profile_picture = uploaded.url;
+          else if (uploaded.id) payload.profile_picture = uploaded.id;
         }
 
-        await authAPI.updateUser(id, fd, token);
+        if (user.specialist_profile) payload.specialist_profile = user.specialist_profile;
+
+        await authAPI.updateUser(id, payload, token);
         // Si hay specialist_profile, intentar actualizarlo por user id
         if (user.specialist_profile) {
           // use the fetched user's id (authoritative) instead of the route param
           // this avoids 404s when the route id doesn't match the authenticated user
           const profileUserId = Number(user.id || id);
+          // Limpiar specialist_profile para enviar solo los campos editables
+          const specialistData = {
+            user_display: user.specialist_profile.user_display || '',
+            profession: user.specialist_profile.profession || '',
+            experience_years: user.specialist_profile.experience_years !== undefined && user.specialist_profile.experience_years !== null 
+              ? Number(user.specialist_profile.experience_years) 
+              : undefined,
+            about_us: user.specialist_profile.about_us || '',
+            can_give_consultations: Boolean(user.specialist_profile.can_give_consultations),
+            can_offer_online_services: Boolean(user.specialist_profile.can_offer_online_services),
+          };
+          // Eliminar campos undefined/null/vacíos (excepto booleanos y números)
+          Object.keys(specialistData).forEach(key => {
+            const value = specialistData[key];
+            if (value === undefined || value === null || (typeof value === 'string' && value.trim() === '')) {
+              delete specialistData[key];
+            }
+          });
+          console.log('[EditUser] Sending specialist data (with file):', specialistData, 'to user ID:', profileUserId);
           try {
             await profilesAPI.patchSpecialistByUser(
               profileUserId,
-              user.specialist_profile,
+              specialistData,
               token
             );
           } catch (e) {
+            console.error('[EditUser] Error updating specialist profile (PATCH):', {
+              error: e.message,
+              status: e.status,
+              body: e.body,
+              raw: e.raw
+            });
             // fallback to PUT if PATCH is not supported for this endpoint
-            await profilesAPI.putSpecialistByUser(
-              profileUserId,
-              user.specialist_profile,
-              token
-            );
+            try {
+              await profilesAPI.putSpecialistByUser(
+                profileUserId,
+                specialistData,
+                token
+              );
+            } catch (e2) {
+              console.error('[EditUser] Error with PUT fallback:', {
+                error: e2.message,
+                status: e2.status,
+                body: e2.body,
+                raw: e2.raw
+              });
+              // Si ambos fallan, puede que el perfil no exista, intentar crearlo
+              if (e2.status === 404 || e.status === 404) {
+                try {
+                  await profilesAPI.createSpecialist(specialistData, token);
+                } catch (e3) {
+                  console.error('[EditUser] Error creating specialist profile:', {
+                    error: e3.message,
+                    status: e3.status,
+                    body: e3.body
+                  });
+                  throw new Error('No se pudo actualizar el perfil de especialista');
+                }
+              } else {
+                // Si es error 500, mostrar mensaje más descriptivo
+                const errorMsg = e2.body?.detail || e2.body?.error || e2.body?.message || e2.message || 'Error del servidor al actualizar el perfil';
+                throw new Error(errorMsg);
+              }
+            }
           }
         }
       } else {
@@ -147,18 +204,69 @@ const EditUser = () => {
         // actualizar specialist_profile por separado si existe
         if (user.specialist_profile) {
           const profileUserId = Number(user.id || id);
+          // Limpiar specialist_profile para enviar solo los campos editables
+          const specialistData = {
+            user_display: user.specialist_profile.user_display || '',
+            profession: user.specialist_profile.profession || '',
+            experience_years: user.specialist_profile.experience_years !== undefined && user.specialist_profile.experience_years !== null 
+              ? Number(user.specialist_profile.experience_years) 
+              : undefined,
+            about_us: user.specialist_profile.about_us || '',
+            can_give_consultations: Boolean(user.specialist_profile.can_give_consultations),
+            can_offer_online_services: Boolean(user.specialist_profile.can_offer_online_services),
+          };
+          // Eliminar campos undefined/null/vacíos (excepto booleanos y números)
+          Object.keys(specialistData).forEach(key => {
+            const value = specialistData[key];
+            if (value === undefined || value === null || (typeof value === 'string' && value.trim() === '')) {
+              delete specialistData[key];
+            }
+          });
+          console.log('[EditUser] Sending specialist data (no file):', specialistData, 'to user ID:', profileUserId);
           try {
             await profilesAPI.patchSpecialistByUser(
               profileUserId,
-              user.specialist_profile,
+              specialistData,
               token
             );
           } catch (e) {
-            await profilesAPI.putSpecialistByUser(
-              profileUserId,
-              user.specialist_profile,
-              token
-            );
+            console.error('[EditUser] Error updating specialist profile (PATCH):', {
+              error: e.message,
+              status: e.status,
+              body: e.body,
+              raw: e.raw
+            });
+            try {
+              await profilesAPI.putSpecialistByUser(
+                profileUserId,
+                specialistData,
+                token
+              );
+            } catch (e2) {
+              console.error('[EditUser] Error with PUT fallback:', {
+                error: e2.message,
+                status: e2.status,
+                body: e2.body,
+                raw: e2.raw
+              });
+              // Si ambos fallan, puede que el perfil no exista, intentar crearlo
+              if (e2.status === 404 || e.status === 404) {
+                try {
+                  await profilesAPI.createSpecialist(specialistData, token);
+                } catch (e3) {
+                  console.error('[EditUser] Error creating specialist profile:', {
+                    error: e3.message,
+                    status: e3.status,
+                    body: e3.body
+                  });
+                  throw new Error('No se pudo actualizar el perfil de especialista');
+                }
+              } else {
+                // Si es error 500, mostrar mensaje más descriptivo
+                const errorMsg = e2.body?.detail || e2.body?.error || e2.body?.message || e2.message || 'Error del servidor al actualizar el perfil';
+                throw new Error(errorMsg);
+              }
+            }
           }
         }
       }

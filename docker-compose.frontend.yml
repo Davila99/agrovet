@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: agrovet_frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      # Browser-side env vars (must point to localhost or public domain)
+      - VITE_AUTH_SERVICE_URL=http://localhost:8002/api
+      - VITE_CHAT_SERVICE_URL=http://localhost:8006
+      - VITE_FORUM_SERVICE_URL=http://localhost:8005/api
+      - VITE_ADDS_SERVICE_URL=http://localhost:8004/api
+      - VITE_MEDIA_SERVICE_URL=http://localhost:8001/api
+      - VITE_GATEWAY_URL=http://localhost:8000/api
+      - VITE_WS_URL=ws://localhost:8006/ws
+    networks:
+      - agrovet-network
+
+networks:
+  agrovet-network:
+    external: true
+    name: agrovet-network

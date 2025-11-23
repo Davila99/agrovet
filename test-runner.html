@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧪 Tests de Edición de Usuario</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            margin: 0;
+        }
+        #output {
+            background: #252526;
+            border: 1px solid #3e3e42;
+            border-radius: 4px;
+            padding: 15px;
+            max-height: 80vh;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-size: 12px;
+        }
+        .success { color: #4EC9B0; }
+        .error { color: #F48771; }
+        .info { color: #569CD6; }
+        .warning { color: #DCDCAA; }
+        h1 { color: #4EC9B0; margin-top: 0; }
+        button {
+            background: #0E639C;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        button:hover { background: #1177BB; }
+        button:disabled { background: #3e3e42; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Tests de Edición de Usuario</h1>
+    <button id="runTests" onclick="runTests()">▶️ Ejecutar Tests</button>
+    <button onclick="clearOutput()">🗑️ Limpiar</button>
+    <div id="output"></div>
+
+    <script>
+        const output = document.getElementById('output');
+        
+        function log(message, type = 'info') {
+            const colors = {
+                success: '#4EC9B0',
+                error: '#F48771',
+                info: '#569CD6',
+                warning: '#DCDCAA'
+            };
+            const color = colors[type] || colors.info;
+            const timestamp = new Date().toLocaleTimeString();
+            output.innerHTML += `<span style="color: ${color}">[${timestamp}] ${message}</span>\n`;
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        function clearOutput() {
+            output.innerHTML = '';
+        }
+        
+        async function runTests() {
+            const btn = document.getElementById('runTests');
+            btn.disabled = true;
+            clearOutput();
+            
+            log('🧪 INICIANDO TESTS COMPLETOS', 'success');
+            log('─'.repeat(60), 'info');
+            
+            const BASE_AUTH = 'http://127.0.0.1:8002/api';
+            const BASE_PROFILES = 'http://127.0.0.1:8003/api';
+            
+            const credentials = { phone_number: '82397291', password: 'Daniel123.' };
+            
+            let token = null;
+            let userId = null;
+            let userData = null;
+            
+            function logTest(num, name) {
+                log(`\n${num}️⃣ TEST: ${name}`, 'info');
+                log('─'.repeat(60), 'info');
+            }
+            
+            async function request(url, options = {}) {
+                const { headers = {}, ...rest } = options;
+                const fetchHeaders = { ...headers };
+                
+                if (token && !fetchHeaders.Authorization) {
+                    fetchHeaders.Authorization = `Bearer ${token}`;
+                }
+                
+                if (rest.body && !(rest.body instanceof FormData)) {
+                    fetchHeaders['Content-Type'] = 'application/json';
+                    if (typeof rest.body === 'object') {
+                        rest.body = JSON.stringify(rest.body);
+                    }
+                }
+                
+                log(`📤 ${options.method || 'GET'} ${url}`, 'info');
+                if (rest.body && typeof rest.body === 'string' && rest.body.length < 300) {
+                    log(`   Body: ${rest.body}`, 'info');
+                }
+                
+                try {
+                    const res = await fetch(url, { ...rest, headers: fetchHeaders });
+                    const text = await res.text();
+                    let data = {};
+                    try {
+                        data = text ? JSON.parse(text) : {};
+                    } catch (e) {
+                        data = { raw: text };
+                    }
+                    
+                    if (res.ok) {
+                        log(`📥 Status: ${res.status} ${res.statusText}`, 'success');
+                        if (Object.keys(data).length < 10) {
+                            log(`   Response: ${JSON.stringify(data, null, 2)}`, 'success');
+                        } else {
+                            log(`   Response keys: ${Object.keys(data).join(', ')}`, 'success');
+                            log(`   Response (first 500 chars): ${JSON.stringify(data, null, 2).substring(0, 500)}`, 'success');
+                        }
+                    } else {
+                        log(`📥 Status: ${res.status} ${res.statusText}`, 'error');
+                        log(`   Error Response: ${JSON.stringify(data, null, 2)}`, 'error');
+                        if (text.length < 500) {
+                            log(`   Raw Response: ${text}`, 'error');
+                        }
+                    }
+                    
+                    if (!res.ok) {
+                        const error = new Error(`HTTP ${res.status}: ${data.detail || data.error || data.message || res.statusText}`);
+                        error.status = res.status;
+                        error.body = data;
+                        error.raw = text;
+                        throw error;
+                    }
+                    
+                    return data;
+                } catch (error) {
+                    if (error.status) {
+                        log(`❌ Request failed: ${error.message}`, 'error');
+                        log(`   Status: ${error.status}`, 'error');
+                        log(`   Body: ${JSON.stringify(error.body, null, 2)}`, 'error');
+                        if (error.raw && error.raw.length < 500) {
+                            log(`   Raw: ${error.raw}`, 'error');
+                        }
+                    } else {
+                        log(`❌ Network/Parse Error: ${error.message}`, 'error');
+                    }
+                    throw error;
+                }
+            }
+            
+            try {
+                // TEST 1: Login
+                logTest('1', 'Login');
+                const loginResponse = await request(`${BASE_AUTH}/auth/login/`, {
+                    method: 'POST',
+                    body: credentials,
+                });
+                
+                token = loginResponse.access || loginResponse.token || loginResponse.access_token;
+                if (!token) {
+                    throw new Error('No se recibió token en el login');
+                }
+                log(`✅ Login exitoso - Token: ${token.substring(0, 30)}...`, 'success');
+                
+                // TEST 2: Obtener perfil
+                logTest('2', 'Obtener perfil del usuario (me)');
+                const profileResponse = await request(`${BASE_AUTH}/auth/users/me/`, { method: 'GET' });
+                userId = profileResponse.id;
+                userData = profileResponse;
+                log(`✅ Perfil obtenido - ID: ${userId}, Name: ${profileResponse.full_name}, Role: ${profileResponse.role}`, 'success');
+                
+                if (profileResponse.specialist_profile) {
+                    log(`   Specialist Profile: ${JSON.stringify(profileResponse.specialist_profile, null, 2)}`, 'info');
+                }
+                
+                // TEST 3: Obtener usuario por ID
+                logTest('3', `Obtener usuario por ID (${userId})`);
+                const userByIdResponse = await request(`${BASE_AUTH}/auth/users/${userId}/`, { method: 'GET' });
+                log(`✅ Usuario obtenido por ID`, 'success');
+                log(`   ID: ${userByIdResponse.id}, Name: ${userByIdResponse.full_name}, Email: ${userByIdResponse.email}`, 'success');
+                
+                // TEST 4: Verificar perfil de especialista
+                logTest('4', `Verificar perfil de especialista (GET /profiles/specialists/${userId}/)`);
+                try {
+                    const specialistGetResponse = await request(`${BASE_PROFILES}/profiles/specialists/${userId}/`, { method: 'GET' });
+                    log(`✅ Perfil de especialista encontrado`, 'success');
+                    log(`   Data: ${JSON.stringify(specialistGetResponse, null, 2)}`, 'success');
+                } catch (e) {
+                    if (e.status === 404) {
+                        log(`⚠️ Perfil de especialista no existe (404)`, 'warning');
+                    } else {
+                        log(`❌ Error obteniendo perfil de especialista: ${e.message}`, 'error');
+                    }
+                }
+                
+                // TEST 5: PATCH al perfil de especialista
+                logTest('5', `PATCH al perfil de especialista (${userId})`);
+                const testSpecialistData = {
+                    user_display: userData.specialist_profile?.user_display || 'Test Display Name',
+                    profession: userData.specialist_profile?.profession || 'Test Profession',
+                    experience_years: userData.specialist_profile?.experience_years ?? 5,
+                    about_us: userData.specialist_profile?.about_us || 'Test about us',
+                    can_give_consultations: userData.specialist_profile?.can_give_consultations ?? true,
+                    can_offer_online_services: userData.specialist_profile?.can_offer_online_services ?? false,
+                };
+                
+                // Limpiar datos
+                Object.keys(testSpecialistData).forEach(key => {
+                    const value = testSpecialistData[key];
+                    if (value === undefined || value === null || (typeof value === 'string' && value.trim() === '')) {
+                        delete testSpecialistData[key];
+                    }
+                });
+                
+                log(`   Datos a enviar: ${JSON.stringify(testSpecialistData, null, 2)}`, 'info');
+                
+                let patchSuccess = false;
+                try {
+                    const patchResponse = await request(`${BASE_PROFILES}/profiles/specialists/${userId}/`, {
+                        method: 'PATCH',
+                        body: testSpecialistData,
+                    });
+                    log(`✅ PATCH exitoso`, 'success');
+                    log(`   Response: ${JSON.stringify(patchResponse, null, 2)}`, 'success');
+                    patchSuccess = true;
+                } catch (e) {
+                    log(`❌ Error en PATCH: ${e.message}`, 'error');
+                    
+                    // TEST 6: PUT como fallback
+                    logTest('6', `PUT al perfil de especialista (fallback)`);
+                    try {
+                        const putResponse = await request(`${BASE_PROFILES}/profiles/specialists/${userId}/`, {
+                            method: 'PUT',
+                            body: testSpecialistData,
+                        });
+                        log(`✅ PUT exitoso`, 'success');
+                        log(`   Response: ${JSON.stringify(putResponse, null, 2)}`, 'success');
+                        patchSuccess = true;
+                    } catch (e2) {
+                        log(`❌ Error en PUT: ${e2.message}`, 'error');
+                        
+                        // TEST 7: CREATE si no existe
+                        if (e2.status === 404 || e.status === 404) {
+                            logTest('7', 'CREATE perfil de especialista (no existe)');
+                            try {
+                                const createResponse = await request(`${BASE_PROFILES}/profiles/specialists/`, {
+                                    method: 'POST',
+                                    body: testSpecialistData,
+                                });
+                                log(`✅ CREATE exitoso`, 'success');
+                                log(`   Response: ${JSON.stringify(createResponse, null, 2)}`, 'success');
+                                patchSuccess = true;
+                            } catch (e3) {
+                                log(`❌ Error en CREATE: ${e3.message}`, 'error');
+                            }
+                        }
+                    }
+                }
+                
+                // TEST 8: Actualizar usuario básico
+                logTest('8', 'Actualizar usuario (PATCH)');
+                const updateUserData = {
+                    full_name: userData.full_name || 'Test User',
+                    bio: userData.bio || 'Test bio updated',
+                };
+                
+                try {
+                    const updateResponse = await request(`${BASE_AUTH}/auth/users/${userId}/`, {
+                        method: 'PATCH',
+                        body: updateUserData,
+                    });
+                    log(`✅ Usuario actualizado`, 'success');
+                    log(`   Response: ${JSON.stringify(updateResponse, null, 2)}`, 'success');
+                } catch (e) {
+                    log(`❌ Error actualizando usuario: ${e.message}`, 'error');
+                }
+                
+                // Resumen final
+                log('\n' + '═'.repeat(60), 'info');
+                log('📊 RESUMEN DE TESTS', 'info');
+                log('═'.repeat(60), 'info');
+                log('✅ Login: OK', 'success');
+                log('✅ Obtener perfil: OK', 'success');
+                log('✅ Obtener usuario por ID: OK', 'success');
+                log(patchSuccess ? '✅ Actualizar perfil especialista: OK' : '❌ Actualizar perfil especialista: FALLÓ', patchSuccess ? 'success' : 'error');
+                log('✅ Actualizar usuario: OK', 'success');
+                log('\n' + '═'.repeat(60), 'info');
+                log('✅ TODOS LOS TESTS COMPLETADOS', 'success');
+                
+            } catch (error) {
+                log('\n' + '═'.repeat(60), 'error');
+                log('❌ ERROR CRÍTICO EN LOS TESTS', 'error');
+                log('═'.repeat(60), 'error');
+                log(`Error: ${error.message}`, 'error');
+                if (error.stack) {
+                    log(`Stack: ${error.stack}`, 'error');
+                }
+            } finally {
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
+

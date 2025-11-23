@@ -12,11 +12,11 @@ import Footer from "./Footer";
 import { motion } from "framer-motion";
 import Navbar from "./navigation/nav.jsx";
 
-// usar motion(Component) directamente
-const MotionBox = motion(Box);
-const MotionListItem = motion(ListItem);
-const MotionChip = motion(Chip);
-const MotionTypography = motion(Typography);
+// usar motion.create(Component) directamente
+const MotionBox = motion.create(Box);
+const MotionListItem = motion.create(ListItem);
+const MotionChip = motion.create(Chip);
+const MotionTypography = motion.create(Typography);
 
 const containerVariants = {
   hidden: { opacity: 0 },

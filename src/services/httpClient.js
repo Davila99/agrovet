@@ -1,9 +1,10 @@
-  // Producción (sin espacio accidental)
-const BASE_URL = "https://agrovet.pythonanywhere.com/api";
-  // const BASE_URL = "https://shante-klephtic-nahla.ngrok-free.dev/api";
+  // Base URL is now configurable via Vite env vars. Fallback to previous default.
+import env from './env';
+import authClient from './authClient';
 
-// const BASE_URL = "http://127.0.0.1:8000/api";
-  // Allow runtime override (e.g. tests or embed) via window.__AGROVET_API_BASE
+const DEFAULT_BASE = "http://127.0.0.1:8000/api";
+const BASE_URL = (import.meta && import.meta.env && import.meta.env.VITE_GATEWAY_URL) || DEFAULT_BASE;
+// Allow runtime override via window.__AGROVET_API_BASE to support tests or embedding
 
   /**
    * @param {string} endpoint - Ruta del endpoint.
@@ -16,14 +17,13 @@ const BASE_URL = "https://agrovet.pythonanywhere.com/api";
       let fetchHeaders = { ...headers };
       // Añadir Authorization si hay token en localStorage y no fue pasada en headers
       try {
-        const raw = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-        if (raw && !fetchHeaders.Authorization && !fetchHeaders.authorization) {
-          // stored token may include prefix 'Token ' or 'Bearer ' — normalize to raw key
-          const token = raw.replace(/^Token\s*/i, '').replace(/^Bearer\s*/i, '');
-          fetchHeaders.Authorization = `Token ${token}`;
+        // Prefer authClient-managed token storage
+        const token = authClient.getAccessToken && authClient.getAccessToken();
+        if (token && !fetchHeaders.Authorization && !fetchHeaders.authorization) {
+          fetchHeaders.Authorization = `Bearer ${token}`;
         }
       } catch (e) {
-        // Ignorar acceso a localStorage en entornos no-browser
+        // ignore in non-browser
       }
       if (rest.body instanceof FormData) {
         delete fetchHeaders["Content-Type"];
@@ -38,21 +38,46 @@ const BASE_URL = "https://agrovet.pythonanywhere.com/api";
         ? setTimeout(() => controller.abort(), timeoutMs)
         : null;
 
-      // Build a robust URL: ensure single slash between base and endpoint
+      // Build a robust URL: support absolute URLs passed through, or service-specific paths
       const p = String(endpoint || "").trim();
-      const path = p.startsWith("/") ? p : "/" + p;
-      const url = BASE_URL + path;
+      // If endpoint is an absolute URL, use it directly
+      const isAbsolute = /^https?:\/\//i.test(p);
+      // Route known top-level paths to their specific services instead of the gateway
+      let url;
+      if (isAbsolute) {
+        url = p;
+      } else {
+        // Decide service key by inspecting path prefix (common top-level APIs)
+        const pathLower = p.toLowerCase();
+        let serviceKey = 'GATEWAY';
+        if (pathLower.startsWith('/auth') || pathLower.startsWith('auth/')) serviceKey = 'AUTH';
+        else if (pathLower.startsWith('/media') || pathLower.startsWith('media/')) serviceKey = 'MEDIA';
+        else if (pathLower.startsWith('/adds') || pathLower.startsWith('adds/')) serviceKey = 'ADDS';
+        else if (pathLower.startsWith('/profiles') || pathLower.startsWith('profiles/')) serviceKey = 'PROFILES';
+        else if (pathLower.startsWith('/foro') || pathLower.startsWith('foro/')) serviceKey = 'FORUM';
+        url = env.buildUrl(serviceKey, p);
+      }
       
 
-      const res = await fetch(url, {
-        headers: fetchHeaders,
-        signal,
-        ...rest,
-      }).finally(() => {
-        if (timeout) clearTimeout(timeout);
-      });
+      try {
+        try { console.debug('[httpClient] request ->', { url, headers: fetchHeaders, body: rest && rest.body ? (typeof rest.body === 'string' ? rest.body : '[object]') : null }); } catch (e) {}
+        const res = await fetch(url, {
+          headers: fetchHeaders,
+          signal,
+          ...rest,
+        }).finally(() => {
+          if (timeout) clearTimeout(timeout);
+        });
+        try { console.debug('[httpClient] response', { url, status: res.status, statusText: res.statusText }); } catch (e) {}
+        // continue with parsing below
+        var __res = res; // alias for following code
+      } catch (fetchErr) {
+        // network/fetch error
+        try { console.error('[httpClient] fetch exception', { url, error: fetchErr }); } catch (e) {}
+        throw fetchErr;
+      }
 
-      let text = await res.text().catch(() => "");
+      let text = await __res.text().catch(() => "");
       let data = {};
       try {
         data = text ? JSON.parse(text) : {};
@@ -62,33 +87,65 @@ const BASE_URL = "https://agrovet.pythonanywhere.com/api";
 
       
 
-      if (!res.ok) {
+      if (!__res.ok) {
+        // If 401, attempt a single refresh+retry (unless we're on auth endpoints)
+        const isAuthEndpoint = String(url).includes('/auth/login') || String(url).includes('/auth/refresh') || String(url).includes('/auth/token/refresh') || String(url).includes('/auth/refresh-token');
+        if (__res.status === 401 && !isAuthEndpoint) {
+          try {
+            const refreshed = await authClient.refreshToken();
+            if (refreshed && refreshed.access) {
+              // Retry the original request once with refreshed token
+              const retryController = typeof AbortController !== 'undefined' ? new AbortController() : null;
+              const retrySignal = retryController ? retryController.signal : undefined;
+              const retryTimeout = retryController ? setTimeout(() => retryController.abort(), timeoutMs) : null;
+              const retriedHeaders = { ...fetchHeaders };
+              // attach new token
+              retriedHeaders.Authorization = `Bearer ${refreshed.access}`;
+              const retried = await fetch(url, {
+                headers: retriedHeaders,
+                signal: retrySignal,
+                ...rest,
+              }).finally(() => {
+                if (retryTimeout) clearTimeout(retryTimeout);
+              });
+
+              let retryText = await retried.text().catch(() => '');
+              let retryData = {};
+              try { retryData = retryText ? JSON.parse(retryText) : {}; } catch (e) { retryData = { raw: retryText }; }
+              if (retried.ok) return retryData;
+              // if retry failed, fallthrough to original error path and throw below
+            }
+          } catch (e) {
+            // refresh failed — proceed to throw original 401 error below
+          }
+        }
         try {
           console.error('[httpClient] ❌ API error', {
-            status: res.status,
-            statusText: res.statusText,
+            status: __res.status,
+            statusText: __res.statusText,
             body: data,
             endpoint: url,
+            rawResponse: text,
           });
         } catch (e) {}
-        
-          const message = data.detail || data.error || data.message || `HTTP ${res.status} ${res.statusText}`;
+
+        const message = data.detail || data.error || data.message || `HTTP ${__res.status} ${__res.statusText}`;
         // Si es error de servidor (5xx) notificamos que el servicio está caído
-        if (res.status >= 500 && typeof window !== 'undefined') {
+        if (__res.status >= 500 && typeof window !== 'undefined') {
           try {
             window.__AGROVET_SERVICE_DOWN = true;
             window.dispatchEvent(new CustomEvent('agrovet:service-down'));
           } catch (e) {}
         }
         // Extra diagnostic for auth login 401 to help debug specialist login issues
-        if (res.status === 401 && String(url).includes('/auth/login')) {
+        if (__res.status === 401 && String(url).includes('/auth/login')) {
           try {
             console.error('[httpClient][AUTH] 401 on login endpoint', { endpoint: url, requestBody: rest && rest.body, responseBody: data });
           } catch (e) {}
         }
 
         const err = new Error(message);
-        err.status = res.status;
+        err.status = __res.status;
         // Attach parsed response body for callers to inspect serializer errors
         err.body = data;
         // Also include raw text for deeper debugging
@@ -122,6 +179,7 @@ const BASE_URL = "https://agrovet.pythonanywhere.com/api";
   }
 
   export const api = {
+    // Convenience methods maintained for backwards compatibility.
     register: (data) =>
       request("/auth/register/", {
         method: "POST",
@@ -132,6 +190,19 @@ const BASE_URL = "https://agrovet.pythonanywhere.com/api";
       request("/auth/login/", {
         method: "POST",
         body: JSON.stringify(data),
+      }).then((res) => {
+        try {
+          // If response contains tokens, persist them via authClient
+          if (res && (res.access || res.token || res.refresh || res.access_token)) {
+            const tokens = {};
+            if (res.access) tokens.access = res.access;
+            if (res.refresh) tokens.refresh = res.refresh;
+            if (res.token) tokens.access = tokens.access || res.token;
+            if (res.access_token) tokens.access = tokens.access || res.access_token;
+            authClient.saveTokens(tokens);
+          }
+        } catch (e) {}
+        return res;
       }),
 
     getProfile: (token) =>

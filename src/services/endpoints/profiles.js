@@ -1,53 +1,72 @@
 import httpClient from "../httpClient";
 import { authHeaders } from "./utils";
+import env from "../env";
+import profileAdapter from "../adapters/profileAdapter";
+import authClient from "../authClient";
 
 export const profilesAPI = {
-  getSpecialistsByObjectId: (objectId, token) => {
-    const localToken = token || (typeof window !== "undefined" ? localStorage.getItem("token") : null);
-    console.log("[profilesAPI.getSpecialistsByObjectId]", { objectId, localToken });
-    return httpClient(`/profiles/specialists/?object_id=${objectId}`, {
+  getSpecialistsByObjectId: async (objectId, token) => {
+    const localToken = token || (typeof window !== "undefined" ? authClient.getAccessToken() : null);
+    const url = env.buildUrl('PROFILES', `/profiles/specialists/?object_id=${objectId}`);
+    const res = await httpClient(url, {
       method: "GET",
       headers: authHeaders(localToken),
     });
+    if (Array.isArray(res)) {
+      return res.map(profileAdapter.normalizeProfile);
+    }
+    return res;
   },
 
-  createSpecialist: (data, token) => {
-    const localToken = token || (typeof window !== "undefined" ? localStorage.getItem("token") : null);
-    console.log("[profilesAPI.createSpecialist]", { data, localToken });
-    return httpClient(`/profiles/specialists/`, {
+  createSpecialist: async (data, token) => {
+    const localToken = token || (typeof window !== "undefined" ? authClient.getAccessToken() : null);
+    const url = env.buildUrl('PROFILES', `/profiles/specialists/`);
+    const res = await httpClient(url, {
       method: "POST",
       headers: authHeaders(localToken),
       body: data,
     });
+    return profileAdapter.normalizeProfile(res);
   },
 
-  updateSpecialist: (id, data, token) => {
-    const localToken = token || (typeof window !== "undefined" ? localStorage.getItem("token") : null);
-    console.log("[profilesAPI.updateSpecialist]", { id, data, localToken });
-    return httpClient(`/profiles/specialists/${id}/`, {
+  updateSpecialist: async (id, data, token) => {
+    const localToken = token || (typeof window !== "undefined" ? authClient.getAccessToken() : null);
+    const url = env.buildUrl('PROFILES', `/profiles/specialists/${id}/`);
+    const res = await httpClient(url, {
       method: "PATCH",
       headers: authHeaders(localToken),
       body: data,
     });
+    return profileAdapter.normalizeProfile(res);
   },
 
-  putSpecialistByUser: (userId, data, token) => {
-    const localToken = token || (typeof window !== "undefined" ? localStorage.getItem("token") : null);
-    console.log("[profilesAPI.putSpecialistByUser]", { userId, data, localToken });
-    return httpClient(`/profiles/specialists/${userId}/`, {
+  putSpecialistByUser: async (userId, data, token) => {
+    const localToken = token || (typeof window !== "undefined" ? authClient.getAccessToken() : null);
+    const url = env.buildUrl('PROFILES', `/profiles/specialists/${userId}/`);
+    try {
+      console.log('[profilesAPI] PUT specialist by user:', { userId, url, data, hasToken: !!localToken });
+    } catch (e) {}
+    const res = await httpClient(url, {
       method: "PUT",
       headers: authHeaders(localToken),
       body: data,
     });
+    return profileAdapter.normalizeProfile(res);
   },
 
-  patchSpecialistByUser: (userId, data, token) => {
-    const localToken = token || (typeof window !== "undefined" ? localStorage.getItem("token") : null);
-    console.log("[profilesAPI.patchSpecialistByUser]", { userId, data, localToken });
-    return httpClient(`/profiles/specialists/${userId}/`, {
+  patchSpecialistByUser: async (userId, data, token) => {
+    const localToken = token || (typeof window !== "undefined" ? authClient.getAccessToken() : null);
+    const url = env.buildUrl('PROFILES', `/profiles/specialists/${userId}/`);
+    try {
+      console.log('[profilesAPI] PATCH specialist by user:', { userId, url, data, hasToken: !!localToken });
+    } catch (e) {}
+    const res = await httpClient(url, {
       method: "PATCH",
       headers: authHeaders(localToken),
       body: data,
     });
+    return profileAdapter.normalizeProfile(res);
   },
 };
+
+export default profilesAPI;

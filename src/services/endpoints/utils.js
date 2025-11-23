@@ -4,5 +4,5 @@ export const normalizeToken = (raw) =>
 
 export const authHeaders = (token) => {
   const t = normalizeToken(token);
-  return t ? { Authorization: `Token ${t}` } : {};
+  return t ? { Authorization: `Bearer ${t}` } : {};
 };
