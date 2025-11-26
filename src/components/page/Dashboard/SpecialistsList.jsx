@@ -112,7 +112,7 @@ const SpecialistsList = ({ onSelectSpecialist, searchQuery }) => {
     return (
       <Box
         sx={{
-          width: "100%",
+          width: "110%",
           p: 2,
           backgroundColor: background,
           borderRight: "1px solid #c8e6c9",
@@ -134,7 +134,6 @@ const SpecialistsList = ({ onSelectSpecialist, searchQuery }) => {
         display: "flex",
         flexDirection: "column",
         backgroundColor: background,
-        borderRight: "1px solid #c8e6c9",
       }}
     >
       <Box
@@ -142,9 +141,13 @@ const SpecialistsList = ({ onSelectSpecialist, searchQuery }) => {
           flex: 1,
           overflowY: "auto",
           overflowX: "hidden",
-          p: 1.5,
+          p: { xs: 1, sm: 1.5 },
           pb: 8, // ✅ espacio extra al final para que el último card no se corte
           scrollBehavior: "smooth",
+          width: "100%",
+          minWidth: 0,
+          maxWidth: "100%",
+          boxSizing: "border-box",
           "&::-webkit-scrollbar": { width: "8px" },
           "&::-webkit-scrollbar-thumb": {
             backgroundColor: "#a5d6a7",
@@ -182,8 +185,12 @@ const SpecialistsList = ({ onSelectSpecialist, searchQuery }) => {
                   p: 1.2,
                   cursor: "pointer",
                   width: "100%",
+                  maxWidth: "100%",
+                  minWidth: 0,
+                  boxSizing: "border-box",
                   boxShadow: "0 2px 8px rgba(46,125,50,0.1)",
                   transition: "all 0.2s ease-in-out",
+                  gap: 1,
                   "&:hover": {
                     transform: "translateY(-2px)",
                     boxShadow: "0 5px 15px rgba(46,125,50,0.25)",
@@ -196,6 +203,9 @@ const SpecialistsList = ({ onSelectSpecialist, searchQuery }) => {
                     alignItems: "center",
                     gap: 1.2,
                     flex: 1,
+                    minWidth: 0,
+                    overflow: "hidden",
+                    maxWidth: "calc(100% - 90px)", // Reservar espacio para el botón
                   }}
                 >
                   <Avatar
@@ -207,7 +217,7 @@ const SpecialistsList = ({ onSelectSpecialist, searchQuery }) => {
                       border: `2px solid ${mainGreen}`,
                     }}
                   />
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Box sx={{ flex: 1, minWidth: 0, overflow: "hidden", pr: 1 }}>
                     <Typography
                       variant="subtitle2"
                       sx={{
@@ -248,7 +258,14 @@ const SpecialistsList = ({ onSelectSpecialist, searchQuery }) => {
                     backgroundColor: mainGreen,
                     "&:hover": { backgroundColor: "#256628" },
                     fontSize: "0.7rem",
-                    minWidth: 70,
+                    minWidth: 75,
+                    maxWidth: 85,
+                    width: "auto",
+                    flexShrink: 0,
+                    px: 1.2,
+                    py: 0.6,
+                    whiteSpace: "nowrap",
+                    borderRadius: 1.5,
                   }}
                   size="small"
                   onClick={(e) => {

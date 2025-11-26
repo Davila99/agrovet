@@ -6,17 +6,43 @@ import {
   Divider,
   Grid,
   Link as MuiLink,
+  Paper,
 } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
 
 const FieldRow = ({ label, value }) => (
-  <Box sx={{ py: 1 }}>
-    <Typography variant="subtitle2" sx={{ color: "text.secondary" }}>
+  <Box
+    sx={{
+      py: 1.5,
+      px: 2,
+      borderRadius: 2,
+      transition: "background-color 0.2s",
+      "&:hover": {
+        bgcolor: "#f8f9fa",
+      },
+    }}
+  >
+    <Typography
+      variant="subtitle2"
+      sx={{
+        color: "text.secondary",
+        fontWeight: 600,
+        fontSize: "0.875rem",
+        mb: 0.5,
+        textTransform: "uppercase",
+        letterSpacing: "0.5px",
+      }}
+    >
       {label}
     </Typography>
     <Typography
       variant="body2"
-      sx={{ color: value ? "text.primary" : "text.disabled" }}
+      sx={{
+        color: value ? "text.primary" : "text.disabled",
+        fontWeight: value ? 500 : 400,
+        lineHeight: 1.6,
+        whiteSpace: "pre-line",
+      }}
     >
       {value ?? "— Sin información —"}
     </Typography>
@@ -46,42 +72,61 @@ const BusinessmanProfile = ({ user }) => {
         )}`;
 
   return (
-    <Box>
-      <Box
+    <Paper
+      elevation={2}
+      sx={{
+        p: { xs: 2, sm: 3 },
+        borderRadius: 3,
+        bgcolor: "white",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+        transition: "all 0.3s ease",
+        "&:hover": {
+          boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
+          transform: "translateY(-2px)",
+        },
+      }}
+    >
+      <Typography
+        variant="h6"
         sx={{
-          p: 2,
-          borderRadius: 2,
-          bgcolor: "white",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+          fontWeight: 700,
+          color: "#103E68",
+          mb: 2,
+          fontSize: "1.25rem",
         }}
       >
-        <Typography variant="h6" sx={{ mb: 1 }}>
-          Información del negocio
-        </Typography>
+        Información del Negocio
+      </Typography>
 
-        <Divider sx={{ mb: 2 }} />
+      <Divider sx={{ mb: 3 }} />
 
-        <Grid container spacing={2}>
-          <Grid size={{ xs: 12, md: 6 }}>
-            {/* Nombre público, Sobre mí (descriptions) y Nombre del negocio apilados */}
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={6}>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
             <FieldRow label="Nombre público" value={user_display} />
             <FieldRow label="Descripción" value={descriptions} />
             <FieldRow label="Nombre del negocio" value={business_name} />
-          </Grid>
-
-          <Grid size={{ xs: 12, md: 6 }}>
-            <Grid container spacing={2}>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <FieldRow
-                  label="Ofrece productos locales"
-                  value={offers_local_products ? "Sí" : "No"}
-                />
-              </Grid>
-            </Grid>
-          </Grid>
+          </Box>
         </Grid>
-      </Box>
-    </Box>
+
+        <Grid item xs={12} md={6}>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            {offers_local_products !== undefined && (
+              <FieldRow
+                label="Ofrece productos locales"
+                value={offers_local_products ? "Sí" : "No"}
+              />
+            )}
+            {(lat || lon) && (
+              <FieldRow
+                label="Ubicación"
+                value={lat && lon ? `${lat}, ${lon}` : "No especificada"}
+              />
+            )}
+          </Box>
+        </Grid>
+      </Grid>
+    </Paper>
   );
 };
 

@@ -37,7 +37,7 @@ const Navbar = () => {
     };
   }, []);
   const location = useLocation();
-  const hideHeaderFor = ['/adds', '/add', '/foro'];
+  const hideHeaderFor = ['/adds', '/add', '/foro', '/dashboard', '/chat'];
   const shouldHideHeader = hideHeaderFor.some(p => location.pathname.startsWith(p));
   useEffect(() => {
     setToken(localStorage.getItem("token"));
@@ -97,135 +97,135 @@ const Navbar = () => {
                 px: { xs: 0, sm: 2 },
               }}
             >
-            {/* Logo */}
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                flex: { xs: 1, md: "none" },
-              }}
-            >
-              <RouterLink to="/" style={{ display: "flex", alignItems: "center" }}>
-                <img
-                  src={logo}
-                  alt="Logo AgroVets"
-                  width="90"
-                  style={{ height: 48 }}
-                />
-              </RouterLink>
-            </Box>
-
-            {/* Desktop Menu */}
-            <Box
-              sx={{
-                flex: 1,
-                display: { xs: "none", md: "flex" },
-                justifyContent: "center",
-              }}
-            >
-              <DesktopMenu
-                comunidadMenuAnchor={comunidadMenuAnchor}
-                openComunidadMenu={openComunidadMenu}
-                closeComunidadMenu={closeComunidadMenu}
-                isLoggedIn={isLoggedIn}
-              />
-
-              {/* Search (desktop) */}
-              <Box sx={{ ml: 2, width: 320 }}>
-                <TextField
-                  size="small"
-                  fullWidth
-                  placeholder="Buscar negocios, veterinarias..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
-                      setSearchQuery("");
-                    }
-                  }}
-                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton
-                          size="small"
-                          onClick={() => {
-                            navigate(
-                              `/search?q=${encodeURIComponent(searchQuery)}`
-                            );
-                            setSearchQuery("");
-                          }}
-                        >
-                          <SearchIcon fontSize="small" />
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-              </Box>
-            </Box>
-
-            {/* User Actions */}
-            <Stack
-              direction="row"
-              spacing={2}
-              sx={{
-                alignItems: "center",
-                display: { xs: "none", md: "flex" },
-              }}
-            >
-              {isLoggedIn && !location.pathname?.startsWith('/chat') ? (
-                // Hide the user menu when on the chat page because its popover
-                // overlapped important UI (requested by the user). If you want
-                // to re-enable the menu on chat, remove the pathname guard.
-                <UserMenu onLogout={handleLogout} user={user} />
-              ) : isLoggedIn ? (
-                // When logged in but on chat, show a simple avatar instead of the full menu
-                <Box>
-                  <AvatarPlaceholder user={user} />
-                </Box>
-              ) : (
-                <>
-                  <Button
-                    variant="outline"
-                    size="md"
-                    LinkComponent={RouterLink}
-                    to="/login"
-                    sx={{ borderRadius: 3 }}
-                  >
-                    Iniciar sesión
-                  </Button>
-                  <Button
-                    variant="primaryBlue"
-                    size="md"
-                    LinkComponent={RouterLink}
-                    to="/register"
-                    sx={{ borderRadius: 3 }}
-                  >
-                    Registrarse
-                  </Button>
-                </>
-              )}
-            </Stack>
-
-            {/* Mobile Menu Button */}
-            <Box
-              sx={{
-                display: { xs: "flex", md: "none" },
-                ml: 1,
-                alignItems: "center",
-              }}
-            >
-              {/* Mobile Menu Button */}
-              <IconButton
-                onClick={toggleDrawer(true)}
-                color="primary"
-                size="large"
+              {/* Logo */}
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  flex: { xs: 1, md: "none" },
+                }}
               >
-                <MenuIcon />
-              </IconButton>
-            </Box>
+                <RouterLink to="/" style={{ display: "flex", alignItems: "center" }}>
+                  <img
+                    src={logo}
+                    alt="Logo AgroVets"
+                    width="90"
+                    style={{ height: 48 }}
+                  />
+                </RouterLink>
+              </Box>
+
+              {/* Desktop Menu */}
+              <Box
+                sx={{
+                  flex: 1,
+                  display: { xs: "none", md: "flex" },
+                  justifyContent: "center",
+                }}
+              >
+                <DesktopMenu
+                  comunidadMenuAnchor={comunidadMenuAnchor}
+                  openComunidadMenu={openComunidadMenu}
+                  closeComunidadMenu={closeComunidadMenu}
+                  isLoggedIn={isLoggedIn}
+                />
+
+                {/* Search (desktop) */}
+                <Box sx={{ ml: 2, width: 320 }}>
+                  <TextField
+                    size="small"
+                    fullWidth
+                    placeholder="Buscar negocios, veterinarias..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+                        setSearchQuery("");
+                      }
+                    }}
+                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            size="small"
+                            onClick={() => {
+                              navigate(
+                                `/search?q=${encodeURIComponent(searchQuery)}`
+                              );
+                              setSearchQuery("");
+                            }}
+                          >
+                            <SearchIcon fontSize="small" />
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                </Box>
+              </Box>
+
+              {/* User Actions */}
+              <Stack
+                direction="row"
+                spacing={2}
+                sx={{
+                  alignItems: "center",
+                  display: { xs: "none", md: "flex" },
+                }}
+              >
+                {isLoggedIn && !location.pathname?.startsWith('/chat') ? (
+                  // Hide the user menu when on the chat page because its popover
+                  // overlapped important UI (requested by the user). If you want
+                  // to re-enable the menu on chat, remove the pathname guard.
+                  <UserMenu onLogout={handleLogout} user={user} />
+                ) : isLoggedIn ? (
+                  // When logged in but on chat, show a simple avatar instead of the full menu
+                  <Box>
+                    <AvatarPlaceholder user={user} />
+                  </Box>
+                ) : (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="md"
+                      LinkComponent={RouterLink}
+                      to="/login"
+                      sx={{ borderRadius: 3 }}
+                    >
+                      Iniciar sesión
+                    </Button>
+                    <Button
+                      variant="primaryBlue"
+                      size="md"
+                      LinkComponent={RouterLink}
+                      to="/register"
+                      sx={{ borderRadius: 3 }}
+                    >
+                      Registrarse
+                    </Button>
+                  </>
+                )}
+              </Stack>
+
+              {/* Mobile Menu Button */}
+              <Box
+                sx={{
+                  display: { xs: "flex", md: "none" },
+                  ml: 1,
+                  alignItems: "center",
+                }}
+              >
+                {/* Mobile Menu Button */}
+                <IconButton
+                  onClick={toggleDrawer(true)}
+                  color="primary"
+                  size="large"
+                >
+                  <MenuIcon />
+                </IconButton>
+              </Box>
             </Toolbar>
           </Box>
         </AppBar>

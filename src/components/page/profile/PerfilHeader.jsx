@@ -58,19 +58,40 @@ const PerfilHeader = ({ user, editing, setEditing, isOwnProfile = true }) => {
     navigate(target);
   };
 
+  const role = (user?.role || "").toString().toLowerCase();
+  
+  // Gradientes según el rol
+  const getGradient = () => {
+    if (role === "specialist") {
+      return "linear-gradient(135deg, #00c6a7 0%, #9EF01A 100%)";
+    } else if (role === "businessman") {
+      return "linear-gradient(135deg, #2AABEE 0%, #1a94d9 100%)";
+    }
+    return "linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)";
+  };
+
   return (
-    <>
+    <Box sx={{ position: "relative" }}>
+      {/* Fondo con gradiente */}
       <Box
         sx={{
-          height: { xs: 120, sm: 160 },
-          backgroundImage: `linear-gradient(120deg, #E8F5E9 0%, #C8E6C9 100%), repeating-radial-gradient(circle at 20% 20%, rgba(102,187,106,0.2), rgba(56,142,60,0.2) 40px, transparent 40px, transparent 80px)`,
-          backgroundBlendMode: "multiply",
-          backgroundSize: "160px 160px",
-          backgroundPosition: "0 0, 80px 80px",
+          height: { xs: 140, sm: 180 },
+          background: getGradient(),
           position: "relative",
+          "&::before": {
+            content: '""',
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background:
+              "radial-gradient(circle at 20% 50%, rgba(255,255,255,0.1) 0%, transparent 50%)",
+          },
         }}
       />
 
+      {/* Contenido del header */}
       <Box
         sx={{
           p: { xs: 2, sm: 3 },
@@ -78,17 +99,18 @@ const PerfilHeader = ({ user, editing, setEditing, isOwnProfile = true }) => {
           display: "flex",
           flexDirection: { xs: "column", sm: "row" },
           alignItems: { xs: "center", sm: "flex-end" },
-          gap: 2,
+          gap: 3,
         }}
       >
         <Avatar
           src={user?.profile_picture}
           alt={user?.full_name}
           sx={{
-            width: { xs: 90, sm: 120 },
-            height: { xs: 90, sm: 120 },
+            width: { xs: 100, sm: 120 },
+            height: { xs: 100, sm: 120 },
             border: "4px solid white",
-            fontSize: 40,
+            fontSize: { xs: 36, sm: 48 },
+            boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
           }}
         >
           {!user?.profile_picture &&
@@ -100,62 +122,108 @@ const PerfilHeader = ({ user, editing, setEditing, isOwnProfile = true }) => {
             sx={{
               display: "flex",
               alignItems: "center",
-              gap: 1,
+              gap: 1.5,
               justifyContent: { xs: "center", sm: "flex-start" },
+              flexWrap: "wrap",
+              mb: 0.5,
             }}
           >
-            <Typography variant="h6" fontWeight="bold" color="#103E68">
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 800,
+                color: "#1A202C",
+                fontSize: { xs: "1.5rem", sm: "1.75rem" },
+              }}
+            >
               {user?.full_name} {user?.last_name}
             </Typography>
             {/* Mostrar puntuación como estrellas para profesionales (specialist) */}
-            {(user?.role || "").toString().toLowerCase() === "specialist" && (
+            {role === "specialist" && (
               <Rating
                 name="read-only-rating"
                 value={Number(user?.specialist_profile?.puntuations || 0)}
                 precision={0.5}
                 size="small"
                 readOnly
+                sx={{
+                  "& .MuiRating-iconFilled": {
+                    color: "#FFD700",
+                  },
+                }}
               />
             )}
           </Box>
 
-          <Typography color="text.secondary">
-            {user?.role === "Specialist" && "Especialista"}
-            {user?.role === "businessman" && "Negocio"}
-            {user?.role === "consumer" && "Consumidor"}
+          <Typography
+            sx={{
+              color: "#718096",
+              fontWeight: 500,
+              fontSize: "0.95rem",
+            }}
+          >
+            {role === "specialist" && "Especialista"}
+            {role === "businessman" && "Negocio"}
+            {role === "consumer" && "Consumidor"}
           </Typography>
         </Box>
 
-        <Box sx={{ ml: "auto", display: "flex", alignItems: "center" }}>
-          {(user?.role || "").toString().toLowerCase() === "businessman" && (
+        <Box
+          sx={{
+            display: "flex",
+            gap: 1.5,
+            alignItems: "center",
+            flexDirection: { xs: "row", sm: "row" },
+          }}
+        >
+          {role === "businessman" && (
             <Button
               component={RouterLink}
               to={buildMapLinkForBusiness()}
               variant="outlined"
               startIcon={<MapOutlinedIcon />}
-              sx={{ textTransform: "none", borderRadius: 2, mr: 1 }}
+              sx={{
+                textTransform: "none",
+                borderRadius: 2,
+                borderColor: "#2AABEE",
+                color: "#2AABEE",
+                fontWeight: 600,
+                boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                "&:hover": {
+                  borderColor: "#1a94d9",
+                  bgcolor: "#2AABEE10",
+                  boxShadow: "0 4px 8px rgba(0,0,0,0.15)",
+                },
+              }}
             >
               Ir al mapa
             </Button>
           )}
 
-          {/* Botón para editar usuario (perfil general) - oculto si se está viendo como visitante */}
           {isOwnProfile && (
             <Button
-              component={RouterLink}
-              to={`/perfil/editar/${
-                user?.id || localStorage.getItem("userId")
-              }`}
+              onClick={handleEditToggle}
               variant="contained"
               color="primary"
-              sx={{ textTransform: "none", borderRadius: 2 }}
+              sx={{
+                textTransform: "none",
+                borderRadius: 2,
+                fontWeight: 600,
+                px: 3,
+                boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+                "&:hover": {
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+                  transform: "translateY(-1px)",
+                },
+                transition: "all 0.2s",
+              }}
             >
               Editar usuario
             </Button>
           )}
         </Box>
       </Box>
-    </>
+    </Box>
   );
 };
 

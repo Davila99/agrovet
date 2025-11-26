@@ -20,12 +20,16 @@ export default function AudioPlayButton({ playing, onToggle, ariaLabel }) {
       aria-label={ariaLabel || (playing ? 'Pause' : 'Play')}
     >
       {playing ? (
-        <svg width="14" height="14" viewBox="0 0 24 24"><rect x="6" y="4" width="3" height="16" fill="#ffffff" rx="1"/><rect x="15" y="4" width="3" height="16" fill="#ffffff" rx="1"/></svg>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="#ffffff">
+          <rect x="6" y="4" width="3" height="16" rx="1"/>
+          <rect x="15" y="4" width="3" height="16" rx="1"/>
+        </svg>
       ) : (
-        <span style={{ fontSize: 16, lineHeight: 1, color: '#3a3a3a', display: 'inline-block', transform: 'translateY(-1px)' }} aria-hidden>
-          ▶️
-        </span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="#3a3a3a">
+          <path d="M8 5v14l11-7z"/>
+        </svg>
       )}
     </button>
   );
 }
+

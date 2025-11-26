@@ -19,7 +19,7 @@ import Perfil from "./components/page/profile/Perfil.jsx";
 import EditUser from "./components/page/profile/EditUser.jsx";
 import ProtectedRoute from "./middleware/ProtectedRoute.jsx";
 import Dashboard from "./components/page/Dashboard.jsx";
-// import ChatPage from "./components/page/ChatPage"; // DISABLED - Chat migration incomplete
+import Chat from "./components/page/Chat.jsx";
 import AddPage from './components/page/AddPage';
 import { AddForm, AddDetail } from './components/page/add';
 import OrbPage from './components/page/Orb/index.jsx';
@@ -27,8 +27,6 @@ import OrbPage from './components/page/Orb/index.jsx';
 
 function App() {
   const queryClient = new QueryClient();
-  // Development helpers: mock server is optional. To use mock, call
-  // import('./pages/Foro/mocks/foroMockServer').then(m => m.startForoMock()) from the console.
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
@@ -67,7 +65,14 @@ function App() {
                     </ProtectedRoute>
                   }
                 />
-                {/* <Route path="/chat" element={<ChatPage />} /> */} {/* DISABLED - Chat migration incomplete */}
+                <Route
+                  path="/chat"
+                  element={
+                    <ProtectedRoute>
+                      <Chat />
+                    </ProtectedRoute>
+                  }
+                />
                 <Route path="/orb" element={<OrbPage />} />
                 {/* Alias: allow /add to redirect to /adds (common typo or short link) */}
                 <Route path="/add" element={<Navigate to="/adds" replace />} />

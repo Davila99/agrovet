@@ -1,14 +1,44 @@
 import React from "react";
-import { Box, Avatar, Typography, Divider, Grid, Rating } from "@mui/material";
+import { Box, Avatar, Typography, Divider, Grid, Rating, Paper } from "@mui/material";
 
 const FieldRow = ({ label, value }) => (
-  <Box sx={{ py: 1 }}>
-    <Typography variant="subtitle2" sx={{ color: "text.secondary" }}>
+  <Box
+    sx={{
+      py: 1,
+      px: 1.5,
+      borderRadius: 1.5,
+      borderBottom: "1px solid rgba(0, 0, 0, 0.08)",
+      transition: "background-color 0.2s",
+      "&:hover": {
+        bgcolor: "#f8f9fa",
+      },
+      "&:last-child": {
+        borderBottom: "none",
+      },
+    }}
+  >
+    <Typography
+      variant="subtitle2"
+      sx={{
+        color: "text.secondary",
+        fontWeight: 600,
+        fontSize: "0.75rem",
+        mb: 0.5,
+        textTransform: "uppercase",
+        letterSpacing: "0.5px",
+      }}
+    >
       {label}
     </Typography>
     <Typography
       variant="body2"
-      sx={{ color: value ? "text.primary" : "text.disabled" }}
+      sx={{
+        color: value ? "text.primary" : "text.disabled",
+        fontWeight: value ? 500 : 400,
+        lineHeight: 1.5,
+        whiteSpace: "pre-line",
+        fontSize: "0.875rem",
+      }}
     >
       {value ?? "— Sin información —"}
     </Typography>
@@ -53,57 +83,87 @@ const SpecialistProfile = ({ user }) => {
   });
 
   return (
-    <Box>
-      {/* Portada */}
-
-      <Box
+    <Paper
+      elevation={2}
+      sx={{
+        p: { xs: 2, sm: 3 },
+        borderRadius: 3,
+        bgcolor: "white",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+        transition: "all 0.3s ease",
+        "&:hover": {
+          boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
+          transform: "translateY(-2px)",
+        },
+      }}
+    >
+      <Typography
+        variant="h6"
         sx={{
-          p: 2,
-          borderRadius: 2,
-          bgcolor: "white",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+          fontWeight: 700,
+          color: "#103E68",
+          mb: 2,
+          fontSize: "1.25rem",
         }}
       >
-        <Typography variant="h6" sx={{ mb: 1 }}>
-          Información profesional
-        </Typography>
+        Información Profesional
+      </Typography>
 
-        <Divider sx={{ mb: 2 }} />
+      <Divider sx={{ mb: 2 }} />
 
-        <Grid container spacing={2}>
-          <Grid size={{ xs: 12, md: 6 }}>
-            {/* Nombre público, Sobre mí y Profesión apilados */}
-            <FieldRow label="Nombre público" value={user_display} />
-            <FieldRow label="Sobre mí" value={about_us} />
-            <FieldRow label="Profesión" value={profession} />
-          </Grid>
-
-          <Grid size={{ xs: 12, md: 6 }}>
-            {/* El resto en una grid de tarjetas pequeñas */}
-            <Grid container spacing={2}>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <FieldRow
-                  label="Años de experiencia"
-                  value={experience_years ?? "0"}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <FieldRow
-                  label="Puede dar consultas"
-                  value={can_give_consultations ? "Sí" : "No"}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <FieldRow
-                  label="Ofrece servicios en línea"
-                  value={can_offer_online_services ? "Sí" : "No"}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <Box sx={{ py: 1 }}>
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+        {/* Años de experiencia primero */}
+        <FieldRow
+          label="Años de experiencia"
+          value={experience_years ? `${experience_years} años` : "0 años"}
+        />
+        
+        <FieldRow label="Profesión" value={profession} />
+        
+        <FieldRow label="Nombre público" value={user_display} />
+        
+        <FieldRow label="Sobre mí" value={about_us} />
+        
+        <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+          <Box sx={{ flex: "1 1 auto", minWidth: "200px" }}>
+            <FieldRow
+              label="Puede dar consultas"
+              value={can_give_consultations ? "Sí" : "No"}
+            />
+          </Box>
+          <Box sx={{ flex: "1 1 auto", minWidth: "200px" }}>
+            <FieldRow
+              label="Servicios en línea"
+              value={can_offer_online_services ? "Sí" : "No"}
+            />
+          </Box>
+        </Box>
+        
+        {(puntuations !== undefined || point !== undefined) && (
+          <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", alignItems: "flex-start" }}>
+            {puntuations !== undefined && (
+              <Box sx={{ flex: "1 1 auto", minWidth: "200px" }}>
+                <Box
+                  sx={{
+                    py: 1.5,
+                    px: 2,
+                    borderRadius: 2,
+                    transition: "background-color 0.2s",
+                    "&:hover": {
+                      bgcolor: "#f8f9fa",
+                    },
+                  }}
+                >
                   <Typography
                     variant="subtitle2"
-                    sx={{ color: "text.secondary" }}
+                    sx={{
+                      color: "text.secondary",
+                      fontWeight: 600,
+                      fontSize: "0.875rem",
+                      mb: 1,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                    }}
                   >
                     Puntuación
                   </Typography>
@@ -115,15 +175,17 @@ const SpecialistProfile = ({ user }) => {
                     size="small"
                   />
                 </Box>
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
+              </Box>
+            )}
+            {point !== undefined && (
+              <Box sx={{ flex: "1 1 auto", minWidth: "200px" }}>
                 <FieldRow label="Puntos" value={point ?? "0"} />
-              </Grid>
-            </Grid>
-          </Grid>
-        </Grid>
+              </Box>
+            )}
+          </Box>
+        )}
       </Box>
-    </Box>
+    </Paper>
   );
 };
 

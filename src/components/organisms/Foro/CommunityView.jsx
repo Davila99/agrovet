@@ -15,6 +15,8 @@ import Tooltip from '@mui/material/Tooltip';
 import Stack from '@mui/material/Stack';
 import foroService from '../../../services/endpoints/foro';
 import SidebarCommunities from './SidebarCommunities';
+import TextField from '@mui/material/TextField';
+import DialogActions from '@mui/material/DialogActions';
 
 export default function CommunityView({ communityId }) {
   const { data } = useCommunities();
@@ -23,6 +25,17 @@ export default function CommunityView({ communityId }) {
   const [createdPosts, setCreatedPosts] = useState([]);
   const [editingCover, setEditingCover] = useState(false);
   const [editingAvatar, setEditingAvatar] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [newName, setNewName] = useState('');
+
+  const handleUpdateName = async () => {
+    try {
+      await foroService.updateCommunity(communityId, { name: newName });
+      window.location.reload();
+    } catch (e) {
+      console.error('Error updating name:', e);
+    }
+  };
   return (
     <div>
       <header style={{ marginBottom: 12 }}>
@@ -61,7 +74,18 @@ export default function CommunityView({ communityId }) {
                 <Avatar src={comm?.avatar || ''} alt={comm?.name} sx={{ width: 96, height: 96, border: '4px solid rgba(255,255,255,0.85)', cursor: 'pointer' }} />
               </IconButton>
               <Box>
-                <h1 style={{ margin: 0 }}>{comm?.name}</h1>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <h1 style={{ margin: 0 }}>{comm?.name}</h1>
+                  <IconButton
+                    size="small"
+                    onClick={() => {
+                      setNewName(comm?.name || '');
+                      setEditingName(true);
+                    }}
+                  >
+                    <EditIcon fontSize="small" />
+                  </IconButton>
+                </Box>
                 <div style={{ opacity: 0.85 }}>{comm?.short_description}</div>
                 <div style={{ marginTop: 8 }}>Miembros: {comm?.members_count || 0}</div>
               </Box>
@@ -140,6 +164,24 @@ export default function CommunityView({ communityId }) {
             window.location.reload();
           }} />
         </DialogContent>
+      </Dialog>
+
+      <Dialog open={editingName} onClose={() => setEditingName(false)} fullWidth>
+        <DialogTitle>Editar nombre</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Nombre de la comunidad"
+            fullWidth
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditingName(false)}>Cancelar</Button>
+          <Button onClick={handleUpdateName} variant="contained">Guardar</Button>
+        </DialogActions>
       </Dialog>
     </div>
   );

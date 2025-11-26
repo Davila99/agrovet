@@ -2,9 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Container, Typography, Button, Box } from "@mui/material";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { getProfile } from "../../services/endpoints";
 import Footer from "./Footer";
-import Navbar from "./navigation/nav.jsx";
 
 import banner1 from "../../assets/image/banner1.webp";
 import banner2 from "../../assets/image/banner2.webp";
@@ -24,7 +22,6 @@ const WelcomePage = () => {
   const [displayedPhrase, setDisplayedPhrase] = useState("");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [textIndex, setTextIndex] = useState(0);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const navigate = useNavigate();
 
   // Carrusel de banners
@@ -34,24 +31,6 @@ const WelcomePage = () => {
     }, 4000);
     return () => clearInterval(interval);
   }, [banners.length]);
-
-  // Validar sesión
-  useEffect(() => {
-    const check = async () => {
-      try {
-        const token = (localStorage.getItem("token") || "")
-          .replace(/^Token\s*/i, "")
-          .replace(/^Bearer\s*/i, "")
-          .trim();
-        if (!token) return setIsLoggedIn(false);
-        const profile = await getProfile(token);
-        setIsLoggedIn(!!profile?.id);
-      } catch {
-        setIsLoggedIn(false);
-      }
-    };
-    check();
-  }, []);
 
   // Efecto escribir título
   useEffect(() => {
@@ -83,9 +62,9 @@ const WelcomePage = () => {
     return () => clearInterval(interval);
   }, [textIndex]);
 
+
   return (
     <>
-      <Navbar />
       <Box sx={{ color: "#fff", overflow: "hidden" }}>
         <Box
           sx={{
@@ -112,7 +91,7 @@ const WelcomePage = () => {
             }}
           />
 
-          {/* Burbujas flotantes “liquid glass” */}
+          {/* Burbujas flotantes "liquid glass" */}
           <Box
             sx={{
               position: "absolute",

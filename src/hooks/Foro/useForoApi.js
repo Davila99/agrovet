@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import * as foroService from '/src/services/endpoints';
+import foroService from '../../services/endpoints/foro';
 
 export function usePosts(params = {}) {
   const [data, setData] = useState(null);

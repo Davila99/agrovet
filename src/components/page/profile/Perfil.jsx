@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { Box, Paper, CircularProgress, Alert } from "@mui/material";
 import { getProfile, authAPI, profilesAPI } from "../../../services/endpoints";
+import { authAPI as authAPIEndpoint } from "../../../services/endpoints/auth";
 import { normalizeStoredToken } from "../chat/chatUtils";
 import { useLocation } from "react-router-dom";
 import PerfilHeader from "./PerfilHeader";
 import PerfilForm from "./PerfilForm";
 import PerfilPortfolio from "./PerfilPortfolio";
 import PerfilContactHistory from "./PerfilContactHistory";
+import PortfolioSection from "./organisms/PortfolioSection";
+import ProductCatalog from "./organisms/ProductCatalog";
 import authClient from "../../../services/authClient";
 
 const Perfil = () => {
@@ -90,7 +93,12 @@ const Perfil = () => {
             if (specialistProfile) {
               // SOBRESCRIBIR el specialist_profile con los datos del Profiles Service
               res.specialist_profile = specialistProfile;
+              // También asignar work_images_full directamente desde el perfil
+              res.work_images_full = specialistProfile.work_images_full || [];
               console.log('[Perfil] ✅ Perfil de especialista asignado. res.specialist_profile ahora es:', JSON.stringify(res.specialist_profile, null, 2));
+              console.log('[Perfil] ✅ work_images_full:', res.work_images_full);
+              console.log('[Perfil] ✅ work_images_full length:', res.work_images_full?.length);
+              console.log('[Perfil] ✅ work_images_full items:', res.work_images_full?.map(item => ({ id: item.id, name: item.name, url: item.url })));
               console.log('[Perfil] ✅ profession después de asignar:', res.specialist_profile?.profession);
               console.log('[Perfil] ✅ experience_years después de asignar:', res.specialist_profile?.experience_years);
               console.log('[Perfil] ✅ about_us después de asignar:', res.specialist_profile?.about_us);
@@ -109,8 +117,19 @@ const Perfil = () => {
             // Continuar sin el perfil de especialista si falla, pero mostrar un warning
             console.warn('[Perfil] ⚠️ Continuando sin perfil de especialista actualizado');
           }
+        } else if (userRole === "businessman") {
+          console.log('[Perfil] ⚠️ Usuario es businessman, obteniendo perfil desde Profiles Service...');
+          try {
+            const businessmanProfile = await profilesAPI.getBusinessmanByUser(res.id, token);
+            if (businessmanProfile) {
+              res.businessman_profile = businessmanProfile;
+              res.products_and_services_full = businessmanProfile.products_and_services_full || [];
+            }
+          } catch (e) {
+            console.error("❌ [Perfil] Error al cargar el perfil de businessman:", e);
+          }
         } else {
-          console.log('[Perfil] Usuario no es especialista, role:', res.role, 'userRole:', userRole);
+          console.log('[Perfil] Usuario no es especialista ni businessman, role:', res.role, 'userRole:', userRole);
         }
         
         console.log('[Perfil] 📋 Datos finales antes de setUser:', JSON.stringify(res, null, 2));
@@ -140,9 +159,22 @@ const Perfil = () => {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSave = () => {
-    setUser(form);
-    setEditing(false);
+  const handleSave = async () => {
+    try {
+      const token = normalizeStoredToken(localStorage.getItem("token"));
+      // Si es businessman y tiene coordenadas, actualizar también la ubicación
+      if ((form.role || "").toString().toLowerCase() === "businessman" && (form.latitude || form.longitude)) {
+        await authAPIEndpoint.updateUser(user.id, {
+          latitude: form.latitude || null,
+          longitude: form.longitude || null,
+        }, token);
+      }
+      setUser(form);
+      setEditing(false);
+    } catch (error) {
+      console.error("Error al guardar cambios:", error);
+      alert("Error al guardar los cambios");
+    }
   };
 
   if (loading)
@@ -188,56 +220,127 @@ const Perfil = () => {
   return (
     <Box
       sx={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "flex-start",
-
+        minHeight: "100vh",
         bgcolor: "#f0f2f5",
-        p: 1,
+        py: { xs: 2, sm: 3 },
+        px: { xs: 1, sm: 2 },
       }}
     >
-      <Paper
-        elevation={5}
+      <Box
         sx={{
-          width: "100%",
-          borderRadius: 3,
-          overflow: "hidden",
-          position: "relative",
+          maxWidth: "1200px",
+          mx: "auto",
         }}
       >
-        <PerfilHeader
-          user={user}
-          editing={editing}
-          setEditing={setEditing}
-          form={form}
-          isOwnProfile={isOwnProfile}
-        />
-        <Box
+        {/* Header Card */}
+        <Paper
+          elevation={3}
           sx={{
-            p: { xs: 2, sm: 3 },
-            display: "flex",
-            flexDirection: { xs: "column", md: "row" },
-            gap: 3,
-            bgcolor: "#f9f9f9",
+            borderRadius: 3,
+            overflow: "hidden",
+            mb: 3,
+            bgcolor: "white",
           }}
         >
-          <PerfilForm
+          <PerfilHeader
+            user={user}
             editing={editing}
-            form={user}
-            onChange={handleChange}
-            onSave={handleSave}
+            setEditing={setEditing}
+            form={form}
+            isOwnProfile={isOwnProfile}
           />
-          {/* Mostrar portafolio para especialistas/empresarios; para consumer mostrar historial de contacto */}
-          {(user.role || "").toString().toLowerCase() === "consumer" ? (
-            <PerfilContactHistory contactHistory={user.contact_history || []} />
-          ) : (
-            <PerfilPortfolio
-              editing={editing}
-              portfolio={user.portfolio || []}
+        </Paper>
+
+        {/* Content Grid */}
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", md: "1fr 1fr", lg: "400px 1fr" },
+            gap: 3,
+          }}
+        >
+          {/* Columna izquierda - Información personal y profesional */}
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+            <PerfilForm
+              editing={editing && isOwnProfile}
+              form={user}
+              onChange={handleChange}
+              onSave={handleSave}
             />
-          )}
+          </Box>
+
+          {/* Columna derecha - Portafolio, Catálogo o Historial */}
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+            {(user.role || "").toString().toLowerCase() === "consumer" ? (
+              <PerfilContactHistory contactHistory={user.contact_history || []} />
+            ) : (
+              <>
+                {(user.role || "").toString().toLowerCase() === "specialist" && (() => {
+                  const portfolioData = user.work_images_full || user.specialist_profile?.work_images_full || [];
+                  return (
+                    <PortfolioSection
+                      editing={isOwnProfile} // SIEMPRE editable si es mi perfil, sin importar el modo edición general
+                      portfolio={portfolioData}
+                      userRole={user.role}
+                      userId={user.id}
+                      isOwnProfile={isOwnProfile}
+                      onUpdate={(updatedPortfolio) => {
+                        setUser((prev) => {
+                          const updated = {
+                            ...prev,
+                            work_images_full: updatedPortfolio,
+                          };
+                          if (prev.specialist_profile) {
+                            updated.specialist_profile = {
+                              ...prev.specialist_profile,
+                              work_images_full: updatedPortfolio,
+                            };
+                          }
+                          return updated;
+                        });
+                      }}
+                    />
+                  );
+                })()}
+                {(user.role || "").toString().toLowerCase() === "businessman" && (
+                  <>
+                    <PortfolioSection
+                      editing={isOwnProfile}
+                      portfolio={user.work_images_full || []}
+                      userRole={user.role}
+                      userId={user.id}
+                      isOwnProfile={isOwnProfile}
+                      onUpdate={(updatedPortfolio) => {
+                        setUser((prev) => ({
+                          ...prev,
+                          work_images_full: updatedPortfolio,
+                        }));
+                      }}
+                    />
+                    <ProductCatalog
+                      editing={isOwnProfile}
+                      products={user.products_and_services_full || user.businessman_profile?.products_and_services_full || []}
+                      userRole={user.role}
+                      userId={user.id}
+                      isOwnProfile={isOwnProfile}
+                      onUpdate={(updatedProducts) => {
+                        setUser((prev) => ({
+                          ...prev,
+                          products_and_services_full: updatedProducts,
+                          businessman_profile: {
+                            ...prev.businessman_profile,
+                            products_and_services_full: updatedProducts,
+                          },
+                        }));
+                      }}
+                    />
+                  </>
+                )}
+              </>
+            )}
+          </Box>
         </Box>
-      </Paper>
+      </Box>
     </Box>
   );
 };

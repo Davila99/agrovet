@@ -11,17 +11,54 @@ export async function uploadMedia(formData, token) {
   const localToken = token || (typeof window !== "undefined" ? authClient.getAccessToken() : null);
   const headers = authHeaders(localToken);
 
-  const res = await httpClient(url, {
-    method: 'POST',
-    headers,
-    body: formData,
-  });
-
-  // Normalize response to { id, url, name }
+  console.log("📤 [uploadMedia] Iniciando subida a:", url);
+  console.log("📤 [uploadMedia] Token disponible:", !!localToken);
+  
   try {
-    return mediaAdapter.normalizeMedia(res);
-  } catch (e) {
-    return res;
+    const res = await httpClient(url, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+
+    // Log detallado de la respuesta
+    console.log("=".repeat(50));
+    console.log("📥 [uploadMedia] RESPUESTA DEL SERVIDOR:");
+    console.log("📥 [uploadMedia] Respuesta completa:", JSON.stringify(res, null, 2));
+    console.log("📥 [uploadMedia] Tipo:", typeof res);
+    console.log("📥 [uploadMedia] Es null?:", res === null);
+    console.log("📥 [uploadMedia] Es undefined?:", res === undefined);
+    if (res) {
+      console.log("📥 [uploadMedia] Keys:", Object.keys(res));
+      console.log("📥 [uploadMedia] ID:", res.id);
+      console.log("📥 [uploadMedia] URL:", res.url);
+      console.log("📥 [uploadMedia] Name:", res.name);
+      console.log("📥 [uploadMedia] Description:", res.description);
+    }
+    console.log("=".repeat(50));
+
+    // Normalize response to { id, url, name }
+    let normalized;
+    try {
+      normalized = mediaAdapter.normalizeMedia(res);
+      console.log("✅ [uploadMedia] Media normalizado:", JSON.stringify(normalized, null, 2));
+      console.log("✅ [uploadMedia] Normalized ID:", normalized.id);
+      console.log("✅ [uploadMedia] Normalized URL:", normalized.url);
+    } catch (e) {
+      console.error("❌ [uploadMedia] Error al normalizar:", e);
+      normalized = res;
+    }
+    
+    return normalized;
+  } catch (error) {
+    console.error("❌ [uploadMedia] Error en httpClient:", error);
+    console.error("❌ [uploadMedia] Error details:", {
+      message: error.message,
+      status: error.status,
+      body: error.body,
+      url: url
+    });
+    throw error;
   }
 }
 

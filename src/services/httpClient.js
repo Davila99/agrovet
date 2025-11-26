@@ -262,6 +262,30 @@ const BASE_URL = (import.meta && import.meta.env && import.meta.env.VITE_GATEWAY
         err.raw = text;
         throw err;
       }
+      
+      // Log detallado para debugging de portfolio
+      if (url.includes('/profiles/specialists/') && __res.ok) {
+        console.log('='.repeat(80));
+        console.log('[httpClient] 📥 RESPUESTA DEL BACKEND (PATCH/GET specialist):');
+        console.log('[httpClient] URL:', url);
+        console.log('[httpClient] Status:', __res.status);
+        console.log('[httpClient] Response data:', JSON.stringify(data, null, 2));
+        if (data.work_images_full) {
+          console.log('[httpClient] ✅ work_images_full encontrado:', data.work_images_full);
+          console.log('[httpClient] ✅ work_images_full length:', data.work_images_full?.length);
+          if (Array.isArray(data.work_images_full)) {
+            console.log('[httpClient] ✅ work_images_full items:', data.work_images_full.map(item => ({
+              id: item?.id,
+              name: item?.name,
+              url: item?.url
+            })));
+          }
+        } else {
+          console.log('[httpClient] ⚠️ work_images_full NO encontrado en la respuesta');
+        }
+        console.log('='.repeat(80));
+      }
+      
       return data;
     } catch (err) {
     try {
@@ -344,6 +368,16 @@ const BASE_URL = (import.meta && import.meta.env && import.meta.env.VITE_GATEWAY
   };
 
   export default httpClient;
+
+  // Helper function to create auth headers
+  export function authHeaders(token) {
+    if (!token) return {};
+    // Remove 'Bearer ' prefix if present, then add it back
+    const cleanToken = token.replace(/^Bearer\s*/i, '').trim();
+    return {
+      Authorization: `Bearer ${cleanToken}`
+    };
+  }
 
   export function clearServiceDownFlag() {
     if (typeof window !== 'undefined') {

@@ -1,0 +1,60 @@
+.voice-agent-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  background: #000000;
+  padding: 20px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+}
+
+.orb-container {
+  width: 100%;
+  max-width: 600px;
+  height: 600px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-shrink: 0;
+  position: absolute;
+  top: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  pointer-events: none;
+}
+
+.controls-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 20;
+  margin-top: 600px;
+}
+
+@media (max-width: 768px) {
+  .voice-agent-container {
+    gap: 15px;
+    padding: 15px;
+  }
+
+  .orb-container {
+    max-width: 400px;
+    height: 400px;
+    top: 15%;
+  }
+  
+  .controls-container {
+    margin-top: 380px;
+  }
+}
+
+
