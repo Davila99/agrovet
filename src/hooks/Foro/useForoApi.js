@@ -9,11 +9,25 @@ export function usePosts(params = {}) {
   useEffect(() => {
     let mounted = true;
     setLoading(true);
-    foroService.getPosts(params).then(res => {
-      if (!mounted) return;
-      setData(res.results || res);
-      setLoading(false);
-    }).catch(err => { if (mounted) { setError(err); setLoading(false); } });
+    setError(null);
+    foroService.getPosts(params)
+      .then(res => {
+        if (!mounted) return;
+        setData(res.results || res);
+        setLoading(false);
+      })
+      .catch(err => { 
+        if (mounted) { 
+          // Silenciar errores 500 del servidor - usamos posts de ejemplo
+          if (err?.status >= 500) {
+            console.warn('[usePosts] Servidor de foro no disponible, usando posts de ejemplo');
+            setData([]); // Retornar array vacío para que use los posts de ejemplo
+          } else {
+            setError(err);
+          }
+          setLoading(false); 
+        }
+      });
     return () => { mounted = false; };
   }, [JSON.stringify(params)]);
 

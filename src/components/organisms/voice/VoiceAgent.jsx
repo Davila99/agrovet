@@ -59,7 +59,9 @@ const VoiceAgent = () => {
       if (!hasSpokenInitialRef.current) {
         hasSpokenInitialRef.current = true;
         try {
-          await voiceChatService.speak("Hola, soy tu asistente de voz. Presiona el micrófono para comenzar.");
+          const agentPresentation = import.meta.env.VITE_AGENT_PRESENTATION || 
+            "Hola hackathones Nicaragua, soy AVAS, tu Asistente Agropecuario Virtual, estoy aquí para revolucionar la salud animal, y que nunca más un productor, agricultor o dueño de animales quede sin una respuesta inmediata, ayudando a salvar millones de vidas animales";
+          await voiceChatService.speak(`${agentPresentation}. Presiona el micrófono para comenzar.`);
         } catch (err) {
           console.warn("No se pudo reproducir mensaje inicial:", err);
         }

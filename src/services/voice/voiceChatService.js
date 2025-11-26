@@ -2,6 +2,8 @@ import { speechRecognitionService } from "./speechRecognitionService";
 import { elevenLabsService } from "./elevenLabsService";
 
 const ELEVEN_LABS_VOICE_ID = import.meta.env.VITE_ELEVEN_VOICE_ID || "IPgYtHTNLjC7Bq7IPHrm";
+const AGENT_NAME = import.meta.env.VITE_AGENT_NAME || "AVAS";
+const AGENT_PRESENTATION = import.meta.env.VITE_AGENT_PRESENTATION || "Hola hackathones Nicaragua, soy AVAS, tu Asistente Agropecuario Virtual, estoy aquí para revolucionar la salud animal, y que nunca más un productor, agricultor o dueño de animales quede sin una respuesta inmediata, ayudando a salvar millones de vidas animales";
 
 /**
  * Servicio de chat de voz
@@ -99,7 +101,7 @@ class VoiceChatService {
     
     // Respuestas básicas según palabras clave
     if (message.includes("hola") || message.includes("buenos días") || message.includes("buenas tardes")) {
-      return "Hola, ¿en qué puedo ayudarte hoy?";
+      return `Hola, soy ${AGENT_NAME}. ¿En qué puedo ayudarte hoy?`;
     }
     
     if (message.includes("adiós") || message.includes("hasta luego") || message.includes("nos vemos")) {

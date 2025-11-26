@@ -15,6 +15,7 @@ const SpecialistsList = ({ onSelectSpecialist, searchQuery }) => {
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState([]);
   const [error, setError] = useState(null);
+  const [specialistsCount, setSpecialistsCount] = useState(0);
   const navigate = useNavigate();
 
   const mainGreen = "#2E7D32";
@@ -55,11 +56,43 @@ const SpecialistsList = ({ onSelectSpecialist, searchQuery }) => {
           const roleMatch = role && (role.includes("specialist") || role.includes("especialista") || role.includes("especialist"));
           const flag = u.is_specialist === true;
           const hasProfile = Boolean(u.specialist_profile);
+          
+          // Debug logging
+          if (roleMatch || flag || hasProfile) {
+            console.debug('[SpecialistsList] User qualifies as specialist:', {
+              id: u.id,
+              name: u.full_name || u.username,
+              role: u.role,
+              roleMatch,
+              flag,
+              hasProfile
+            });
+          }
+          
           return roleMatch || flag || hasProfile;
         };
 
         const specialists = list.filter((u) => isSpecialistUser(u));
         console.log("🧠 Especialistas candidatas:", specialists.length);
+        
+        // Debug: mostrar detalles de los especialistas encontrados
+        if (specialists.length > 0) {
+          console.log("📋 Especialistas encontrados:", specialists.map(u => ({
+            id: u.id,
+            name: u.full_name || u.username,
+            role: u.role,
+            hasProfile: !!u.specialist_profile
+          })));
+        } else {
+          console.warn("⚠️ No se encontraron especialistas. Total usuarios:", list.length);
+          console.debug("📋 Primeros 5 usuarios para debug:", list.slice(0, 5).map(u => ({
+            id: u.id,
+            name: u.full_name || u.username,
+            role: u.role,
+            is_specialist: u.is_specialist,
+            has_profile: !!u.specialist_profile
+          })));
+        }
 
         try {
           console.debug('[SpecialistsList] specialists after filter', { count: specialists.length, sample: specialists.slice(0,5) });
@@ -71,8 +104,16 @@ const SpecialistsList = ({ onSelectSpecialist, searchQuery }) => {
           console.debug('[SpecialistsList] excluded sample (up to 10)', excluded.slice(0,10).map(u => ({ id: u.id, name: u.full_name || u.username, role: u.role, has_profile: !!u.specialist_profile, is_specialist: u.is_specialist })));
         } catch (e) {}
 
-        const filtered = specialists.filter((u) => String(u.id) !== String(currentId));
+        const filtered = specialists.filter((u) => {
+          const isNotCurrentUser = String(u.id) !== String(currentId);
+          if (!isNotCurrentUser) {
+            console.debug('[SpecialistsList] Filtrando usuario actual:', u.id);
+          }
+          return isNotCurrentUser;
+        });
 
+        console.log("✅ Especialistas después de filtrar usuario actual:", filtered.length);
+        setSpecialistsCount(specialists.length);
         setUsers(filtered);
       } catch (e) {
         setError(e.message || String(e));
@@ -158,15 +199,33 @@ const SpecialistsList = ({ onSelectSpecialist, searchQuery }) => {
           },
         }}
       >
-        {users
-          .filter((u) => {
-            const q = String(searchQuery || "").trim().toLowerCase();
-            if (!q) return true;
-            const name = (u.full_name || u.username || "").toLowerCase();
-            const prof = (u.specialist_profile?.profession || "").toLowerCase();
-            return name.includes(q) || prof.includes(q);
-          })
-          .map((u) => {
+        {users.length === 0 ? (
+          <Box
+            sx={{
+              p: 3,
+              textAlign: "center",
+              color: "text.secondary",
+            }}
+          >
+            <Typography variant="body2" sx={{ mb: 1 }}>
+              No hay especialistas disponibles
+            </Typography>
+            <Typography variant="caption" sx={{ color: "text.secondary" }}>
+              {specialistsCount > 0 
+                ? "El único especialista encontrado eres tú" 
+                : "No se encontraron usuarios con rol de especialista"}
+            </Typography>
+          </Box>
+        ) : (
+          users
+            .filter((u) => {
+              const q = String(searchQuery || "").trim().toLowerCase();
+              if (!q) return true;
+              const name = (u.full_name || u.username || "").toLowerCase();
+              const prof = (u.specialist_profile?.profession || "").toLowerCase();
+              return name.includes(q) || prof.includes(q);
+            })
+            .map((u) => {
             const rating = Number(u?.specialist_profile?.puntuations) || 0;
             const profession =
               u.specialist_profile?.profession || "Veterinario";
@@ -279,7 +338,8 @@ const SpecialistsList = ({ onSelectSpecialist, searchQuery }) => {
                 </Button>
               </Card>
             );
-          })}
+          })
+        )}
       </Box>
     </Box>
   );

@@ -33,10 +33,11 @@ const VoiceControls = ({
             fontWeight: 600, 
             color: "#ffffff",
             fontSize: "0.75rem",
-            mb: 0.5
+            mb: 0.5,
+            textAlign: "center"
           }}
         >
-          Asistente de Voz IA
+          {import.meta.env.VITE_AGENT_NAME || "AVAS"}
         </Typography>
         
         {/* Mensajes de error */}
