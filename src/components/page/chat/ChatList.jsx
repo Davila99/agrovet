@@ -40,7 +40,7 @@ export default function ChatList({
    
     <Box
       sx={{
-        width: { xs: "100%", md: 420 },
+        width: { xs: "100%", md: 500 },
         borderRight: { md: "1px solid rgba(0,0,0,0.08)" },
         bgcolor: "background.paper",
         // responsive display: hide on xs when a chat is active (narrow layout),

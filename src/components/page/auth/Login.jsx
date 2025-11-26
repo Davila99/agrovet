@@ -50,6 +50,20 @@ const LoginPage = () => {
         localStorage.setItem("userId", res.user.id);
         console.log("ID del usuario guardado:", res.user.id);
         console.log("Respuesta del login:", res);
+        
+        // Auto-join communities based on role (best effort, don't block login)
+        if (res.user.role) {
+          try {
+            const { autoJoinCommunitiesByRole } = await import('../../../utils/Foro/autoJoinCommunities');
+            // Run in background, don't wait for it
+            autoJoinCommunitiesByRole(res.user.role).catch(err => {
+              console.warn('Failed to auto-join communities:', err);
+            });
+          } catch (err) {
+            console.warn('Failed to load auto-join utility:', err);
+            // Don't block login if this fails
+          }
+        }
       } else {
         console.warn(
           "No se recibió el ID del usuario en la respuesta del login"

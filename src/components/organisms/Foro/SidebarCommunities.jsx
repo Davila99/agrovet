@@ -5,7 +5,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import foroService from '../../../services/endpoints/foro';
 
 export default function SidebarCommunities() {
-  const { data, isLoading } = useCommunities();
+  const { data, isLoading, error: apiError } = useCommunities();
   const items = data || [];
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
@@ -13,7 +13,26 @@ export default function SidebarCommunities() {
   const [shortDescription, setShortDescription] = useState('');
   const [coverImage, setCoverImage] = useState('');
   const [error, setError] = useState(null);
-  if (isLoading) return <div>Loading communities...</div>;
+  
+  if (isLoading) {
+    return (
+      <Paper sx={{ p: 2, borderRadius: 2 }}>
+        <Typography variant="body2" color="text.secondary">
+          Cargando comunidades...
+        </Typography>
+      </Paper>
+    );
+  }
+  
+  if (apiError) {
+    return (
+      <Paper sx={{ p: 2, borderRadius: 2 }}>
+        <Typography variant="body2" color="error">
+          Error cargando comunidades. {apiError.message || 'Verifica que el servicio de foro esté disponible y que las migraciones de base de datos estén ejecutadas.'}
+        </Typography>
+      </Paper>
+    );
+  }
 
   async function handleCreate() {
     setError(null);

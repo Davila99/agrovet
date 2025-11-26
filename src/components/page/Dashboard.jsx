@@ -52,7 +52,6 @@ const Dashboard = () => {
     { id: "chat", label: "Chats", icon: <ChatBubbleOutlineIcon /> },
     { id: "foro", label: "Foro", icon: <ForumOutlinedIcon /> },
     { id: "ads", label: "Ads", icon: <CampaignOutlinedIcon /> },
-    { id: "inventory", label: "Inventario", icon: <InventoryOutlinedIcon /> },
     { id: "ia", label: "IA", icon: <SmartToyOutlinedIcon /> },
   ];
 
@@ -68,7 +67,7 @@ const Dashboard = () => {
     navigate('/perfil');
   };
 
-  const sidebarWidth = collapsed ? 56 : 180;
+  const sidebarWidth = collapsed ? 56 : 220;
 
   const Sidebar = (
     <Paper
@@ -93,48 +92,63 @@ const Dashboard = () => {
     >
       {/* Top Section: Logo & Menu */}
       <Box>
-        {/* Logo & Toggle Header */}
+        {/* Logo & Toggle Header - Vertical Layout */}
         <Box sx={{
-          p: 1,
+          p: collapsed ? 1 : 1.5,
           display: "flex",
-          justifyContent: collapsed ? "center" : "space-between",
+          flexDirection: "column",
+          justifyContent: "center",
           alignItems: "center",
-          height: 40,
+          gap: collapsed ? 0.5 : 1,
           borderBottom: "1px solid rgba(255, 255, 255, 0.05)",
+          pb: collapsed ? 1 : 1.5,
           mb: 0.5
         }}>
-          {!collapsed && (
-            <Box
-              component="img"
-              src={logo}
-              alt="AgroVets"
-              sx={{
-                height: 16,
-                width: "auto",
-                cursor: "pointer",
-                filter: "brightness(0) invert(1)",
-                opacity: 0.9,
-                transition: "opacity 0.2s",
-                "&:hover": { opacity: 1 }
-              }}
-              onClick={() => navigate("/")}
-            />
-          )}
-
+          {/* Toggle Button - Above Logo */}
           {!isMobile && (
             <IconButton
               size="small"
               onClick={() => setCollapsed(!collapsed)}
               sx={{
                 color: "rgba(255, 255, 255, 0.6)",
-                padding: 0.25,
-                "&:hover": { color: "#fff", bgcolor: "rgba(255, 255, 255, 0.05)" },
+                padding: 0.5,
+                mb: collapsed ? 0 : 0.5,
+                "&:hover": { 
+                  color: "#fff", 
+                  bgcolor: "rgba(255, 255, 255, 0.1)" 
+                },
                 transition: "all 0.2s",
-                transform: collapsed ? "rotate(180deg)" : "none"
+                transform: collapsed ? "rotate(180deg)" : "none",
+                "& .MuiSvgIcon-root": {
+                  fontSize: collapsed ? 18 : 20
+                }
               }}
             >
-              <MenuIcon sx={{ fontSize: 16 }} />
+              <MenuIcon />
             </IconButton>
+          )}
+
+          {/* Logo - Larger */}
+          {!collapsed && (
+            <Box
+              component="img"
+              src={logo}
+              alt="AgroVets"
+              sx={{
+                height: 48,
+                width: "auto",
+                maxWidth: "100%",
+                cursor: "pointer",
+                filter: "brightness(0) invert(1)",
+                opacity: 0.9,
+                transition: "opacity 0.2s, transform 0.2s",
+                "&:hover": { 
+                  opacity: 1,
+                  transform: "scale(1.05)"
+                }
+              }}
+              onClick={() => navigate("/")}
+            />
           )}
         </Box>
 
@@ -168,10 +182,10 @@ const Dashboard = () => {
                 }}
                 sx={{
                   borderRadius: 1.5,
-                  mb: 0.5,
-                  py: 0.75,
-                  px: collapsed ? 0.5 : 1.25,
-                  minHeight: 40,
+                  mb: 1,
+                  py: 1,
+                  px: collapsed ? 0.5 : 1.5,
+                  minHeight: 48,
                   justifyContent: collapsed ? "center" : "flex-start",
                   transition: "all 0.2s ease",
                   position: "relative",
@@ -192,12 +206,12 @@ const Dashboard = () => {
               >
                 <ListItemIcon
                   sx={{
-                    minWidth: collapsed ? 0 : 24,
+                    minWidth: collapsed ? 0 : 28,
                     color: selected === item.id ? "#000" : "rgba(255, 255, 255, 0.6)",
                     transition: "color 0.2s ease",
                     justifyContent: "center",
                     "& .MuiSvgIcon-root": {
-                      fontSize: 16
+                      fontSize: 20
                     }
                   }}
                 >
@@ -208,7 +222,7 @@ const Dashboard = () => {
                     primary={item.label}
                     primaryTypographyProps={{
                       fontWeight: selected === item.id ? 600 : 500,
-                      fontSize: "0.8rem",
+                      fontSize: "0.95rem",
                     }}
                   />
                 )}
@@ -220,7 +234,7 @@ const Dashboard = () => {
 
       {/* Bottom Section: Profile & Logout */}
       <Box sx={{
-        p: collapsed ? 0.75 : 1,
+        p: collapsed ? 0.75 : 1.5,
         borderTop: "1px solid rgba(255, 255, 255, 0.05)",
         bgcolor: "rgba(0, 0, 0, 0.2)"
       }}>
@@ -230,7 +244,7 @@ const Dashboard = () => {
           justifyContent: collapsed ? "center" : "space-between",
           bgcolor: collapsed ? "transparent" : "rgba(255, 255, 255, 0.03)",
           borderRadius: 1.5,
-          p: collapsed ? 0 : 0.5,
+          p: collapsed ? 0 : 1,
           transition: "all 0.2s",
           cursor: "pointer",
           "&:hover": { bgcolor: "rgba(255, 255, 255, 0.08)" }
@@ -239,7 +253,7 @@ const Dashboard = () => {
             sx={{
               display: "flex",
               alignItems: "center",
-              gap: 0.75,
+              gap: 1.25,
               overflow: "hidden",
               flex: 1,
               justifyContent: collapsed ? "center" : "flex-start"
@@ -250,29 +264,34 @@ const Dashboard = () => {
               src={user?.profile_picture || ""}
               variant="rounded"
               sx={{
-                width: 24,
-                height: 24,
-                borderRadius: 1,
-                border: "1px solid rgba(255, 255, 255, 0.1)",
-                transition: "border-color 0.2s",
-                fontSize: "0.65rem",
-                "&:hover": { borderColor: "#00c6a7" }
+                width: 48,
+                height: 48,
+                borderRadius: 1.5,
+                border: "2px solid rgba(255, 255, 255, 0.15)",
+                transition: "all 0.2s",
+                fontSize: "1.2rem",
+                fontWeight: 600,
+                "&:hover": { 
+                  borderColor: "#00c6a7",
+                  transform: "scale(1.05)"
+                }
               }}
             >
               {!user?.profile_picture && (user?.full_name?.[0] || "U")}
             </Avatar>
             {!collapsed && (
-              <Box sx={{ minWidth: 0 }}>
+              <Box sx={{ minWidth: 0, flex: 1 }}>
                 <Typography
                   variant="subtitle2"
                   sx={{
                     color: "#fff",
-                    fontWeight: 600,
+                    fontWeight: 700,
                     whiteSpace: "nowrap",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
-                    fontSize: "0.8rem",
-                    lineHeight: 1.2
+                    fontSize: "1rem",
+                    lineHeight: 1.3,
+                    mb: 0.25
                   }}
                 >
                   {user?.full_name?.split(" ")[0] || "Usuario"}
@@ -280,10 +299,11 @@ const Dashboard = () => {
                 <Typography
                   variant="caption"
                   sx={{
-                    color: "rgba(255, 255, 255, 0.5)",
+                    color: "rgba(255, 255, 255, 0.6)",
                     display: "block",
-                    fontSize: "0.7rem",
-                    lineHeight: 1.2
+                    fontSize: "0.85rem",
+                    lineHeight: 1.3,
+                    fontWeight: 500
                   }}
                 >
                   {user?.role === "specialist" ? "Especialista" : user?.role === "business" ? "Negocio" : "Productor"}
@@ -357,7 +377,7 @@ const Dashboard = () => {
           PaperProps={{
             sx: {
               zIndex: 1302,
-              width: 180,
+              width: 220,
               borderRadius: "0 12px 12px 0",
               boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
               bgcolor: "#111827",

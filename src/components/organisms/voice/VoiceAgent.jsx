@@ -16,6 +16,8 @@ const VoiceAgent = () => {
   const audioRef = useRef(null);
   const analyserRef = useRef(null);
   const animationFrameRef = useRef(null);
+  const hasSpokenInitial = useRef(false);
+  const isProcessingRef = useRef(false);
 
   // Loop de análisis de audio en tiempo real
   useEffect(() => {
@@ -42,16 +44,34 @@ const VoiceAgent = () => {
     };
   }, [isListening, isSpeaking]);
 
+  // Efecto para hablar al entrar a la vista - solo una vez
+  useEffect(() => {
+    if (!hasSpokenInitial.current) {
+      hasSpokenInitial.current = true;
+      // Esperar un momento para que el componente esté completamente montado
+      const timer = setTimeout(() => {
+        if (!isSpeaking && !isProcessingRef.current) {
+          handleAIResponse("", true); // true indica que es el saludo inicial
+        }
+      }, 800);
+      
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
   useEffect(() => {
     // Configurar listeners del servicio de reconocimiento
-    speechRecognitionService.on("onResult", (text) => {
-      // Solo procesar si no estamos hablando y hay texto válido
-      if (!isSpeaking && text && text.trim().length > 0) {
+    const handleResult = (text) => {
+      // Solo procesar si no estamos hablando, no estamos procesando, y hay texto válido
+      // Y solo si el usuario activó el micrófono manualmente (isListening debe ser true)
+      if (!isSpeaking && !isProcessingRef.current && isListening && text && text.trim().length > 0) {
         setTranscript(text);
         // Procesar el texto y generar una respuesta con ElevenLabs
-        handleAIResponse(text);
+        handleAIResponse(text, false);
       }
-    });
+    };
+    
+    speechRecognitionService.on("onResult", handleResult);
 
     speechRecognitionService.on("onError", (err) => {
       if (err !== "no-speech") {
@@ -75,6 +95,12 @@ const VoiceAgent = () => {
     });
 
     return () => {
+      // Limpiar listeners
+      speechRecognitionService.on("onResult", null);
+      speechRecognitionService.on("onError", null);
+      speechRecognitionService.on("onStart", null);
+      speechRecognitionService.on("onEnd", null);
+      
       // Limpiar al desmontar
       if (isListening) {
         speechRecognitionService.stop();
@@ -84,15 +110,16 @@ const VoiceAgent = () => {
       }
       audioAnalysisService.cleanup();
     };
-  }, [isSpeaking]);
+  }, [isSpeaking, isListening]);
 
-  const handleAIResponse = async (userText) => {
-    // Evitar procesar si ya estamos hablando
-    if (isSpeaking) {
+  const handleAIResponse = async (userText, isInitialGreeting = false) => {
+    // Evitar procesar si ya estamos hablando o procesando
+    if (isSpeaking || isProcessingRef.current) {
       return;
     }
 
     try {
+      isProcessingRef.current = true;
       setIsSpeaking(true);
       setTranscript(""); // Limpiar transcript para no mostrar lo que dijo el usuario
       
@@ -102,24 +129,35 @@ const VoiceAgent = () => {
         setIsListening(false);
       }
       
-      // Generar respuesta de IA (por ahora una respuesta simple, pero puedes integrar con tu API de IA)
-      // TODO: Integrar con servicio de IA real para generar respuestas contextuales
+      // Generar respuesta de IA
       let aiResponse = "";
       
-      // Respuestas básicas según el contexto
-      const lowerText = userText.toLowerCase().trim();
-      
-      if (lowerText.includes("hola") || lowerText.includes("buenos días") || lowerText.includes("buenas tardes")) {
-        aiResponse = "Hola, ¿en qué puedo ayudarte hoy?";
-      } else if (lowerText.includes("adiós") || lowerText.includes("hasta luego") || lowerText.includes("chao")) {
-        aiResponse = "Hasta luego, que tengas un buen día.";
-      } else if (lowerText.includes("gracias")) {
-        aiResponse = "De nada, estoy aquí para ayudarte.";
-      } else if (lowerText.includes("ayuda") || lowerText.includes("ayúdame")) {
-        aiResponse = "Claro, puedo ayudarte con información sobre productos agrícolas, veterinarios y servicios relacionados con el agro. ¿Qué necesitas?";
+      if (isInitialGreeting) {
+        // Saludo inicial al entrar a la vista
+        const hour = new Date().getHours();
+        if (hour >= 6 && hour < 12) {
+          aiResponse = "Buenos días, soy AVA, tu asistente virtual. ¿En qué puedo ayudarte hoy?";
+        } else if (hour >= 12 && hour < 19) {
+          aiResponse = "Buenas tardes, soy AVA, tu asistente virtual. ¿En qué puedo ayudarte hoy?";
+        } else {
+          aiResponse = "Buenas noches, soy AVA, tu asistente virtual. ¿En qué puedo ayudarte hoy?";
+        }
       } else {
-        // Respuesta genérica sin repetir lo que dijo el usuario
-        aiResponse = "Entendido. ¿Hay algo más en lo que pueda ayudarte?";
+        // Respuestas básicas según el contexto
+        const lowerText = userText.toLowerCase().trim();
+        
+        if (lowerText.includes("hola") || lowerText.includes("buenos días") || lowerText.includes("buenas tardes")) {
+          aiResponse = "Hola, ¿en qué puedo ayudarte hoy?";
+        } else if (lowerText.includes("adiós") || lowerText.includes("hasta luego") || lowerText.includes("chao")) {
+          aiResponse = "Hasta luego, que tengas un buen día.";
+        } else if (lowerText.includes("gracias")) {
+          aiResponse = "De nada, estoy aquí para ayudarte.";
+        } else if (lowerText.includes("ayuda") || lowerText.includes("ayúdame")) {
+          aiResponse = "Claro, puedo ayudarte con información sobre productos agrícolas, veterinarios y servicios relacionados con el agro. ¿Qué necesitas?";
+        } else {
+          // Respuesta genérica sin repetir lo que dijo el usuario
+          aiResponse = "Entendido. ¿Hay algo más en lo que pueda ayudarte?";
+        }
       }
       
       // Generar audio con ElevenLabs
@@ -153,22 +191,18 @@ const VoiceAgent = () => {
         
         audioElement.onended = () => {
           setIsSpeaking(false);
+          isProcessingRef.current = false;
           analyserRef.current = null;
           audioRef.current = null;
           setAudioLevel(0);
-          // Reiniciar el reconocimiento después de que termine de hablar
-          // pero solo si el usuario no lo detuvo manualmente
-          setTimeout(() => {
-            if (!isListening && !isSpeaking) {
-              // No reiniciar automáticamente, esperar a que el usuario presione el micrófono
-            }
-          }, 500);
+          // NO reiniciar automáticamente el reconocimiento - esperar a que el usuario presione el micrófono
         };
       });
     } catch (err) {
       console.error("Error en respuesta de IA:", err);
       setError(`Error al generar respuesta: ${err.message}`);
       setIsSpeaking(false);
+      isProcessingRef.current = false;
       analyserRef.current = null;
       setAudioLevel(0);
     }
@@ -176,35 +210,48 @@ const VoiceAgent = () => {
 
   const toggleMic = async () => {
     try {
-      // No permitir iniciar si estamos hablando
-      if (isSpeaking) {
+      // No permitir iniciar si estamos hablando o procesando
+      if (isSpeaking || isProcessingRef.current) {
         setError("Espera a que termine de hablar");
         return;
       }
 
       if (isListening) {
+        // Detener reconocimiento
         speechRecognitionService.stop();
         setIsListening(false);
         analyserRef.current = null;
         setAudioLevel(0);
         audioAnalysisService.cleanup();
         setTranscript(""); // Limpiar transcript al detener
+        setError(null);
       } else {
         // Limpiar cualquier error previo
         setError(null);
         setTranscript(""); // Limpiar transcript al iniciar
         
+        // Asegurar que no estamos hablando antes de iniciar
+        if (audioRef.current) {
+          try {
+            audioRef.current.pause();
+            audioRef.current = null;
+          } catch (e) {}
+        }
+        
         // Configurar análisis de audio del micrófono para el pulso
         const analyser = await audioAnalysisService.setupMicrophoneAnalysis();
         analyserRef.current = analyser;
         
+        // Iniciar reconocimiento de voz - solo cuando el usuario presiona el micrófono
         speechRecognitionService.start();
       }
     } catch (err) {
+      console.error("Error en toggleMic:", err);
       setError(`Error al ${isListening ? "detener" : "iniciar"} el micrófono: ${err.message}`);
       setIsListening(false);
       analyserRef.current = null;
       setAudioLevel(0);
+      audioAnalysisService.cleanup();
     }
   };
 

@@ -566,8 +566,8 @@ export default function Chat() {
 
             {/* Sidebar - Room List */}
             <Paper sx={{
-                width: { xs: '100%', sm: '32%', md: '30%', lg: '28%' },
-                maxWidth: { xs: '100%', sm: 380, md: 360, lg: 340 },
+                width: { xs: '100%', sm: '28%', md: '26%', lg: '24%' },
+                maxWidth: { xs: '100%', sm: 500, md: 500, lg: 500 },
                 minWidth: { xs: 0, sm: 300, md: 320 },
                 height: { xs: selectedRoom ? '0' : '100%', md: '100%' },
                 borderRight: { md: 1 },

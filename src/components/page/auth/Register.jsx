@@ -117,6 +117,18 @@ const RegisterPage = () => {
     try {
       const res = await authAPI.register(formData);
       console.log("Registro exitoso:", res);
+      
+      // Auto-join communities based on role (best effort, don't block registration)
+      if (res.user && res.user.role) {
+        try {
+          const { autoJoinCommunitiesByRole } = await import('../../../utils/Foro/autoJoinCommunities');
+          await autoJoinCommunitiesByRole(res.user.role);
+        } catch (err) {
+          console.warn('Failed to auto-join communities:', err);
+          // Don't block registration if this fails
+        }
+      }
+      
       navigate("/login");
     } catch (err) {
       console.error("Error al registrar:", err);

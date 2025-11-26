@@ -109,3 +109,4 @@ export default function AudioWaveform({ spectrum = [], width = 120, height = 36,
 
 
 
+
