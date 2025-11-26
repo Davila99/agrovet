@@ -2,7 +2,7 @@
 import env from './env';
 import authClient from './authClient';
 
-const DEFAULT_BASE = "http://127.0.0.1:8000/api";
+const DEFAULT_BASE = "https://agrovet.pythonanywhere.com/api";
 const BASE_URL = (import.meta && import.meta.env && import.meta.env.VITE_GATEWAY_URL) || DEFAULT_BASE;
 // Allow runtime override via window.__AGROVET_API_BASE to support tests or embedding
 
