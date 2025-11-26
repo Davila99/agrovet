@@ -10,8 +10,7 @@ const Footer = () => {
         color: "white",
         py: 4,
         px: { xs: 2, sm: 4 },
-      }}
-    >
+      }}>
       <Box
         sx={{
           display: "grid",
@@ -21,8 +20,7 @@ const Footer = () => {
             xs: "1fr",
             sm: "4fr 5fr 3fr",
           },
-        }}
-      >
+        }}>
         <Box>
           <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
             Contacto
@@ -39,8 +37,7 @@ const Footer = () => {
             <Link
               href="mailto:kenzad187@gmail.com"
               color="inherit"
-              underline="none"
-            >
+              underline="none">
               kenzad187@gmail.com
             </Link>
           </Typography>
@@ -57,30 +54,30 @@ const Footer = () => {
             en tu zona.
           </Typography>
         </Box>
+        {/* 
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+                Síguenos
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 0.5 }}>
+                <Link
+                  href="https://www.instagram.com/agrovets12/"
+                  target="_blank"
+                  rel="noopener"
+                  color="inherit"
+                  underline="hover"
+                >
+                  Instagram: @agrovets12
+                </Link>
+              </Typography>
 
-        <Box>
-          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
-            Síguenos
-          </Typography>
-          <Typography variant="body2" sx={{ mb: 0.5 }}>
-            <Link
-              href="https://www.instagram.com/agrovets12/"
-              target="_blank"
-              rel="noopener"
-              color="inherit"
-              underline="hover"
-            >
-              Instagram: @agrovets12
-            </Link>
-          </Typography>
-
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="body2">
-              © {new Date().getFullYear()} AgroVets. Todos los derechos
-              reservados.
-            </Typography>
-          </Box>
-        </Box>
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="body2">
+                  © {new Date().getFullYear()} AgroVets. Todos los derechos
+                  reservados.
+                </Typography>
+              </Box>
+            </Box> */}
       </Box>
     </Box>
   );

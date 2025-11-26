@@ -80,8 +80,7 @@ const Navbar = () => {
           sx={{
             bgcolor: "transparent",
             zIndex: (theme) => theme.zIndex.appBar,
-          }}
-        >
+          }}>
           <Box
             sx={{
               margin: 1,
@@ -89,23 +88,22 @@ const Navbar = () => {
               borderRadius: 4,
               boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
               px: { xs: 1, sm: 3 },
-            }}
-          >
+            }}>
             <Toolbar
               sx={{
                 justifyContent: "space-between",
                 px: { xs: 0, sm: 2 },
-              }}
-            >
+              }}>
               {/* Logo */}
               <Box
                 sx={{
                   display: "flex",
                   alignItems: "center",
                   flex: { xs: 1, md: "none" },
-                }}
-              >
-                <RouterLink to="/" style={{ display: "flex", alignItems: "center" }}>
+                }}>
+                <RouterLink
+                  to="/"
+                  style={{ display: "flex", alignItems: "center" }}>
                   <img
                     src={logo}
                     alt="Logo AgroVets"
@@ -121,8 +119,7 @@ const Navbar = () => {
                   flex: 1,
                   display: { xs: "none", md: "flex" },
                   justifyContent: "center",
-                }}
-              >
+                }}>
                 <DesktopMenu
                   comunidadMenuAnchor={comunidadMenuAnchor}
                   openComunidadMenu={openComunidadMenu}
@@ -140,11 +137,13 @@ const Navbar = () => {
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
-                        navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+                        navigate(
+                          `/search?q=${encodeURIComponent(searchQuery)}`
+                        );
                         setSearchQuery("");
                       }
                     }}
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
+                    sx={{ "& .MuiOutlinedInput-root": { borderRadius: 3 } }}
                     InputProps={{
                       endAdornment: (
                         <InputAdornment position="end">
@@ -155,8 +154,7 @@ const Navbar = () => {
                                 `/search?q=${encodeURIComponent(searchQuery)}`
                               );
                               setSearchQuery("");
-                            }}
-                          >
+                            }}>
                             <SearchIcon fontSize="small" />
                           </IconButton>
                         </InputAdornment>
@@ -173,9 +171,19 @@ const Navbar = () => {
                 sx={{
                   alignItems: "center",
                   display: { xs: "none", md: "flex" },
-                }}
-              >
-                {isLoggedIn && !location.pathname?.startsWith('/chat') ? (
+                }}>
+                {isLoggedIn && (
+                  <Button
+                    variant="outline"
+                    size="md"
+                    LinkComponent={RouterLink}
+                    to="/dashboard"
+                    sx={{ borderRadius: 3 }}>
+                    Dashboard
+                  </Button>
+                )}
+
+                {isLoggedIn && !location.pathname?.startsWith("/chat") ? (
                   // Hide the user menu when on the chat page because its popover
                   // overlapped important UI (requested by the user). If you want
                   // to re-enable the menu on chat, remove the pathname guard.
@@ -192,8 +200,7 @@ const Navbar = () => {
                       size="md"
                       LinkComponent={RouterLink}
                       to="/login"
-                      sx={{ borderRadius: 3 }}
-                    >
+                      sx={{ borderRadius: 3 }}>
                       Iniciar sesión
                     </Button>
                     <Button
@@ -201,8 +208,7 @@ const Navbar = () => {
                       size="md"
                       LinkComponent={RouterLink}
                       to="/register"
-                      sx={{ borderRadius: 3 }}
-                    >
+                      sx={{ borderRadius: 3 }}>
                       Registrarse
                     </Button>
                   </>
@@ -215,14 +221,12 @@ const Navbar = () => {
                   display: { xs: "flex", md: "none" },
                   ml: 1,
                   alignItems: "center",
-                }}
-              >
+                }}>
                 {/* Mobile Menu Button */}
                 <IconButton
                   onClick={toggleDrawer(true)}
                   color="primary"
-                  size="large"
-                >
+                  size="large">
                   <MenuIcon />
                 </IconButton>
               </Box>

@@ -31,7 +31,12 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
         <Router>
-          <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              minHeight: "100vh",
+            }}>
             <Navbar />
             <Box component="main" sx={{ flex: 1 }}>
               <Routes>
@@ -83,7 +88,6 @@ function App() {
                 <Route path="/foro/*" element={<ForoRoutes />} />
               </Routes>
             </Box>
-            <Footer />
           </Box>
         </Router>
       </ThemeProvider>

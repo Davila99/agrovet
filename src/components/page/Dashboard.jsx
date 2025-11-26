@@ -343,7 +343,15 @@ const Dashboard = () => {
   );
 
   return (
-    <Box sx={{ display: "flex", height: "100vh", bgcolor: "#f4f6f8", overflow: "hidden", width: "100%", maxWidth: "100vw" }}>
+    <Box
+      sx={{
+        display: "flex",
+        height: "100vh",
+        bgcolor: "#f4f6f8",
+        overflow: "hidden",
+        width: "100%",
+        maxWidth: "100vw",
+      }}>
       <CssBaseline />
 
       {/* Mobile Menu Button */}
@@ -363,10 +371,9 @@ const Dashboard = () => {
               bgcolor: "rgba(10, 25, 41, 1)",
             },
             "& .MuiSvgIcon-root": {
-              fontSize: 20
-            }
-          }}
-        >
+              fontSize: 20,
+            },
+          }}>
           <MenuIcon />
         </IconButton>
       )}
@@ -392,8 +399,7 @@ const Dashboard = () => {
               bgcolor: "#111827",
               borderRight: "1px solid rgba(255, 255, 255, 0.05)",
             },
-          }}
-        >
+          }}>
           {Sidebar}
         </Drawer>
       ) : (
@@ -401,9 +407,8 @@ const Dashboard = () => {
           sx={{
             width: sidebarWidth,
             transition: "width 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-            flexShrink: 0
-          }}
-        >
+            flexShrink: 0,
+          }}>
           {Sidebar}
         </Box>
       )}
@@ -421,9 +426,9 @@ const Dashboard = () => {
           maxWidth: isMobile ? "100%" : `calc(100% - ${sidebarWidth}px)`,
           height: "100vh",
           boxSizing: "border-box",
-          transition: "width 0.3s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-        }}
-      >
+          transition:
+            "width 0.3s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+        }}>
         <Box
           sx={{
             flex: 1,
@@ -434,18 +439,18 @@ const Dashboard = () => {
             maxWidth: "100%",
             height: "100%",
             boxSizing: "border-box",
-          }}
-        >
+          }}>
           {selected === "chat" && (
-            <Box sx={{
-              width: "100%",
-              height: "100%",
-              minWidth: 0,
-              maxWidth: "100%",
-              overflow: "hidden",
-              display: "flex",
-              flexDirection: "column",
-            }}>
+            <Box
+              sx={{
+                width: "100%",
+                height: "100%",
+                minWidth: 0,
+                maxWidth: "100%",
+                overflow: "hidden",
+                display: "flex",
+                flexDirection: "column",
+              }}>
               <Chat />
             </Box>
           )}
@@ -455,8 +460,7 @@ const Dashboard = () => {
               sx={{
                 flex: 1,
                 overflow: "auto",
-              }}
-            >
+              }}>
               <ForoPage />
             </Paper>
           )}
@@ -466,8 +470,7 @@ const Dashboard = () => {
               sx={{
                 flex: 1,
                 overflow: "auto",
-              }}
-            >
+              }}>
               <AddPage />
             </Paper>
           )}
@@ -479,23 +482,26 @@ const Dashboard = () => {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-              }}
-            >
-              <Typography variant="body1" sx={{ fontSize: "0.875rem" }} color="text.secondary">
+              }}>
+              <Typography
+                variant="body1"
+                sx={{ fontSize: "0.875rem" }}
+                color="text.secondary">
                 Sección Products en construcción 📦
               </Typography>
             </Paper>
           )}
           {selected === "ia" && (
-            <Box sx={{
-              width: "100%",
-              height: "100%",
-              minWidth: 0,
-              maxWidth: "100%",
-              overflow: "hidden",
-              display: "flex",
-              flexDirection: "column",
-            }}>
+            <Box
+              sx={{
+                width: "100%",
+                height: "100%",
+                minWidth: 0,
+                maxWidth: "100%",
+                overflow: "hidden",
+                display: "flex",
+                flexDirection: "column",
+              }}>
               <AIAgentPage />
             </Box>
           )}
@@ -510,10 +516,10 @@ const Dashboard = () => {
             px: 1.5,
             textAlign: "center",
             borderTop: "1px solid rgba(255, 255, 255, 0.1)",
-          }}
-        >
+          }}>
           <Typography variant="caption" sx={{ fontSize: "0.65rem" }}>
-            © {new Date().getFullYear()} AgroVets. Todos los derechos reservados.
+            © {new Date().getFullYear()} AgroVets. Todos los derechos
+            reservados.
           </Typography>
         </Box>
       </Box>
