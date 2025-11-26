@@ -596,7 +596,53 @@ export default function Chat() {
                         const room = rooms.find(r => String(r.id) === String(roomId));
                         if (room) setSelectedRoom(room);
                     }}
-                    openOneToOne={() => { }}
+                    openOneToOne={async (specialist) => {
+                        try {
+                            if (!specialist || !specialist.id) {
+                                console.warn('openOneToOne: specialist inválido', specialist);
+                                return null;
+                            }
+
+                            const specialistId = parseInt(specialist.id);
+                            if (!specialistId || !currentUserId) {
+                                console.warn('openOneToOne: IDs inválidos', { specialistId, currentUserId });
+                                return null;
+                            }
+
+                            // Buscar si ya existe una sala con este especialista
+                            const existingRoom = rooms.find(r =>
+                                r.participants?.some(p => p.id === specialistId)
+                            );
+
+                            if (existingRoom) {
+                                // Si existe, seleccionarla
+                                setSelectedRoom(existingRoom);
+                                return existingRoom;
+                            } else {
+                                // Si no existe, crear una nueva sala
+                                const newRoom = await chatService.getOrCreatePrivateRoom(
+                                    parseInt(currentUserId),
+                                    specialistId,
+                                    token
+                                );
+                                
+                                // Recargar las salas para tener la lista actualizada
+                                await loadRooms(token);
+                                
+                                // Seleccionar la nueva sala
+                                setSelectedRoom(newRoom);
+                                
+                                // Cambiar a la vista de chats
+                                setViewMode('chats');
+                                
+                                return newRoom;
+                            }
+                        } catch (error) {
+                            console.error('Error en openOneToOne:', error);
+                            setError('Error al abrir la conversación. Por favor, intenta de nuevo.');
+                            return null;
+                        }
+                    }}
                     isMd={true}
                     getCurrentUserId={() => currentUserId}
                     computeLastTsForRoom={computeLastTsForRoom}
