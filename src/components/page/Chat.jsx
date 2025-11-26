@@ -548,146 +548,173 @@ export default function Chat() {
 
 
     return (
-        <Box sx={{
-            display: 'flex',
-            height: '100%',
-            width: '100%',
-            maxWidth: '100%',
-            overflow: 'hidden',
-            bgcolor: '#f0f0f0',
-            flexDirection: { xs: 'column', md: 'row' },
-            position: 'relative',
-            minWidth: 0,
-            boxSizing: 'border-box',
-            flexShrink: 0,
+      <Box
+        sx={{
+          display: "flex",
+          height: "100%",
+          width: "100%",
+          maxWidth: "100%",
+          overflow: "hidden",
+          bgcolor: "#f0f0f0",
+          flexDirection: { xs: "column", md: "row" },
+          position: "relative",
+          minWidth: 0,
+          boxSizing: "border-box",
+          flexShrink: 0,
         }}>
-            <audio ref={writingAudioRef} src={writingSound} preload="auto" />
-            <audio ref={notificationAudioRef} src={notificationSound} preload="auto" />
+        <audio ref={writingAudioRef} src={writingSound} preload="auto" />
+        <audio
+          ref={notificationAudioRef}
+          src={notificationSound}
+          preload="auto"
+        />
 
-            {/* Sidebar - Room List */}
-            <Paper sx={{
-                width: { xs: '100%', sm: '28%', md: '26%', lg: '24%' },
-                maxWidth: { xs: '100%', sm: 500, md: 500, lg: 500 },
-                minWidth: { xs: 0, sm: 300, md: 320 },
-                height: { xs: selectedRoom ? '0' : '100%', md: '100%' },
-                borderRight: { md: 1 },
-                borderBottom: { xs: selectedRoom ? 1 : 0, md: 0 },
-                borderColor: 'divider',
-                display: { xs: selectedRoom ? 'none' : 'flex', md: 'flex' },
-                flexDirection: 'column',
-                overflow: 'hidden',
-                bgcolor: '#ffffff',
-                borderRadius: 0,
-                position: { xs: 'absolute', md: 'relative' },
-                zIndex: { xs: 1300, md: 1 },
-                top: { xs: 0, md: 'auto' },
-                left: { xs: 0, md: 'auto' },
-                flexShrink: 0,
-                boxSizing: 'border-box',
+        {/* Sidebar - Room List */}
+        <Paper
+          sx={{
+            width: { xs: "100%", sm: "28%", md: "26%", lg: "24%" },
+            maxWidth: { xs: "100%", sm: 500, md: 500, lg: 500 },
+            minWidth: { xs: 0, sm: 300, md: 320 },
+            height: { xs: selectedRoom ? "0" : "100%", md: "100%" },
+            borderRight: { md: 1 },
+            borderBottom: { xs: selectedRoom ? 1 : 0, md: 0 },
+            borderColor: "divider",
+            display: { xs: selectedRoom ? "none" : "flex", md: "flex" },
+            flexDirection: "column",
+            overflow: "hidden",
+            bgcolor: "#ffffff",
+            borderRadius: 0,
+            position: { xs: "absolute", md: "relative" },
+            zIndex: { xs: 1300, md: 1 },
+            top: { xs: 0, md: "auto" },
+            left: { xs: 0, md: "auto" },
+            flexShrink: 0,
+            boxSizing: "border-box",
+          }}>
+          <RoomList
+            rooms={rooms}
+            activeId={selectedRoom?.id}
+            viewMode={viewMode}
+            setViewMode={setViewMode}
+            specialistSearch={specialistSearch}
+            setSpecialistSearch={setSpecialistSearch}
+            onSelectChat={(roomId) => {
+              const room = rooms.find((r) => String(r.id) === String(roomId));
+              if (room) setSelectedRoom(room);
+            }}
+            openOneToOne={async (specialist) => {
+              try {
+                if (!specialist || !specialist.id) {
+                  console.warn("openOneToOne: specialist inválido", specialist);
+                  return null;
+                }
+
+                const specialistId = parseInt(specialist.id);
+                if (!specialistId || !currentUserId) {
+                  console.warn("openOneToOne: IDs inválidos", {
+                    specialistId,
+                    currentUserId,
+                  });
+                  return null;
+                }
+
+                // Buscar si ya existe una sala con este especialista
+                const existingRoom = rooms.find((r) =>
+                  r.participants?.some((p) => p.id === specialistId)
+                );
+
+                if (existingRoom) {
+                  // Si existe, seleccionarla
+                  setSelectedRoom(existingRoom);
+                  return existingRoom;
+                } else {
+                  // Si no existe, crear una nueva sala
+                  const newRoom = await chatService.getOrCreatePrivateRoom(
+                    parseInt(currentUserId),
+                    specialistId,
+                    token
+                  );
+
+                  // Recargar las salas para tener la lista actualizada
+                  await loadRooms(token);
+
+                  // Seleccionar la nueva sala
+                  setSelectedRoom(newRoom);
+
+                  // Cambiar a la vista de chats
+                  setViewMode("chats");
+
+                  return newRoom;
+                }
+              } catch (error) {
+                console.error("Error en openOneToOne:", error);
+                setError(
+                  "Error al abrir la conversación. Por favor, intenta de nuevo."
+                );
+                return null;
+              }
+            }}
+            isMd={true}
+            getCurrentUserId={() => currentUserId}
+            computeLastTsForRoom={computeLastTsForRoom}
+            isParticipantOnline={isUserOnline}
+            loading={loading}
+            error={error}
+            usersMap={usersMap}
+          />
+        </Paper>
+
+        {/* Chat Area */}
+        {selectedRoom ? (
+          <Box
+            sx={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              minWidth: 0,
+              // On mobile make the chat area take full viewport height so MessageList can scroll
+              height: { xs: "100vh", md: "100%" },
+              overflow: "hidden",
+              // Reserve space for the fixed ChatInput so messages are not hidden
+              pb: { xs: "72px", md: 0 },
             }}>
-                <RoomList
-                    rooms={rooms}
-                    activeId={selectedRoom?.id}
-                    viewMode={viewMode}
-                    setViewMode={setViewMode}
-                    specialistSearch={specialistSearch}
-                    setSpecialistSearch={setSpecialistSearch}
-                    onSelectChat={(roomId) => {
-                        const room = rooms.find(r => String(r.id) === String(roomId));
-                        if (room) setSelectedRoom(room);
-                    }}
-                    openOneToOne={async (specialist) => {
-                        try {
-                            if (!specialist || !specialist.id) {
-                                console.warn('openOneToOne: specialist inválido', specialist);
-                                return null;
-                            }
-
-                            const specialistId = parseInt(specialist.id);
-                            if (!specialistId || !currentUserId) {
-                                console.warn('openOneToOne: IDs inválidos', { specialistId, currentUserId });
-                                return null;
-                            }
-
-                            // Buscar si ya existe una sala con este especialista
-                            const existingRoom = rooms.find(r =>
-                                r.participants?.some(p => p.id === specialistId)
-                            );
-
-                            if (existingRoom) {
-                                // Si existe, seleccionarla
-                                setSelectedRoom(existingRoom);
-                                return existingRoom;
-                            } else {
-                                // Si no existe, crear una nueva sala
-                                const newRoom = await chatService.getOrCreatePrivateRoom(
-                                    parseInt(currentUserId),
-                                    specialistId,
-                                    token
-                                );
-                                
-                                // Recargar las salas para tener la lista actualizada
-                                await loadRooms(token);
-                                
-                                // Seleccionar la nueva sala
-                                setSelectedRoom(newRoom);
-                                
-                                // Cambiar a la vista de chats
-                                setViewMode('chats');
-                                
-                                return newRoom;
-                            }
-                        } catch (error) {
-                            console.error('Error en openOneToOne:', error);
-                            setError('Error al abrir la conversación. Por favor, intenta de nuevo.');
-                            return null;
-                        }
-                    }}
-                    isMd={true}
-                    getCurrentUserId={() => currentUserId}
-                    computeLastTsForRoom={computeLastTsForRoom}
-                    isParticipantOnline={isUserOnline}
-                    loading={loading}
-                    error={error}
-                    usersMap={usersMap}
-                />
-            </Paper>
-
-            {/* Chat Area */}
-            {selectedRoom ? (
-                <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                    <ChatHeader
-                        participant={participant}
-                        isOnline={participantOnline}
-                        wsConnected={wsConnected}
-                        onBack={() => setSelectedRoom(null)}
-                        showBack={true}
-                        usersMap={usersMap}
-                    />
-                    <MessageList
-                        messages={messages}
-                        currentUserId={currentUserId}
-                    />
-                    <ChatInput
-                        text={text}
-                        setText={setText}
-                        handleSend={handleSend}
-                        handleKeyDown={handleKeyDown}
-                        onAttach={handleAttach}
-                        pendingAttachment={pendingAttachment}
-                        onCancelAttachment={handleCancelAttachment}
-                        onConfirmAttachment={handleConfirmAttachment}
-                        sending={sending}
-                        uploadingAttachment={uploadingAttachment}
-                    />
-                </Box>
-            ) : (
-                <Box sx={{ p: 4, textAlign: 'center', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Typography color="text.secondary">
-                        Selecciona una conversación o inicia una nueva
-                    </Typography>
-                </Box>
-            )}
-        </Box>
+            <ChatHeader
+              participant={participant}
+              isOnline={participantOnline}
+              wsConnected={wsConnected}
+              onBack={() => setSelectedRoom(null)}
+              showBack={true}
+              usersMap={usersMap}
+            />
+            <MessageList messages={messages} currentUserId={currentUserId} />
+            <ChatInput
+              text={text}
+              setText={setText}
+              handleSend={handleSend}
+              handleKeyDown={handleKeyDown}
+              onAttach={handleAttach}
+              pendingAttachment={pendingAttachment}
+              onCancelAttachment={handleCancelAttachment}
+              onConfirmAttachment={handleConfirmAttachment}
+              sending={sending}
+              uploadingAttachment={uploadingAttachment}
+            />
+          </Box>
+        ) : (
+          <Box
+            sx={{
+              p: 4,
+              textAlign: "center",
+              flex: 1,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}>
+            <Typography color="text.secondary">
+              Selecciona una conversación o inicia una nueva
+            </Typography>
+          </Box>
+        )}
+      </Box>
     );
 }
