@@ -35,3 +35,5 @@ export default function Waveform({ waveformData = [], progress = 0, barWidth = 2
 
 
 
+
+

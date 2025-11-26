@@ -115,48 +115,7 @@ const BASE_URL = (import.meta && import.meta.env && import.meta.env.VITE_GATEWAY
       try {
         data = text ? JSON.parse(text) : {};
       } catch (e) {
-        // Si no es JSON, intentar extraer información del HTML de error de Django
-        if (text && typeof text === 'string' && text.includes('<!DOCTYPE html>')) {
-          // Intentar extraer el mensaje de error de Django
-          const errorMatch = text.match(/<h1[^>]*>(.*?)<\/h1>/i) || text.match(/<title[^>]*>(.*?)<\/title>/i);
-          // Buscar el traceback o mensaje de error en <pre> o <li>
-          const tracebackMatch = text.match(/<pre[^>]*class="python-tb"[^>]*>(.*?)<\/pre>/is) || 
-                                 text.match(/<pre[^>]*>(.*?)<\/pre>/is);
-          const detailMatch = text.match(/<li[^>]*>(.*?)<\/li>/is) || 
-                             text.match(/<p[^>]*class="errormsg"[^>]*>(.*?)<\/p>/is) ||
-                             text.match(/<div[^>]*class="errormsg"[^>]*>(.*?)<\/div>/is);
-          
-          // Extraer información del traceback si está disponible
-          let errorDetail = '';
-          if (tracebackMatch) {
-            const traceback = tracebackMatch[1].replace(/<[^>]*>/g, '').trim();
-            // Tomar las primeras líneas del traceback
-            const lines = traceback.split('\n').slice(0, 10).join('\n');
-            errorDetail = lines.substring(0, 1000);
-          } else if (detailMatch) {
-            errorDetail = detailMatch[1].replace(/<[^>]*>/g, '').trim().substring(0, 500);
-          }
-          
-          data = {
-            raw: text.substring(0, 2000), // Aumentar para ver más del HTML
-            error: errorMatch ? errorMatch[1].replace(/<[^>]*>/g, '').trim() : 'Internal Server Error',
-            detail: errorDetail || undefined,
-            htmlError: true
-          };
-          
-          // Log detallado del error HTML para debugging
-          try {
-            console.error('[httpClient] HTML Error Response:', {
-              status: __res.status,
-              errorTitle: data.error,
-              detail: data.detail,
-              url: url,
-              htmlPreview: text.substring(0, 500)
-            });
-          } catch (logErr) {}
-        } else {
-          data = { raw: text };
-        }
+        data = { raw: text };
       }
 
       
@@ -194,49 +153,13 @@ const BASE_URL = (import.meta && import.meta.env && import.meta.env.VITE_GATEWAY
           }
         }
         try {
-          // Extraer información más detallada del error
-          let errorInfo = {
+          console.error('[httpClient] ❌ API error', {
             status: __res.status,
             statusText: __res.statusText,
             body: data,
             endpoint: url,
-          };
-          
-          // Si es un error HTML, intentar extraer más información
-          if (data.htmlError && data.raw) {
-            const htmlText = data.raw;
-            // Buscar el traceback completo
-            const tracebackMatch = htmlText.match(/<pre[^>]*class="python-tb"[^>]*>([\s\S]*?)<\/pre>/i) ||
-                                   htmlText.match(/<pre[^>]*>([\s\S]*?)<\/pre>/i);
-            if (tracebackMatch) {
-              const traceback = tracebackMatch[1].replace(/<[^>]*>/g, '').trim();
-              // Tomar las últimas líneas del traceback (donde está el error real)
-              const lines = traceback.split('\n');
-              const lastLines = lines.slice(-15).join('\n');
-              errorInfo.traceback = lastLines.substring(0, 2000);
-              // También agregar el traceback al objeto data para que esté disponible en e.body
-              data.traceback = lastLines.substring(0, 2000);
-            }
-            
-            // Buscar mensajes de error específicos
-            const errorMsgMatch = htmlText.match(/<li[^>]*>(.*?)<\/li>/gi);
-            if (errorMsgMatch) {
-              errorInfo.errorMessages = errorMsgMatch.slice(0, 5).map(m => m.replace(/<[^>]*>/g, '').trim());
-            }
-          }
-          
-          console.error('[httpClient] ❌ API error', errorInfo);
-          
-          // Log adicional para errores HTML - mostrar información directamente
-          if (data.htmlError) {
-            console.error('🔍 [httpClient] HTML Error Details:');
-            console.error('   Error:', data.error);
-            console.error('   Detail:', data.detail);
-            if (errorInfo.traceback) {
-              console.error('   Traceback:', errorInfo.traceback);
-            }
-            console.error('   HTML Preview:', text.substring(0, 1000));
-          }
+            rawResponse: text,
+          });
         } catch (e) {}
 
         const message = data.detail || data.error || data.message || `HTTP ${__res.status} ${__res.statusText}`;
@@ -262,30 +185,6 @@ const BASE_URL = (import.meta && import.meta.env && import.meta.env.VITE_GATEWAY
         err.raw = text;
         throw err;
       }
-      
-      // Log detallado para debugging de portfolio
-      if (url.includes('/profiles/specialists/') && __res.ok) {
-        console.log('='.repeat(80));
-        console.log('[httpClient] 📥 RESPUESTA DEL BACKEND (PATCH/GET specialist):');
-        console.log('[httpClient] URL:', url);
-        console.log('[httpClient] Status:', __res.status);
-        console.log('[httpClient] Response data:', JSON.stringify(data, null, 2));
-        if (data.work_images_full) {
-          console.log('[httpClient] ✅ work_images_full encontrado:', data.work_images_full);
-          console.log('[httpClient] ✅ work_images_full length:', data.work_images_full?.length);
-          if (Array.isArray(data.work_images_full)) {
-            console.log('[httpClient] ✅ work_images_full items:', data.work_images_full.map(item => ({
-              id: item?.id,
-              name: item?.name,
-              url: item?.url
-            })));
-          }
-        } else {
-          console.log('[httpClient] ⚠️ work_images_full NO encontrado en la respuesta');
-        }
-        console.log('='.repeat(80));
-      }
-      
       return data;
     } catch (err) {
     try {
@@ -368,16 +267,6 @@ const BASE_URL = (import.meta && import.meta.env && import.meta.env.VITE_GATEWAY
   };
 
   export default httpClient;
-
-  // Helper function to create auth headers
-  export function authHeaders(token) {
-    if (!token) return {};
-    // Remove 'Bearer ' prefix if present, then add it back
-    const cleanToken = token.replace(/^Bearer\s*/i, '').trim();
-    return {
-      Authorization: `Bearer ${cleanToken}`
-    };
-  }
 
   export function clearServiceDownFlag() {
     if (typeof window !== 'undefined') {

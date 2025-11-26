@@ -36,6 +36,15 @@ const Dashboard = () => {
   const isMobile = useMediaQuery("(max-width:900px)");
   const navigate = useNavigate();
 
+  // Leer tab de la URL al montar
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tab = urlParams.get("tab");
+    if (tab === "ava" || tab === "ia") {
+      setSelected("ia");
+    }
+  }, []);
+
   useEffect(() => {
     const token =
       typeof window !== "undefined" ? localStorage.getItem("token") : null;
