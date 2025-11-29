@@ -3,7 +3,7 @@ import { Box, Typography } from '@mui/material';
 import MessageItem from '../../molecules/chat/MessageItem';
 import PropTypes from 'prop-types';
 
-export default function MessageList({ messages, currentUserId, loading = false, isPrivateChat = false }) {
+export default function MessageList({ messages, currentUserId, loading = false, isPrivateChat = false, usersMap = {} }) {
     const messagesEndRef = useRef(null);
 
     // Auto-scroll removed as per user request
@@ -71,6 +71,7 @@ export default function MessageList({ messages, currentUserId, loading = false, 
                 currentUserId={currentUserId}
                 showAvatar={true}
                 isPrivateChat={isPrivateChat}
+                usersMap={usersMap}
               />
             );
           })

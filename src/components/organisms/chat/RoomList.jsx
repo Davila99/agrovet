@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   Box,
   List,
@@ -13,14 +13,21 @@ import {
   Button,
   Stack,
   Badge,
+  IconButton,
+  Menu,
+  MenuItem,
+  Chip,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
+import FilterListIcon from "@mui/icons-material/FilterList";
 import ImageIcon from "@mui/icons-material/Image";
 import MicIcon from "@mui/icons-material/Mic";
 import VideocamIcon from "@mui/icons-material/Videocam";
 import SpecialistsList from "../../page/Dashboard/SpecialistsList";
 import { resolveAvatar, cleanName } from "../../page/chat/chatUtils";
 import { usePresenceStore } from '../../../store/usePresenceStore';
+import VerificationBadge from '../../page/profile/molecules/VerificationBadge';
+import { useNavigate } from 'react-router-dom';
 
 export default function RoomList({
   rooms = [],
@@ -38,58 +45,102 @@ export default function RoomList({
   loading = false,
   error = null,
   usersMap = {},
+  professionFilter = null,
+  setProfessionFilter = null,
+  businessTypeFilter = null,
+  setBusinessTypeFilter = null,
 }) {
   const presenceUsers = usePresenceStore((s) => s.users || {});
   const [chatSearch, setChatSearch] = useState("");
+  const [filterAnchorEl, setFilterAnchorEl] = useState(null);
+  const filterOpen = Boolean(filterAnchorEl);
+  
+  // Debug: verificar que las funciones se reciban
+  useEffect(() => {
+    console.log('[RoomList] Props recibidos:', {
+      viewMode,
+      hasSetProfessionFilter: !!setProfessionFilter,
+      hasSetBusinessTypeFilter: !!setBusinessTypeFilter,
+      professionFilter,
+      businessTypeFilter,
+    });
+  }, [viewMode, setProfessionFilter, setBusinessTypeFilter, professionFilter, businessTypeFilter]);
 
-  // Filter rooms by search query
+  // Filter rooms by search query and business type filter
   const filteredRooms = useMemo(() => {
     if (viewMode !== "chats") return [];
-    if (!chatSearch) return rooms;
-    const query = chatSearch.toLowerCase();
-    return rooms.filter((room) => {
-      const parts = room?.participants || [];
-      const me = getCurrentUserId ? getCurrentUserId() : null;
-      let other = null;
-      if (Array.isArray(parts)) {
-        for (const p of parts) {
-          try {
-            const pid = p && (p.id || p.user_id || p.pk) ? (p.id || p.user_id || p.pk) : p;
-            if (pid && String(pid) !== String(me)) { other = p; break; }
-          } catch (e) { }
+    let filtered = rooms;
+    
+    // Aplicar filtro de tipo de negocio si está activo
+    if (businessTypeFilter) {
+      filtered = rooms.filter((room) => {
+        const parts = room?.participants || [];
+        const me = getCurrentUserId ? getCurrentUserId() : null;
+        let other = null;
+        if (Array.isArray(parts)) {
+          for (const p of parts) {
+            try {
+              const pid = p && (p.id || p.user_id || p.pk) ? (p.id || p.user_id || p.pk) : p;
+              if (pid && String(pid) !== String(me)) { other = p; break; }
+            } catch (e) {}
+          }
         }
-      }
-      // Get display name with multiple fallbacks
-      let displayName = '';
-      if (other) {
-        displayName = other.full_name ||
-          other.name ||
-          other.username ||
-          other.display_name ||
-          (other.first_name && other.last_name ? `${other.first_name} ${other.last_name}` : other.first_name) ||
-          other.email?.split('@')[0] ||
-          '';
-      }
-
-      // Fallback to room name or last message sender
-      if (!displayName) {
-        if (room.last_message && room.last_message.sender) {
-          const sender = room.last_message.sender;
-          displayName = sender.full_name ||
-            sender.name ||
-            sender.username ||
-            sender.display_name ||
-            (sender.first_name && sender.last_name ? `${sender.first_name} ${sender.last_name}` : sender.first_name) ||
+        const otherId = other && (other.id || other.user_id || other.pk) ? (other.id || other.user_id || other.pk) : null;
+        const userData = otherId && usersMap[otherId] ? usersMap[otherId] : (other || {});
+        const businessType = userData?.businessman_profile?.business_type;
+        return businessType === businessTypeFilter;
+      });
+    }
+    
+    // Aplicar filtro de búsqueda si hay texto
+    if (chatSearch) {
+      const query = chatSearch.toLowerCase();
+      filtered = filtered.filter((room) => {
+        const parts = room?.participants || [];
+        const me = getCurrentUserId ? getCurrentUserId() : null;
+        let other = null;
+        if (Array.isArray(parts)) {
+          for (const p of parts) {
+            try {
+              const pid = p && (p.id || p.user_id || p.pk) ? (p.id || p.user_id || p.pk) : p;
+              if (pid && String(pid) !== String(me)) { other = p; break; }
+            } catch (e) {}
+          }
+        }
+        // Get display name with multiple fallbacks
+        let displayName = '';
+        if (other) {
+          displayName = other.full_name ||
+            other.name ||
+            other.username ||
+            other.display_name ||
+            (other.first_name && other.last_name ? `${other.first_name} ${other.last_name}` : other.first_name) ||
+            other.email?.split('@')[0] ||
             '';
         }
+
+        // Fallback to room name or last message sender
         if (!displayName) {
-          displayName = room.name || `Chat ${room.id}`;
+          if (room.last_message && room.last_message.sender) {
+            const sender = room.last_message.sender;
+            displayName = sender.full_name ||
+              sender.name ||
+              sender.username ||
+              sender.display_name ||
+              (sender.first_name && sender.last_name ? `${sender.first_name} ${sender.last_name}` : sender.first_name) ||
+              '';
+          }
+          if (!displayName) {
+            displayName = room.name || `Chat ${room.id}`;
+          }
         }
-      }
-      const lastMsg = room.last_message?.text || room.last_message?.content || room.lastMessage || "";
-      return displayName.toLowerCase().includes(query) || lastMsg.toLowerCase().includes(query);
-    });
-  }, [rooms, chatSearch, viewMode, getCurrentUserId]);
+        const lastMsg = room.last_message?.text || room.last_message?.content || room.lastMessage || "";
+        return displayName.toLowerCase().includes(query) || lastMsg.toLowerCase().includes(query);
+      });
+    }
+    
+    return filtered;
+  }, [rooms, chatSearch, viewMode, getCurrentUserId, businessTypeFilter, usersMap]);
 
   return (
     <Box
@@ -114,7 +165,7 @@ export default function RoomList({
           Conversaciones recientes
         </Typography>
 
-        <Box sx={{ mt: 1.5, width: '100%', minWidth: 0, maxWidth: '100%' }}>
+        <Box sx={{ mt: 1.5, width: '100%', minWidth: 0, maxWidth: '100%', display: 'flex', gap: 1, alignItems: 'center' }}>
           {viewMode === "chats" ? (
             <TextField
               size="small"
@@ -178,7 +229,138 @@ export default function RoomList({
               }}
             />
           )}
+          
+          {/* Botón de filtro */}
+          {((viewMode === "specialists" && setProfessionFilter) || (viewMode === "chats" && setBusinessTypeFilter)) && (
+            <>
+              <IconButton
+                size="small"
+                onClick={(e) => setFilterAnchorEl(e.currentTarget)}
+                sx={{
+                  border: '1px solid rgba(0,0,0,0.23)',
+                  borderRadius: '50%',
+                  width: 40,
+                  height: 40,
+                  flexShrink: 0,
+                  color: (professionFilter || businessTypeFilter) ? '#1565C0' : 'inherit',
+                  bgcolor: (professionFilter || businessTypeFilter) ? 'rgba(21, 101, 192, 0.08)' : 'transparent',
+                }}
+              >
+                <FilterListIcon fontSize="small" />
+              </IconButton>
+              <Menu
+                anchorEl={filterAnchorEl}
+                open={filterOpen}
+                onClose={() => setFilterAnchorEl(null)}
+                PaperProps={{
+                  sx: {
+                    mt: 1,
+                    minWidth: 200,
+                  }
+                }}
+              >
+                {viewMode === "specialists" && [
+                  <MenuItem
+                    key="all"
+                    onClick={() => {
+                      if (setProfessionFilter) setProfessionFilter(null);
+                      setFilterAnchorEl(null);
+                    }}
+                    selected={!professionFilter}
+                  >
+                    Todos los especialistas
+                  </MenuItem>,
+                  <Divider key="divider1" />,
+                  <MenuItem
+                    key="veterinario"
+                    onClick={() => {
+                      if (setProfessionFilter) setProfessionFilter('Veterinario');
+                      setFilterAnchorEl(null);
+                    }}
+                    selected={professionFilter === 'Veterinario'}
+                  >
+                    Veterinario
+                  </MenuItem>,
+                  <MenuItem
+                    key="agronomo"
+                    onClick={() => {
+                      if (setProfessionFilter) setProfessionFilter('Agrónomo');
+                      setFilterAnchorEl(null);
+                    }}
+                    selected={professionFilter === 'Agrónomo'}
+                  >
+                    Agrónomo
+                  </MenuItem>,
+                  <MenuItem
+                    key="zootecnista"
+                    onClick={() => {
+                      if (setProfessionFilter) setProfessionFilter('Zootecnista');
+                      setFilterAnchorEl(null);
+                    }}
+                    selected={professionFilter === 'Zootecnista'}
+                  >
+                    Zootecnista
+                  </MenuItem>
+                ]}
+                {viewMode === "chats" && [
+                  <MenuItem
+                    key="all-chats"
+                    onClick={() => {
+                      if (setBusinessTypeFilter) setBusinessTypeFilter(null);
+                      setFilterAnchorEl(null);
+                    }}
+                    selected={!businessTypeFilter}
+                  >
+                    Todas las conversaciones
+                  </MenuItem>,
+                  <Divider key="divider2" />,
+                  <MenuItem
+                    key="agroveterinaria"
+                    onClick={() => {
+                      if (setBusinessTypeFilter) setBusinessTypeFilter('Agroveterinaria');
+                      setFilterAnchorEl(null);
+                    }}
+                    selected={businessTypeFilter === 'Agroveterinaria'}
+                  >
+                    Agroveterinaria
+                  </MenuItem>,
+                  <MenuItem
+                    key="empresa-agropecuaria"
+                    onClick={() => {
+                      if (setBusinessTypeFilter) setBusinessTypeFilter('Empresa Agropecuaria');
+                      setFilterAnchorEl(null);
+                    }}
+                    selected={businessTypeFilter === 'Empresa Agropecuaria'}
+                  >
+                    Empresa Agropecuaria
+                  </MenuItem>
+                ]}
+              </Menu>
+            </>
+          )}
         </Box>
+        
+        {/* Mostrar filtro activo */}
+        {(professionFilter || businessTypeFilter) && (
+          <Box sx={{ mt: 1, display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+            {professionFilter && (
+              <Chip
+                label={`Profesión: ${professionFilter}`}
+                size="small"
+                onDelete={() => setProfessionFilter && setProfessionFilter(null)}
+                sx={{ fontSize: '0.7rem', height: 24 }}
+              />
+            )}
+            {businessTypeFilter && (
+              <Chip
+                label={`Tipo: ${businessTypeFilter}`}
+                size="small"
+                onDelete={() => setBusinessTypeFilter && setBusinessTypeFilter(null)}
+                sx={{ fontSize: '0.7rem', height: 24 }}
+              />
+            )}
+          </Box>
+        )}
 
         <Stack
           direction="row"
@@ -323,6 +505,81 @@ export default function RoomList({
                     } catch (e) { return false; }
                   })();
 
+                  // Obtener datos del usuario para verificación - PRIORIZAR usersMap que tiene datos completos
+                  const userData = finalOtherId && usersMap[finalOtherId] ? usersMap[finalOtherId] : (other || {});
+                  
+                  // Verificar si es especialista (de múltiples formas)
+                  const role = (userData?.role || other?.role || '').toString().toLowerCase();
+                  const isSpecialist = role === 'specialist' || role === 'especialista' || !!userData?.specialist_profile || !!other?.specialist_profile;
+                  
+                  // Obtener verification_status de diferentes ubicaciones posibles
+                  // Priorizar userData de usersMap, luego other del participante
+                  const profile = userData?.specialist_profile || other?.specialist_profile || {};
+                  
+                  // Obtener valores directamente, verificando que no sean undefined/null
+                  // Verificar explícitamente que el valor existe y no es undefined/null
+                  let verificationStatus = (profile.verification_status && profile.verification_status !== undefined && profile.verification_status !== null) 
+                    ? profile.verification_status 
+                    : null;
+                  let verificationType = (profile.verification_type && profile.verification_type !== undefined && profile.verification_type !== null)
+                    ? profile.verification_type
+                    : null;
+                  
+                  // Si profile tiene las keys pero valores undefined, intentar desde userData directamente
+                  if (!verificationStatus && userData?.specialist_profile?.verification_status && 
+                      userData.specialist_profile.verification_status !== undefined && 
+                      userData.specialist_profile.verification_status !== null) {
+                    verificationStatus = userData.specialist_profile.verification_status;
+                    verificationType = userData.specialist_profile.verification_type;
+                  }
+                  
+                  // Si aún no tiene status pero tiene documentos, determinar el status (igual que en SpecialistsList)
+                  if (!verificationStatus) {
+                    const hasTitle = !!(profile.verification_title_id || userData?.verification_title_id || other?.verification_title_id);
+                    const hasStudentCard = !!(profile.verification_student_card_id || userData?.verification_student_card_id || other?.verification_student_card_id);
+                    const hasGraduationLetter = !!(profile.verification_graduation_letter_id || userData?.verification_graduation_letter_id || other?.verification_graduation_letter_id);
+                    
+                    console.log(`[RoomList] 📋 Documentos para ${displayName}:`, {
+                      hasTitle,
+                      hasStudentCard,
+                      hasGraduationLetter,
+                      profileTitleId: profile.verification_title_id,
+                      profileStudentCardId: profile.verification_student_card_id,
+                      profileGraduationLetterId: profile.verification_graduation_letter_id
+                    });
+                    
+                    if (hasTitle || hasGraduationLetter) {
+                      verificationStatus = 'verified_professional';
+                      verificationType = verificationType || 'Médico Titulado';
+                    } else if (hasStudentCard) {
+                      verificationStatus = 'verified_student';
+                      verificationType = verificationType || 'Estudiante';
+                    }
+                  }
+                  
+                  // DEBUG: Log siempre para ver qué datos tenemos
+                  console.log(`[RoomList] 🔍 Chat ${displayName}:`, {
+                    finalOtherId,
+                    role,
+                    isSpecialist,
+                    hasUserData: !!userData,
+                    hasOther: !!other,
+                    hasProfile: !!profile,
+                    verificationStatus,
+                    verificationType,
+                    profileKeys: Object.keys(profile),
+                    profileValues: {
+                      verification_status: profile.verification_status,
+                      verification_type: profile.verification_type,
+                      verification_title_id: profile.verification_title_id,
+                      verification_student_card_id: profile.verification_student_card_id,
+                      verification_graduation_letter_id: profile.verification_graduation_letter_id
+                    },
+                    userDataSpecialistProfile: userData?.specialist_profile,
+                    otherSpecialistProfile: other?.specialist_profile,
+                    fullProfile: JSON.stringify(profile).substring(0, 500)
+                  });
+
                   // Detectar tipo de media del último mensaje
                   const lastMsg = c.last_message;
                   const lastMsgMediaUrl = lastMsg?.media_url || (lastMsg?.attachments && lastMsg.attachments[0]?.url);
@@ -351,6 +608,20 @@ export default function RoomList({
                     }
                   }
 
+                  const handleAvatarClick = (e) => {
+                    e.stopPropagation(); // Prevenir que se active el chat al hacer clic en el avatar
+                    if (finalOtherId) {
+                      navigate(`/perfil?userId=${finalOtherId}`);
+                    }
+                  };
+
+                  const handleNameClick = (e) => {
+                    e.stopPropagation(); // Prevenir que se active el chat al hacer clic en el nombre
+                    if (finalOtherId) {
+                      navigate(`/perfil?userId=${finalOtherId}`);
+                    }
+                  };
+
                   return (
                     <ListItemButton
                       key={c.id}
@@ -359,7 +630,12 @@ export default function RoomList({
                     >
                       <ListItemAvatar>
                         <Box sx={{ position: 'relative', display: 'inline-block' }}>
-                          <Avatar src={avatarSrc} alt={displayName}>
+                          <Avatar 
+                            src={avatarSrc} 
+                            alt={displayName}
+                            onClick={handleAvatarClick}
+                            sx={{ cursor: 'pointer', '&:hover': { opacity: 0.8 } }}
+                          >
                             {!avatarSrc && displayName ? String(displayName).charAt(0) : null}
                           </Avatar>
                           {/* online dot for other participant */}
@@ -370,10 +646,30 @@ export default function RoomList({
                       </ListItemAvatar>
                       <ListItemText
                         primary={
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Typography variant="body1" sx={{ fontWeight: 500, flex: 1 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
+                            <Typography 
+                              variant="body1" 
+                              sx={{ fontWeight: 500, flex: 1, cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+                              onClick={handleNameClick}
+                            >
                               {cleanName(displayName)}
                             </Typography>
+                            {/* Badge de verificación si el usuario es especialista */}
+                            {(() => {
+                              if (!isSpecialist) return null;
+                              if (!verificationStatus) {
+                                console.log(`[RoomList] ❌ No badge para ${displayName}: isSpecialist=${isSpecialist}, verificationStatus=${verificationStatus}`);
+                                return null;
+                              }
+                              console.log(`[RoomList] ✅ MOSTRANDO BADGE para ${displayName}: verificationStatus=${verificationStatus}`);
+                              return (
+                                <VerificationBadge
+                                  verificationStatus={verificationStatus}
+                                  verificationType={verificationType}
+                                  size="small"
+                                />
+                              );
+                            })()}
                             {unreadCount > 0 && (
                               <Box
                                 sx={{
@@ -482,6 +778,7 @@ export default function RoomList({
               }
             }}
             searchQuery={specialistSearch}
+            professionFilter={professionFilter}
           />
         </Box>
       )}

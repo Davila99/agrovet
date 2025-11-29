@@ -48,10 +48,10 @@ const PerfilForm = ({ editing, form, onChange, onSave }) => {
         <Typography
           variant="h6"
           sx={{
-            fontWeight: 700,
+            fontWeight: 600,
             color: "#103E68",
-            mb: 2,
-            fontSize: "1.25rem",
+            mb: 1.5,
+            fontSize: "1rem",
           }}
         >
           Información Personal
@@ -64,9 +64,9 @@ const PerfilForm = ({ editing, form, onChange, onSave }) => {
                 variant="subtitle2"
                 sx={{
                   color: "text.secondary",
-                  mb: 1,
+                  mb: 0.75,
                   fontWeight: 600,
-                  fontSize: "0.875rem",
+                  fontSize: "0.75rem",
                 }}
               >
                 {field.label}
@@ -117,13 +117,15 @@ const PerfilForm = ({ editing, form, onChange, onSave }) => {
             <Button
               variant="contained"
               color="primary"
+              size="small"
               startIcon={<Save />}
               sx={{
-                borderRadius: 2,
+                borderRadius: 1.5,
                 textTransform: "none",
-                fontWeight: 600,
-                px: 3,
-                py: 1,
+                fontWeight: 500,
+                fontSize: "0.8rem",
+                px: 2,
+                py: 0.75,
                 boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
                 "&:hover": {
                   boxShadow: "0 4px 12px rgba(0,0,0,0.3)",

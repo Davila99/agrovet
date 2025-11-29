@@ -7,6 +7,7 @@ import { normalizeStoredToken } from './chat/chatUtils';
 import env from '../../services/env';
 import usePresenceStore from '../../store/usePresenceStore';
 import { fetchUsers } from '../../data/users';
+import { profilesAPI } from '../../services/endpoints';
 import writingSound from '../../assets/mp3/writing.mp3';
 import notificationSound from '../../assets/mp3/notification.mp3';
 import RoomList from '../organisms/chat/RoomList';
@@ -35,6 +36,8 @@ export default function Chat() {
     const [usersMap, setUsersMap] = useState({});
     const [viewMode, setViewMode] = useState('chats');
     const [specialistSearch, setSpecialistSearch] = useState('');
+    const [professionFilter, setProfessionFilter] = useState(null);
+    const [businessTypeFilter, setBusinessTypeFilter] = useState(null);
 
     const writingAudioRef = useRef(null);
     const notificationAudioRef = useRef(null);
@@ -47,18 +50,89 @@ export default function Chat() {
 
     const presenceStore = usePresenceStore(s => s.users || {});
 
-    // Fetch all users for usersMap
+    // Fetch all users for usersMap and determine verification_status from documents
     useEffect(() => {
         const loadUsers = async () => {
             if (!token) return;
             try {
                 const usersData = await fetchUsers(token);
                 const usersById = {};
+                
+                console.log(`[Chat.jsx] 📦 Usuarios recibidos de /auth/users/:`, usersData?.length || 0);
+                
+                // Primero procesar usuarios básicos
                 (usersData || []).forEach(user => {
                     if (user.id) {
                         usersById[user.id] = user;
                     }
                 });
+                
+                // Luego cargar perfiles completos de especialistas que no tienen specialist_profile
+                const specialistsToLoad = (usersData || []).filter(user => {
+                    const isSpecialist = (user.role || '').toString().toLowerCase() === 'specialist';
+                    const hasProfile = !!user.specialist_profile;
+                    return isSpecialist && !hasProfile;
+                });
+                
+                console.log(`[Chat.jsx] 🔄 Cargando ${specialistsToLoad.length} perfiles de especialistas...`);
+                
+                // Cargar perfiles completos en paralelo
+                await Promise.all(specialistsToLoad.map(async (user) => {
+                    try {
+                        const { profilesAPI } = await import('../../services/endpoints');
+                        const specialistProfile = await profilesAPI.getSpecialistByUser(user.id, token);
+                        if (specialistProfile) {
+                            usersById[user.id] = {
+                                ...usersById[user.id],
+                                specialist_profile: specialistProfile
+                            };
+                            console.log(`[Chat.jsx] ✅ Perfil cargado para ${user.full_name || user.username}:`, {
+                                verification_status: specialistProfile.verification_status,
+                                verification_type: specialistProfile.verification_type
+                            });
+                        }
+                    } catch (err) {
+                        console.warn(`[Chat.jsx] ⚠️ Error cargando perfil para ${user.id}:`, err);
+                    }
+                }));
+                
+                // Finalmente procesar todos los usuarios para determinar verification_status
+                Object.keys(usersById).forEach(userId => {
+                    const user = usersById[userId];
+                    const profile = user.specialist_profile || {};
+                    
+                    // Determine verification_status from documents if not present
+                    let verificationStatus = profile.verification_status;
+                    let verificationType = profile.verification_type;
+                    
+                    // Si verification_status es undefined/null, calcular desde documentos
+                    if (!verificationStatus || verificationStatus === null || verificationStatus === undefined) {
+                        const hasTitle = !!profile.verification_title_id;
+                        const hasStudentCard = !!profile.verification_student_card_id;
+                        const hasGraduationLetter = !!profile.verification_graduation_letter_id;
+                        
+                        if (hasTitle || hasGraduationLetter) {
+                            verificationStatus = 'verified_professional';
+                            verificationType = verificationType || 'Médico Titulado';
+                        } else if (hasStudentCard) {
+                            verificationStatus = 'verified_student';
+                            verificationType = verificationType || 'Estudiante';
+                        }
+                    }
+                    
+                    // Actualizar specialist_profile con verification_status si tiene valor
+                    if (verificationStatus) {
+                        usersById[userId] = {
+                            ...user,
+                            specialist_profile: {
+                                ...profile,
+                                verification_status: verificationStatus,
+                                verification_type: verificationType,
+                            }
+                        };
+                    }
+                });
+                
                 setUsersMap(usersById);
             } catch (err) {
                 console.warn('Could not load users map:', err);
@@ -159,20 +233,41 @@ export default function Chat() {
             setRooms(normalizedRooms);
 
             if (targetUserId && normalizedRooms.length > 0) {
-                const existingRoom = normalizedRooms.find(r =>
-                    r.participants?.some(p => p.id === parseInt(targetUserId))
-                );
+                // Buscar sala existente con mejor validación de IDs
+                const existingRoom = normalizedRooms.find(r => {
+                    if (!r.participants || !Array.isArray(r.participants)) return false;
+                    return r.participants.some((p) => {
+                        const pid = p.id || p.user_id || p.pk;
+                        return pid && (parseInt(pid) === parseInt(targetUserId) || String(pid) === String(targetUserId));
+                    });
+                });
 
                 if (existingRoom) {
                     setSelectedRoom(existingRoom);
                 } else if (currentUserId) {
+                    // Si no existe, crear/obtener sala
                     const newRoom = await chatService.getOrCreatePrivateRoom(
                         parseInt(currentUserId),
                         parseInt(targetUserId),
                         authToken
                     );
-                    setSelectedRoom(newRoom);
-                    await loadRooms(authToken);
+                    
+                    // Recargar salas después de crear para sincronizar
+                    const updatedRooms = await chatService.getRooms(authToken);
+                    const normalizedUpdatedRooms = Array.isArray(updatedRooms) ? updatedRooms : [];
+                    
+                    // Buscar la sala en la lista actualizada
+                    const foundRoom = normalizedUpdatedRooms.find(r => {
+                        if (!r.participants || !Array.isArray(r.participants)) return false;
+                        return r.participants.some((p) => {
+                            const pid = p.id || p.user_id || p.pk;
+                            return pid && (parseInt(pid) === parseInt(targetUserId) || String(pid) === String(targetUserId));
+                        });
+                    });
+                    
+                    // Usar la sala encontrada o la nueva
+                    setSelectedRoom(foundRoom || newRoom);
+                    setRooms(normalizedUpdatedRooms);
                 }
             }
         } catch (error) {
@@ -260,12 +355,35 @@ export default function Chat() {
                                 messageMap.set(msg.id, msg);
                             }
                         });
-                        if (!messageMap.has(normalizedMessage.id)) {
-                            messageMap.set(normalizedMessage.id, normalizedMessage);
-                        } else {
+                        
+                        // Si el mensaje ya existe, actualizar preservando el previewUrl si el nuevo mensaje no tiene media_url
+                        if (messageMap.has(normalizedMessage.id)) {
                             const existing = messageMap.get(normalizedMessage.id);
-                            messageMap.set(normalizedMessage.id, { ...existing, ...normalizedMessage });
+                            const updated = { 
+                                ...existing, 
+                                ...normalizedMessage,
+                                // Preservar media_url del servidor si existe, sino mantener el preview temporal
+                                media_url: normalizedMessage.media_url || normalizedMessage.file_url || normalizedMessage.attachments?.[0]?.url || existing.media_url,
+                                // Actualizar attachments si vienen del servidor
+                                attachments: normalizedMessage.attachments || existing.attachments,
+                                // Preservar tamaño del archivo si existe
+                                media_file_size: normalizedMessage.media_file_size || existing.media_file_size,
+                                media_file_size_mb: normalizedMessage.media_file_size_mb || existing.media_file_size_mb,
+                                // Marcar como no subiendo si viene del servidor con media_url
+                                is_uploading: (normalizedMessage.media_url || normalizedMessage.file_url) ? false : existing.is_uploading,
+                                media_uploading: (normalizedMessage.media_url || normalizedMessage.file_url) ? false : existing.media_uploading,
+                                media_upload_percent: (normalizedMessage.media_url || normalizedMessage.file_url) ? null : existing.media_upload_percent,
+                            };
+                            messageMap.set(normalizedMessage.id, updated);
+                        } else {
+                            // Nuevo mensaje: asegurar que tenga media_url si viene con attachments
+                            const newMsg = {
+                                ...normalizedMessage,
+                                media_url: normalizedMessage.media_url || normalizedMessage.file_url || normalizedMessage.attachments?.[0]?.url,
+                            };
+                            messageMap.set(normalizedMessage.id, newMsg);
                         }
+                        
                         return Array.from(messageMap.values()).sort((a, b) => {
                             const timeA = new Date(a.created_at || 0).getTime();
                             const timeB = new Date(b.created_at || 0).getTime();
@@ -350,7 +468,9 @@ export default function Chat() {
                     }
                 }
 
-
+                // Obtener tamaño del archivo
+                const fileSize = pendingAttachment.file.size || 0;
+                const fileSizeMB = (fileSize / (1024 * 1024)).toFixed(2);
 
                 // Agregar mensaje optimísticamente con preview URL
                 const tempId = `temp_${Date.now()}_${Math.random()}`;
@@ -367,7 +487,10 @@ export default function Chat() {
                         type: fileType === 'audio' ? 'audio' : (fileType === 'video' ? 'video' : 'image')
                     }],
                     media_spectrum: spectrum,
-                    is_uploading: true, // Flag para mostrar indicador de carga
+                    media_uploading: true, // Flag para mostrar indicador de carga
+                    media_upload_percent: 0,
+                    media_file_size: fileSize,
+                    media_file_size_mb: fileSizeMB,
                     sent: true,
                     delivered: false,
                     read: false,
@@ -375,21 +498,39 @@ export default function Chat() {
 
                 setMessages(prev => [...prev, optimisticMessage]);
 
-                if (fileType === 'audio') {
-                    sentMessage = await chatService.sendMessageWithImage(
-                        selectedRoom.id,
-                        pendingAttachment.file,
-                        token,
-                        text.trim() || '',
-                        spectrum
-                    );
-                } else {
-                    sentMessage = await chatService.sendMessageWithImage(
-                        selectedRoom.id,
-                        pendingAttachment.file,
-                        token,
-                        text.trim() || ''
-                    );
+                // Función para actualizar el progreso
+                const updateProgress = (percent) => {
+                    setMessages(prev => prev.map(msg => 
+                        msg.id === tempId 
+                            ? { ...msg, media_upload_percent: percent }
+                            : msg
+                    ));
+                };
+
+                try {
+                    if (fileType === 'audio') {
+                        sentMessage = await chatService.sendMessageWithImage(
+                            selectedRoom.id,
+                            pendingAttachment.file,
+                            token,
+                            text.trim() || '',
+                            spectrum,
+                            updateProgress
+                        );
+                    } else {
+                        sentMessage = await chatService.sendMessageWithImage(
+                            selectedRoom.id,
+                            pendingAttachment.file,
+                            token,
+                            text.trim() || '',
+                            null,
+                            updateProgress
+                        );
+                    }
+                } catch (error) {
+                    // En caso de error, remover el mensaje temporal
+                    setMessages(prev => prev.filter(msg => msg.id !== tempId));
+                    throw error;
                 }
 
                 // Reemplazar mensaje temporal con el real
@@ -399,6 +540,8 @@ export default function Chat() {
                         const tempMessage = prev.find(msg => msg.id === tempId);
                         const tempPreviewUrl = tempMessage?.media_url;
                         const tempAttachments = tempMessage?.attachments;
+                        const tempFileSize = tempMessage?.media_file_size;
+                        const tempFileSizeMB = tempMessage?.media_file_size_mb;
 
                         // Primero filtrar el mensaje temporal
                         const withoutTemp = prev.filter(msg => msg.id !== tempId);
@@ -407,10 +550,13 @@ export default function Chat() {
                         // Preparar el mensaje del servidor, preservando el preview si no tiene media_url propio
                         const serverMessage = {
                             ...sentMessage,
-                            is_uploading: false,
+                            media_uploading: false,
+                            media_upload_percent: null,
                             // Si el servidor aún no tiene media_url, usar el preview temporal
-                            media_url: sentMessage.media_url || tempPreviewUrl,
-                            attachments: sentMessage.attachments || tempAttachments
+                            media_url: sentMessage.media_url || sentMessage.attachments?.[0]?.url || tempPreviewUrl,
+                            attachments: sentMessage.attachments || tempAttachments,
+                            media_file_size: tempFileSize,
+                            media_file_size_mb: tempFileSizeMB,
                         };
 
                         if (serverExists) {
@@ -486,22 +632,106 @@ export default function Chat() {
             setUploadingAttachment(true);
             const fileType = attachment.file.type?.split('/')[0] || 'image';
             const spectrum = attachment.spectrum || null;
+            const fileSize = attachment.file.size || 0;
+            const fileSizeMB = (fileSize / (1024 * 1024)).toFixed(2);
+            
+            // Crear mensaje optimístico
+            let previewUrl = attachment.previewUrl;
+            if (!previewUrl && (fileType === 'image' || fileType === 'video')) {
+                try {
+                    previewUrl = URL.createObjectURL(attachment.file);
+                } catch (e) {
+                    console.warn('[Chat] No se pudo crear preview URL:', e);
+                }
+            }
+            
+            const tempId = `temp_${Date.now()}_${Math.random()}`;
+            const optimisticMessage = {
+                id: tempId,
+                text: text.trim() || '',
+                sender: { id: parseInt(currentUserId) },
+                sender_id: parseInt(currentUserId),
+                created_at: new Date().toISOString(),
+                room_id: selectedRoom.id,
+                media_url: previewUrl,
+                attachments: [{
+                    url: previewUrl,
+                    type: fileType === 'audio' ? 'audio' : (fileType === 'video' ? 'video' : 'image')
+                }],
+                media_spectrum: spectrum,
+                media_uploading: true,
+                media_upload_percent: 0,
+                media_file_size: fileSize,
+                media_file_size_mb: fileSizeMB,
+                sent: true,
+                delivered: false,
+                read: false,
+            };
+            
+            setMessages(prev => [...prev, optimisticMessage]);
+            
+            // Función para actualizar el progreso
+            const updateProgress = (percent) => {
+                setMessages(prev => prev.map(msg => 
+                    msg.id === tempId 
+                        ? { ...msg, media_upload_percent: percent }
+                        : msg
+                ));
+            };
 
+            let sentMessage;
             if (fileType === 'audio') {
-                await chatService.sendMessageWithImage(
+                sentMessage = await chatService.sendMessageWithImage(
                     selectedRoom.id,
                     attachment.file,
                     token,
                     text.trim() || '',
-                    spectrum
+                    spectrum,
+                    updateProgress
                 );
             } else {
-                await chatService.sendMessageWithImage(
+                sentMessage = await chatService.sendMessageWithImage(
                     selectedRoom.id,
                     attachment.file,
                     token,
-                    text.trim() || ''
+                    text.trim() || '',
+                    null,
+                    updateProgress
                 );
+            }
+
+            // Reemplazar mensaje temporal con el real
+            if (sentMessage && sentMessage.id) {
+                setMessages(prev => {
+                    const tempMessage = prev.find(msg => msg.id === tempId);
+                    const tempPreviewUrl = tempMessage?.media_url;
+                    const tempAttachments = tempMessage?.attachments;
+                    const tempFileSize = tempMessage?.media_file_size;
+                    const tempFileSizeMB = tempMessage?.media_file_size_mb;
+
+                    const withoutTemp = prev.filter(msg => msg.id !== tempId);
+                    const serverExists = withoutTemp.find(m => m.id === sentMessage.id);
+
+                    const serverMessage = {
+                        ...sentMessage,
+                        media_uploading: false,
+                        media_upload_percent: null,
+                        media_url: sentMessage.media_url || sentMessage.attachments?.[0]?.url || tempPreviewUrl,
+                        attachments: sentMessage.attachments || tempAttachments,
+                        media_file_size: tempFileSize,
+                        media_file_size_mb: tempFileSizeMB,
+                    };
+
+                    if (serverExists) {
+                        return withoutTemp.map(msg =>
+                            msg.id === sentMessage.id ? { ...msg, ...serverMessage } : msg
+                        );
+                    } else {
+                        return [...withoutTemp, serverMessage];
+                    }
+                });
+            } else {
+                setMessages(prev => prev.filter(msg => msg.id !== tempId));
             }
 
             setPendingAttachment(null);
@@ -512,6 +742,8 @@ export default function Chat() {
             }
         } catch (error) {
             console.error('Error enviando archivo:', error);
+            // Remover mensaje temporal en caso de error
+            setMessages(prev => prev.filter(msg => !msg.id?.toString().startsWith('temp_')));
         } finally {
             setUploadingAttachment(false);
         }
@@ -618,33 +850,72 @@ export default function Chat() {
                   return null;
                 }
 
+                // Asegurarse de que las salas estén cargadas antes de buscar
+                // Si no hay salas cargadas o la lista está vacía, cargarlas primero
+                if (!rooms || rooms.length === 0) {
+                  console.log("Cargando salas antes de buscar sala existente...");
+                  await loadRooms(token);
+                }
+
                 // Buscar si ya existe una sala con este especialista
-                const existingRoom = rooms.find((r) =>
-                  r.participants?.some((p) => p.id === specialistId)
-                );
+                // Buscar por ID del participante (puede estar en diferentes formatos)
+                const existingRoom = rooms.find((r) => {
+                  if (!r.participants || !Array.isArray(r.participants)) return false;
+                  return r.participants.some((p) => {
+                    const pid = p.id || p.user_id || p.pk;
+                    return pid && (parseInt(pid) === parseInt(specialistId) || String(pid) === String(specialistId));
+                  });
+                });
 
                 if (existingRoom) {
+                  console.log("Sala existente encontrada:", existingRoom.id);
                   // Si existe, seleccionarla
                   setSelectedRoom(existingRoom);
+                  // Cambiar a la vista de chats
+                  setViewMode("chats");
                   return existingRoom;
                 } else {
-                  // Si no existe, crear una nueva sala
+                  console.log("No se encontró sala existente, creando/obteniendo sala...");
+                  // Si no existe, usar el endpoint que debería devolver la existente si ya existe
                   const newRoom = await chatService.getOrCreatePrivateRoom(
                     parseInt(currentUserId),
-                    specialistId,
+                    parseInt(specialistId),
                     token
                   );
 
-                  // Recargar las salas para tener la lista actualizada
+                  if (!newRoom || !newRoom.id) {
+                    console.error("Error: No se recibió sala válida del servidor");
+                    throw new Error("No se pudo crear o obtener la sala");
+                  }
+
+                  // Recargar las salas para tener la lista actualizada y sincronizada
                   await loadRooms(token);
 
-                  // Seleccionar la nueva sala
-                  setSelectedRoom(newRoom);
+                  // Buscar la sala en la lista actualizada para asegurar que tenemos la versión más reciente
+                  // Esto previene duplicados si el servidor devolvió una sala existente
+                  const updatedRooms = await chatService.getRooms(token);
+                  const normalizedUpdatedRooms = Array.isArray(updatedRooms) ? updatedRooms : [];
+                  const foundRoom = normalizedUpdatedRooms.find((r) => {
+                    if (!r.participants || !Array.isArray(r.participants)) return false;
+                    return r.participants.some((p) => {
+                      const pid = p.id || p.user_id || p.pk;
+                      return pid && (parseInt(pid) === parseInt(specialistId) || String(pid) === String(specialistId));
+                    });
+                  });
+
+                  // Usar la sala encontrada en la lista actualizada o la nueva sala si no se encuentra
+                  const roomToSelect = foundRoom || newRoom;
+                  
+                  // Actualizar el estado con las salas actualizadas
+                  setRooms(normalizedUpdatedRooms);
+                  
+                  // Seleccionar la sala
+                  setSelectedRoom(roomToSelect);
 
                   // Cambiar a la vista de chats
                   setViewMode("chats");
 
-                  return newRoom;
+                  return roomToSelect;
                 }
               } catch (error) {
                 console.error("Error en openOneToOne:", error);
@@ -661,6 +932,10 @@ export default function Chat() {
             loading={loading}
             error={error}
             usersMap={usersMap}
+            professionFilter={professionFilter}
+            setProfessionFilter={setProfessionFilter}
+            businessTypeFilter={businessTypeFilter}
+            setBusinessTypeFilter={setBusinessTypeFilter}
           />
         </Paper>
 
@@ -686,7 +961,7 @@ export default function Chat() {
               showBack={true}
               usersMap={usersMap}
             />
-            <MessageList messages={messages} currentUserId={currentUserId} />
+            <MessageList messages={messages} currentUserId={currentUserId} usersMap={usersMap} />
             <ChatInput
               text={text}
               setText={setText}

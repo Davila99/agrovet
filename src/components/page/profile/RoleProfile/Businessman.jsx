@@ -27,8 +27,8 @@ const FieldRow = ({ label, value }) => (
       sx={{
         color: "text.secondary",
         fontWeight: 600,
-        fontSize: "0.875rem",
-        mb: 0.5,
+        fontSize: "0.7rem",
+        mb: 0.4,
         textTransform: "uppercase",
         letterSpacing: "0.5px",
       }}
@@ -40,8 +40,9 @@ const FieldRow = ({ label, value }) => (
       sx={{
         color: value ? "text.primary" : "text.disabled",
         fontWeight: value ? 500 : 400,
-        lineHeight: 1.6,
+        lineHeight: 1.4,
         whiteSpace: "pre-line",
+        fontSize: "0.8rem",
       }}
     >
       {value ?? "— Sin información —"}
@@ -56,7 +57,7 @@ const BusinessmanProfile = ({ user }) => {
   if ((user.role || "").toString().toLowerCase() !== "businessman") return null;
 
   const profile = user.businessman_profile || {};
-  const { user_display, business_name, descriptions, offers_local_products } =
+  const { user_display, business_type, business_name, descriptions, offers_local_products } =
     profile;
 
   // las coordenadas las proporciona el objeto `user` (cliente)
@@ -89,10 +90,10 @@ const BusinessmanProfile = ({ user }) => {
       <Typography
         variant="h6"
         sx={{
-          fontWeight: 700,
+          fontWeight: 600,
           color: "#103E68",
-          mb: 2,
-          fontSize: "1.25rem",
+          mb: 1.5,
+          fontSize: "1rem",
         }}
       >
         Información del Negocio
@@ -104,6 +105,7 @@ const BusinessmanProfile = ({ user }) => {
         <Grid item xs={12} md={6}>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
             <FieldRow label="Nombre público" value={user_display} />
+            <FieldRow label="Tipo de negocio" value={business_type} />
             <FieldRow label="Descripción" value={descriptions} />
             <FieldRow label="Nombre del negocio" value={business_name} />
           </Box>

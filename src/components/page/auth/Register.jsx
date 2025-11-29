@@ -29,6 +29,12 @@ const RegisterPage = () => {
     role: "",
     bio: "",
     profile_picture: null,
+    specialist_profile: {
+      profession: "",
+    },
+    businessman_profile: {
+      business_type: "",
+    },
   });
 
   const [loading, setLoading] = useState(false);
@@ -59,8 +65,30 @@ const RegisterPage = () => {
       return;
     }
 
-    const newForm = { ...form, [e.target.name]: e.target.value };
-    setForm(newForm);
+    // Manejar campos anidados como specialist_profile.profession
+    if (e.target.name.includes('.')) {
+      const [parent, child] = e.target.name.split('.');
+      setForm((prevForm) => {
+        const newForm = {
+          ...prevForm,
+          [parent]: {
+            ...(prevForm[parent] || {}),
+            [child]: e.target.value
+          }
+        };
+        // Si se establece una profesión, asegurar que el role sea Specialist
+        if (parent === "specialist_profile" && child === "profession" && e.target.value) {
+          newForm.role = "Specialist";
+        }
+        return newForm;
+      });
+      return;
+    }
+
+    setForm((prevForm) => ({
+      ...prevForm,
+      [e.target.name]: e.target.value
+    }));
 
     // Limpia error si las contraseñas ahora coinciden y son válidas
     if (
@@ -101,6 +129,39 @@ const RegisterPage = () => {
     Object.entries(source).forEach(([key, value]) => {
       // no enviar confirm_password
       if (key === "confirm_password") return;
+      
+      // Manejar specialist_profile como objeto anidado
+      // Enviar profession como specialist_profile_profession para que el backend lo reconozca
+      if (key === "specialist_profile" && value && typeof value === "object") {
+        Object.entries(value).forEach(([subKey, subValue]) => {
+          if (subValue !== null && subValue !== undefined && subValue !== "") {
+            // El backend espera specialist_profile_profession en lugar de specialist_profile.profession
+            if (subKey === "profession") {
+              formData.append("specialist_profile_profession", subValue);
+            } else {
+              formData.append(`specialist_profile.${subKey}`, subValue);
+            }
+          }
+        });
+        return;
+      }
+      
+      // Manejar businessman_profile como objeto anidado
+      // Enviar business_type como businessman_profile_business_type para que el backend lo reconozca
+      if (key === "businessman_profile" && value && typeof value === "object") {
+        Object.entries(value).forEach(([subKey, subValue]) => {
+          if (subValue !== null && subValue !== undefined && subValue !== "") {
+            // El backend espera businessman_profile_business_type en lugar de businessman_profile.business_type
+            if (subKey === "business_type") {
+              formData.append("businessman_profile_business_type", subValue);
+            } else {
+              formData.append(`businessman_profile.${subKey}`, subValue);
+            }
+          }
+        });
+        return;
+      }
+      
       let toAppend = value;
       if (
         (key === "latitude" || key === "longitude") &&
@@ -150,6 +211,24 @@ const RegisterPage = () => {
     if (currentStep === 2) {
       if (!form.password || !form.confirm_password || !form.role || !form.bio) {
         setError("Completa contraseña, confirmación, perfil y sobre mi");
+        return false;
+      }
+      // Validar que si es especialista (Veterinario, Agrónomo, Zootecnista), tenga profesión seleccionada
+      const isSpecialistRole = form.role === "Specialist" || 
+                                form.specialist_profile?.profession === "Veterinario" ||
+                                form.specialist_profile?.profession === "Agrónomo" ||
+                                form.specialist_profile?.profession === "Zootecnista";
+      if (isSpecialistRole && !form.specialist_profile?.profession) {
+        setError("Debes seleccionar una profesión");
+        return false;
+      }
+      
+      // Validar que si es businessman (Agroveterinaria, Empresa Agropecuaria), tenga business_type seleccionado
+      const isBusinessmanRole = form.role === "businessman" ||
+                                 form.businessman_profile?.business_type === "Agroveterinaria" ||
+                                 form.businessman_profile?.business_type === "Empresa Agropecuaria";
+      if (isBusinessmanRole && !form.businessman_profile?.business_type) {
+        setError("Debes seleccionar un tipo de negocio");
         return false;
       }
       if (form.password !== form.confirm_password) {

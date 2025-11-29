@@ -88,7 +88,7 @@ const PortfolioCard = ({ item, editing, onEdit, onDelete, index }) => {
       }}
     >
       {imageUrl ? (
-        <Box sx={{ position: "relative", width: "100%", height: "80px", flexShrink: 0 }}>
+        <Box sx={{ position: "relative", width: "100%", height: "120px", flexShrink: 0 }}>
           <CardMedia
             component="img"
             image={imageUrl}
@@ -160,7 +160,7 @@ const PortfolioCard = ({ item, editing, onEdit, onDelete, index }) => {
         <Box sx={{ 
           position: "relative", 
           width: "100%", 
-          height: "80px", 
+          height: "120px", 
           flexShrink: 0,
           bgcolor: "#f5f5f5",
           display: "flex",

@@ -1,4 +1,4 @@
-import React, { memo, useMemo } from 'react';
+import React, { memo, useMemo, useState, useEffect, useRef } from 'react';
 import { Box, Paper, Typography, CircularProgress } from '@mui/material';
 import { resolveAvatar, formatTimestamp } from '../chatUtils';
 import MessageStatusTicks from '../MessageStatusTicks';
@@ -52,6 +52,53 @@ const MessageItem = memo(({ m, index, userId, activeConv, activeId }) => {
   }, [m, userId, activeConv]);
 
   const key = String(m.uid || m.id || `${m.timestamp || ''}_${index}`);
+  
+  // Estado para manejar la carga de videos
+  const [videoLoading, setVideoLoading] = useState(false);
+  const [videoLoaded, setVideoLoaded] = useState(false);
+  const videoRef = useRef(null);
+  
+  // Detectar cuando el video está cargando o cargado
+  useEffect(() => {
+    if (mediaType === 'video' && mediaUrl && !fromMe) {
+      setVideoLoading(true);
+      setVideoLoaded(false);
+      
+      const video = videoRef.current;
+      if (video) {
+        const handleCanPlay = () => {
+          setVideoLoaded(true);
+          setVideoLoading(false);
+        };
+        
+        const handleLoadStart = () => {
+          setVideoLoading(true);
+        };
+        
+        video.addEventListener('canplay', handleCanPlay);
+        video.addEventListener('loadstart', handleLoadStart);
+        
+        return () => {
+          video.removeEventListener('canplay', handleCanPlay);
+          video.removeEventListener('loadstart', handleLoadStart);
+        };
+      }
+    } else if (mediaType === 'video' && fromMe) {
+      setVideoLoaded(!m.media_uploading);
+      setVideoLoading(m.media_uploading);
+    }
+  }, [mediaType, mediaUrl, fromMe, m.media_uploading]);
+  
+  // Formatear tamaño del archivo
+  const formatFileSize = (bytes) => {
+    if (!bytes) return '';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+  };
+  
+  const fileSize = m.media_file_size || m.file_size || null;
+  const fileSizeFormatted = fileSize ? formatFileSize(fileSize) : '';
 
   // Removed noisy render-time diagnostics to reduce console noise in production.
 
@@ -74,12 +121,48 @@ const MessageItem = memo(({ m, index, userId, activeConv, activeId }) => {
             )}
 
             {mediaType === 'video' && (
-              <Box sx={{ position: 'relative', display: 'inline-block' }}>
-                <video src={mediaUrl} controls style={{ maxWidth: '260px', borderRadius: 6 }} />
-                {m.media_uploading && typeof m.media_upload_percent === 'number' && (
-                  <Box sx={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0 }}>
-                    <CircularProgress variant="determinate" value={m.media_upload_percent} size={44} thickness={4} sx={{ color: '#21a366' }} />
-                    <Typography variant="caption" sx={{ mt: '-32px', color: 'white', fontWeight: 700, fontSize: '0.65rem' }}>{Math.round(m.media_upload_percent)}%</Typography>
+              <Box sx={{ position: 'relative', display: 'inline-block', maxWidth: '260px', borderRadius: 1, overflow: 'hidden', backgroundColor: '#000' }}>
+                <video 
+                  ref={videoRef}
+                  src={mediaUrl} 
+                  controls={!m.media_uploading && videoLoaded}
+                  preload="metadata"
+                  style={{ 
+                    maxWidth: '260px', 
+                    borderRadius: 6, 
+                    display: 'block',
+                    filter: (videoLoading || m.media_uploading) ? 'blur(8px)' : 'none',
+                    transition: 'filter 0.3s ease',
+                    opacity: (videoLoading || m.media_uploading) ? 0.6 : 1,
+                  }} 
+                />
+                {/* Barra de carga circular cuando se está enviando */}
+                {m.media_uploading && (
+                  <Box sx={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5, zIndex: 2 }}>
+                    <CircularProgress 
+                      variant={typeof m.media_upload_percent === 'number' ? 'determinate' : 'indeterminate'} 
+                      value={m.media_upload_percent || 0} 
+                      size={48} 
+                      thickness={4} 
+                      sx={{ color: '#fff' }} 
+                    />
+                    {typeof m.media_upload_percent === 'number' && (
+                      <Typography variant="caption" sx={{ mt: '-36px', color: 'white', fontWeight: 700, fontSize: '0.7rem', textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}>
+                        {Math.round(m.media_upload_percent)}%
+                      </Typography>
+                    )}
+                  </Box>
+                )}
+                {/* Barra de carga circular cuando se está descargando (para el receptor) */}
+                {!fromMe && videoLoading && !m.media_uploading && (
+                  <Box sx={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5, zIndex: 2 }}>
+                    <CircularProgress size={48} thickness={4} sx={{ color: '#fff' }} />
+                  </Box>
+                )}
+                {/* Mostrar tamaño del archivo */}
+                {fileSizeFormatted && (
+                  <Box sx={{ position: 'absolute', bottom: 8, right: 8, backgroundColor: 'rgba(0, 0, 0, 0.7)', color: '#fff', px: 1, py: 0.5, borderRadius: 1, fontSize: '0.65rem', fontWeight: 500, zIndex: 1 }}>
+                    {fileSizeFormatted}
                   </Box>
                 )}
               </Box>

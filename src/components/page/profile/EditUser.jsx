@@ -7,6 +7,10 @@ import {
   Alert,
   Typography,
   Checkbox,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
   FormControlLabel,
 } from "@mui/material";
 import { useParams, useNavigate } from "react-router-dom";
@@ -22,6 +26,7 @@ const EditUser = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [professionValue, setProfessionValue] = useState("");
 
   useEffect(() => {
     const load = async () => {
@@ -29,6 +34,54 @@ const EditUser = () => {
       try {
         const token = authClient.getAccessToken();
         const data = await authAPI.userById(id, token);
+        
+        // Si es especialista, cargar el perfil completo para obtener la profesión
+        if ((data.role || '').toString().toLowerCase() === 'specialist') {
+          try {
+            const specialistProfile = await profilesAPI.getSpecialistByUser(data.id, token);
+            if (specialistProfile) {
+              // Asegurar que specialist_profile esté inicializado correctamente
+              data.specialist_profile = {
+                ...(data.specialist_profile || {}),
+                ...specialistProfile,
+                // Asegurar que profession esté presente (puede ser string vacío)
+                profession: specialistProfile.profession || data.specialist_profile?.profession || '',
+              };
+              // Actualizar también el estado local de profession
+              setProfessionValue(specialistProfile.profession || data.specialist_profile?.profession || '');
+              console.log('[EditUser] ✅ Perfil de especialista cargado:', {
+                profession: data.specialist_profile.profession,
+                professionType: typeof data.specialist_profile.profession,
+                fullProfile: data.specialist_profile,
+              });
+            } else {
+              // Si no se pudo cargar, inicializar specialist_profile vacío
+              data.specialist_profile = data.specialist_profile || {
+                profession: '',
+              };
+              setProfessionValue(data.specialist_profile.profession || '');
+            }
+          } catch (e) {
+            console.warn('[EditUser] ⚠️ No se pudo cargar el perfil completo del especialista:', e);
+            // Inicializar specialist_profile vacío si falla
+            data.specialist_profile = data.specialist_profile || {
+              profession: '',
+            };
+            setProfessionValue(data.specialist_profile.profession || '');
+          }
+        } else if (data.specialist_profile?.profession) {
+          // Si ya viene profession del Auth Service, usarla
+          setProfessionValue(data.specialist_profile.profession);
+        }
+        
+        console.log('[EditUser] 🔍 Usuario cargado:', {
+          id: data.id,
+          role: data.role,
+          hasSpecialistProfile: !!data.specialist_profile,
+          profession: data.specialist_profile?.profession,
+          professionType: typeof data.specialist_profile?.profession,
+          fullSpecialistProfile: data.specialist_profile,
+        });
         setUser(data);
       } catch (e) {
         setError("No se pudo cargar el usuario");
@@ -41,23 +94,40 @@ const EditUser = () => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+    console.log('[EditUser] handleChange:', { name, value, type, checked });
+    
     // soportar campos anidados como specialist_profile.user_display
     if (name.includes(".")) {
       const [parent, child] = name.split(".");
-      setUser((prev) => ({
-        ...prev,
-        [parent]: {
-          ...(prev[parent] || {}),
-          [child]:
-            type === "checkbox"
-              ? checked
-              : type === "number"
-              ? value === ""
-                ? ""
-                : Number(value)
-              : value,
-        },
-      }));
+      console.log('[EditUser] Campo anidado:', { parent, child, value, prevUser: user });
+      
+      setUser((prev) => {
+        if (!prev) {
+          console.warn('[EditUser] ⚠️ prev es null, no se puede actualizar');
+          return prev;
+        }
+        
+        const updated = {
+          ...prev,
+          [parent]: {
+            ...(prev[parent] || {}),
+            [child]:
+              type === "checkbox"
+                ? checked
+                : type === "number"
+                ? value === ""
+                  ? ""
+                  : Number(value)
+                : value,
+          },
+        };
+        console.log('[EditUser] ✅ Estado actualizado:', {
+          profession: updated.specialist_profile?.profession,
+          fullSpecialistProfile: updated.specialist_profile,
+          parentValue: updated[parent],
+        });
+        return updated;
+      });
     } else {
       setUser((prev) => ({
         ...prev,
@@ -505,12 +575,59 @@ const EditUser = () => {
               value={user.specialist_profile?.user_display || ""}
               onChange={handleChange}
             />
-            <TextField
-              label="Profesión"
-              name="specialist_profile.profession"
-              value={user.specialist_profile?.profession || ""}
-              onChange={handleChange}
-            />
+            <FormControl fullWidth>
+              <InputLabel id="profession-label">Profesión</InputLabel>
+              <Select
+                labelId="profession-label"
+                id="profession-select"
+                label="Profesión"
+                name="specialist_profile.profession"
+                value={professionValue}
+                onChange={(e) => {
+                  const newValue = e.target.value;
+                  console.log('[EditUser] Select onChange:', {
+                    newValue,
+                    name: e.target.name,
+                    currentProfessionValue: professionValue,
+                    currentUserProfession: user?.specialist_profile?.profession,
+                  });
+                  
+                  // Actualizar ambos estados
+                  setProfessionValue(newValue);
+                  
+                  // Actualizar también el estado del usuario
+                  setUser((prev) => {
+                    if (!prev) return prev;
+                    const updated = {
+                      ...prev,
+                      specialist_profile: {
+                        ...(prev.specialist_profile || {}),
+                        profession: newValue,
+                      },
+                    };
+                    console.log('[EditUser] ✅ Estado actualizado:', {
+                      professionValue: newValue,
+                      userProfession: updated.specialist_profile?.profession,
+                    });
+                    return updated;
+                  });
+                }}
+                displayEmpty
+              >
+                <MenuItem value="">
+                  <em>Selecciona una profesión</em>
+                </MenuItem>
+                <MenuItem value="Veterinario">Veterinario</MenuItem>
+                <MenuItem value="Agrónomo">Agrónomo</MenuItem>
+                <MenuItem value="Zootecnista">Zootecnista</MenuItem>
+              </Select>
+              {/* Debug: mostrar el valor actual */}
+              {process.env.NODE_ENV === 'development' && (
+                <Typography variant="caption" sx={{ mt: 0.5, color: 'text.secondary', fontSize: '0.7rem' }}>
+                  Debug - professionValue: "{professionValue}" | user.profession: "{user?.specialist_profile?.profession || '(vacío)'}"
+                </Typography>
+              )}
+            </FormControl>
             <TextField
               label="Años de experiencia"
               name="specialist_profile.experience_years"

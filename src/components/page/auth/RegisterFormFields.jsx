@@ -6,6 +6,10 @@ import {
   IconButton,
   Box,
   Typography,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
@@ -176,21 +180,118 @@ const RegisterFormFields = ({ form, handleChange, step = 1 }) => {
               )}
             </Box>
           </Box>
-          <TextField
-            select
-            fullWidth
-            label="Perfil"
-            name="role"
-            value={form.role}
-            onChange={handleChange}
-            margin="normal"
-            SelectProps={{ native: true }}
-          >
-            <option value=""></option>
-            <option value="consumer">Cliente</option>
-            <option value="Specialist">Especialista</option>
-            <option value="businessman">Aliado Comercial</option>
-          </TextField>
+          <FormControl fullWidth margin="normal">
+            <InputLabel id="profession-label">Profesión</InputLabel>
+            <Select
+              labelId="profession-label"
+              label="Profesión"
+              name="profession"
+              value={
+                // Prioridad 1: Si hay una profesión seleccionada, mostrar esa
+                form.specialist_profile?.profession || 
+                // Prioridad 2: Si hay un tipo de negocio seleccionado, mostrar ese
+                form.businessman_profile?.business_type || 
+                // Prioridad 3: Si hay un role consumer, mostrar ese
+                (form.role === "consumer" ? "consumer" : "") ||
+                ""
+              }
+              onChange={(e) => {
+                const selectedValue = e.target.value;
+                console.log('[RegisterFormFields] Select onChange - ANTES:', {
+                  selectedValue,
+                  currentForm: form,
+                });
+                
+                // Actualizar todo el estado de una vez usando una función que actualiza múltiples campos
+                if (selectedValue === "Veterinario" || selectedValue === "Agrónomo" || selectedValue === "Zootecnista") {
+                  // Si selecciona una profesión, establecer role como Specialist y la profesión
+                  // Primero actualizar la profesión (esto también establecerá el role automáticamente)
+                  handleChange({
+                    target: {
+                      name: "specialist_profile.profession",
+                      value: selectedValue
+                    }
+                  });
+                  // Luego limpiar business_type
+                  handleChange({
+                    target: {
+                      name: "businessman_profile.business_type",
+                      value: ""
+                    }
+                  });
+                } else if (selectedValue === "Agroveterinaria" || selectedValue === "Empresa Agropecuaria") {
+                  // Si selecciona un tipo de negocio, establecer role como businessman
+                  handleChange({
+                    target: {
+                      name: "role",
+                      value: "businessman"
+                    }
+                  });
+                  handleChange({
+                    target: {
+                      name: "businessman_profile.business_type",
+                      value: selectedValue
+                    }
+                  });
+                  handleChange({
+                    target: {
+                      name: "specialist_profile.profession",
+                      value: ""
+                    }
+                  });
+                } else if (selectedValue === "consumer") {
+                  // Para consumer, solo cambiar el role
+                  handleChange({
+                    target: {
+                      name: "role",
+                      value: "consumer"
+                    }
+                  });
+                  handleChange({
+                    target: {
+                      name: "specialist_profile.profession",
+                      value: ""
+                    }
+                  });
+                  handleChange({
+                    target: {
+                      name: "businessman_profile.business_type",
+                      value: ""
+                    }
+                  });
+                } else {
+                  // Si se selecciona vacío, limpiar todo
+                  handleChange({
+                    target: {
+                      name: "role",
+                      value: ""
+                    }
+                  });
+                  handleChange({
+                    target: {
+                      name: "specialist_profile.profession",
+                      value: ""
+                    }
+                  });
+                  handleChange({
+                    target: {
+                      name: "businessman_profile.business_type",
+                      value: ""
+                    }
+                  });
+                }
+              }}
+            >
+              <MenuItem value="">Seleccione una profesión</MenuItem>
+              <MenuItem value="consumer">Dueño de animales / Ganadero</MenuItem>
+              <MenuItem value="Veterinario">Veterinario</MenuItem>
+              <MenuItem value="Agrónomo">Agrónomo</MenuItem>
+              <MenuItem value="Zootecnista">Zootecnista</MenuItem>
+              <MenuItem value="Agroveterinaria">Agroveterinaria</MenuItem>
+              <MenuItem value="Empresa Agropecuaria">Empresa Agropecuaria</MenuItem>
+            </Select>
+          </FormControl>
+          
           <TextField
             fullWidth
             label="Sobre Mi"

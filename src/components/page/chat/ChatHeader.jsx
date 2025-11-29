@@ -11,6 +11,7 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { resolveAvatar, cleanName } from "./chatUtils";
 import { usePresenceStore } from '../../../store/usePresenceStore';
 import { useNavigate } from 'react-router-dom';
+import VerificationBadge from '../../profile/molecules/VerificationBadge';
 
 const formatLastSeen = (iso) => {
   try {
@@ -55,6 +56,12 @@ export default function ChatHeader({
   const otherId = other && (other.id || other.user_id || other.pk) ? (other.id || other.user_id || other.pk) : null;
   const presence = otherId ? usePresenceStore((s) => s.users[String(otherId)]) : null;
 
+  // Obtener datos del usuario para verificación
+  const userData = other || selectedContact || {};
+  const isSpecialist = (userData?.role || '').toString().toLowerCase() === 'specialist' || !!userData?.specialist_profile;
+  const verificationStatus = userData?.specialist_profile?.verification_status || null;
+  const verificationType = userData?.specialist_profile?.verification_type || null;
+
   const handleAvatarClick = () => {
     if (otherId) {
       navigate(`/perfil?userId=${otherId}`);
@@ -70,7 +77,17 @@ export default function ChatHeader({
               <ArrowBackIcon />
             </IconButton>
             <Box sx={{ display: "flex", flexDirection: "column" }}>
-              <Typography variant="subtitle1" sx={{ fontSize: "0.8rem", fontWeight: 500 }}>{cleanName(activeConv.name)}</Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
+                <Typography variant="subtitle1" sx={{ fontSize: "0.8rem", fontWeight: 500 }}>{cleanName(activeConv.name)}</Typography>
+                {/* Badge de verificación si el usuario es especialista */}
+                {isSpecialist && verificationStatus && (
+                  <VerificationBadge
+                    verificationStatus={verificationStatus}
+                    verificationType={verificationType}
+                    size="small"
+                  />
+                )}
+              </Box>
               <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1, fontSize: "0.65rem" }}>
                 {(() => {
                   try {
@@ -145,7 +162,17 @@ export default function ChatHeader({
             })()}
           </Box>
           <Box>
-            <Typography variant="subtitle1" sx={{ fontSize: "0.8rem", fontWeight: 500 }}>{cleanName(activeConv.name)}</Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
+              <Typography variant="subtitle1" sx={{ fontSize: "0.8rem", fontWeight: 500 }}>{cleanName(activeConv.name)}</Typography>
+              {/* Badge de verificación si el usuario es especialista */}
+              {isSpecialist && verificationStatus && (
+                <VerificationBadge
+                  verificationStatus={verificationStatus}
+                  verificationType={verificationType}
+                  size="small"
+                />
+              )}
+            </Box>
             <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1, fontSize: "0.65rem" }}>
               {/* Online indicator: prefer presence from Zustand store */}
               {(() => {

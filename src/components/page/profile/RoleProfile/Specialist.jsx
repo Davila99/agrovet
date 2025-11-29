@@ -22,8 +22,8 @@ const FieldRow = ({ label, value }) => (
       sx={{
         color: "text.secondary",
         fontWeight: 600,
-        fontSize: "0.75rem",
-        mb: 0.5,
+        fontSize: "0.7rem",
+        mb: 0.4,
         textTransform: "uppercase",
         letterSpacing: "0.5px",
       }}
@@ -35,9 +35,9 @@ const FieldRow = ({ label, value }) => (
       sx={{
         color: value ? "text.primary" : "text.disabled",
         fontWeight: value ? 500 : 400,
-        lineHeight: 1.5,
+        lineHeight: 1.4,
         whiteSpace: "pre-line",
-        fontSize: "0.875rem",
+        fontSize: "0.8rem",
       }}
     >
       {value ?? "— Sin información —"}
@@ -100,10 +100,10 @@ const SpecialistProfile = ({ user }) => {
       <Typography
         variant="h6"
         sx={{
-          fontWeight: 700,
+          fontWeight: 600,
           color: "#103E68",
-          mb: 2,
-          fontSize: "1.25rem",
+          mb: 1.5,
+          fontSize: "1rem",
         }}
       >
         Información Profesional
@@ -159,8 +159,8 @@ const SpecialistProfile = ({ user }) => {
                     sx={{
                       color: "text.secondary",
                       fontWeight: 600,
-                      fontSize: "0.875rem",
-                      mb: 1,
+                      fontSize: "0.7rem",
+                      mb: 0.75,
                       textTransform: "uppercase",
                       letterSpacing: "0.5px",
                     }}

@@ -17,7 +17,7 @@ const AddProductCard = ({ onClick }) => {
         cursor: "pointer",
         transition: "all 0.3s ease",
         height: "100%",
-        minHeight: "140px", // Altura mínima reducida
+        minHeight: "180px", // Altura mínima aumentada
         "&:hover": {
           bgcolor: "#f0fdfa",
           borderColor: "#00c6a7",
@@ -31,19 +31,19 @@ const AddProductCard = ({ onClick }) => {
         size="small"
         sx={{
           bgcolor: "rgba(0, 198, 167, 0.1)",
-          mb: 0.15,
-          width: 28,
-          height: 28,
+          mb: 0.5,
+          width: 36,
+          height: 36,
           "&:hover": {
             bgcolor: "rgba(0, 198, 167, 0.2)",
           },
         }}
       >
-        <CameraAlt sx={{ fontSize: 18, color: "#00c6a7" }} />
+        <CameraAlt sx={{ fontSize: 22, color: "#00c6a7" }} />
       </IconButton>
-      <Box sx={{ display: "flex", alignItems: "center", gap: 0.25 }}>
-        <Add sx={{ fontSize: 12, color: "#00c6a7" }} />
-        <Typography variant="caption" sx={{ color: "#00c6a7", fontWeight: 600, fontSize: "0.6rem" }}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+        <Add sx={{ fontSize: 14, color: "#00c6a7" }} />
+        <Typography variant="caption" sx={{ color: "#00c6a7", fontWeight: 600, fontSize: "0.7rem" }}>
           Agregar
         </Typography>
       </Box>

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Box,
   List,
@@ -13,12 +13,18 @@ import {
   Button,
   Stack,
   Badge,
+  IconButton,
+  Menu,
+  MenuItem,
+  Chip,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
+import FilterListIcon from "@mui/icons-material/FilterList";
 import SpecialistsList from "../Dashboard/SpecialistsList";
 import { resolveAvatar, cleanName } from "./chatUtils";
 import { usePresenceStore } from '../../../store/usePresenceStore';
 import { useNavigate } from 'react-router-dom';
+import VerificationBadge from '../profile/molecules/VerificationBadge';
 
 export default function ChatList({
   rooms,
@@ -33,9 +39,16 @@ export default function ChatList({
   getCurrentUserId,
   computeLastTsForRoom,
   isParticipantOnline,
+  usersMap = {},
+  professionFilter,
+  setProfessionFilter,
+  businessTypeFilter,
+  setBusinessTypeFilter,
 }) {
   const navigate = useNavigate();
   const presenceUsers = usePresenceStore((s) => s.users || {});
+  const [filterAnchorEl, setFilterAnchorEl] = useState(null);
+  const filterOpen = Boolean(filterAnchorEl);
   return (
    
     <Box
@@ -57,11 +70,11 @@ export default function ChatList({
           Conversaciones recientes
         </Typography>
 
-        <Box sx={{ mt: 1 }}>
+        <Box sx={{ mt: 1, display: 'flex', gap: 1, alignItems: 'center' }}>
           <TextField
             size="small"
             fullWidth
-            placeholder="Buscar especialistas"
+            placeholder={viewMode === "specialists" ? "Buscar especialistas" : "Buscar conversaciones"}
             value={specialistSearch}
             onChange={(e) => setSpecialistSearch(e.target.value)}
             sx={{
@@ -78,7 +91,132 @@ export default function ChatList({
               ),
             }}
           />
+          {/* Botón de filtro */}
+          {(viewMode === "specialists" || viewMode === "chats") && (
+            <>
+              <IconButton
+                size="small"
+                onClick={(e) => setFilterAnchorEl(e.currentTarget)}
+                sx={{
+                  border: '1px solid rgba(0,0,0,0.23)',
+                  borderRadius: '50%',
+                  width: 40,
+                  height: 40,
+                  color: (professionFilter || businessTypeFilter) ? '#1565C0' : 'inherit',
+                  bgcolor: (professionFilter || businessTypeFilter) ? 'rgba(21, 101, 192, 0.08)' : 'transparent',
+                }}
+              >
+                <FilterListIcon fontSize="small" />
+              </IconButton>
+              <Menu
+                anchorEl={filterAnchorEl}
+                open={filterOpen}
+                onClose={() => setFilterAnchorEl(null)}
+                PaperProps={{
+                  sx: {
+                    mt: 1,
+                    minWidth: 200,
+                  }
+                }}
+              >
+                {viewMode === "specialists" ? (
+                  <>
+                    <MenuItem
+                      onClick={() => {
+                        setProfessionFilter(null);
+                        setFilterAnchorEl(null);
+                      }}
+                      selected={!professionFilter}
+                    >
+                      Todos los especialistas
+                    </MenuItem>
+                    <Divider />
+                    <MenuItem
+                      onClick={() => {
+                        setProfessionFilter('Veterinario');
+                        setFilterAnchorEl(null);
+                      }}
+                      selected={professionFilter === 'Veterinario'}
+                    >
+                      Veterinario
+                    </MenuItem>
+                    <MenuItem
+                      onClick={() => {
+                        setProfessionFilter('Agrónomo');
+                        setFilterAnchorEl(null);
+                      }}
+                      selected={professionFilter === 'Agrónomo'}
+                    >
+                      Agrónomo
+                    </MenuItem>
+                    <MenuItem
+                      onClick={() => {
+                        setProfessionFilter('Zootecnista');
+                        setFilterAnchorEl(null);
+                      }}
+                      selected={professionFilter === 'Zootecnista'}
+                    >
+                      Zootecnista
+                    </MenuItem>
+                  </>
+                ) : viewMode === "chats" ? (
+                  <>
+                    <MenuItem
+                      onClick={() => {
+                        setBusinessTypeFilter(null);
+                        setFilterAnchorEl(null);
+                      }}
+                      selected={!businessTypeFilter}
+                    >
+                      Todas las conversaciones
+                    </MenuItem>
+                    <Divider />
+                    <MenuItem
+                      onClick={() => {
+                        setBusinessTypeFilter('Agroveterinaria');
+                        setFilterAnchorEl(null);
+                      }}
+                      selected={businessTypeFilter === 'Agroveterinaria'}
+                    >
+                      Agroveterinaria
+                    </MenuItem>
+                    <MenuItem
+                      onClick={() => {
+                        setBusinessTypeFilter('Empresa Agropecuaria');
+                        setFilterAnchorEl(null);
+                      }}
+                      selected={businessTypeFilter === 'Empresa Agropecuaria'}
+                    >
+                      Empresa Agropecuaria
+                    </MenuItem>
+                  </>
+                ) : null}
+              </Menu>
+            </>
+          )}
         </Box>
+        
+        {/* Mostrar filtro activo */}
+        {(professionFilter || businessTypeFilter) && (
+          <Box sx={{ mt: 1, display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+            {professionFilter && (
+              <Chip
+                label={`Profesión: ${professionFilter}`}
+                size="small"
+                onDelete={() => setProfessionFilter(null)}
+                sx={{ fontSize: '0.7rem', height: 24 }}
+              />
+            )}
+            {businessTypeFilter && (
+              <Chip
+                label={`Tipo: ${businessTypeFilter}`}
+                size="small"
+                onDelete={() => setBusinessTypeFilter(null)}
+                sx={{ fontSize: '0.7rem', height: 24 }}
+              />
+            )}
+          </Box>
+        )}
 
         <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
           {["chats", "specialists", "bot"].map((mode) => (
@@ -148,6 +286,28 @@ export default function ChatList({
                 } catch (e) { return false; }
               })();
 
+              // Obtener datos del usuario para verificación
+              const userData = otherId && usersMap[otherId] ? usersMap[otherId] : (other || {});
+              const isSpecialist = (userData?.role || '').toString().toLowerCase() === 'specialist' || !!userData?.specialist_profile;
+              const profile = userData?.specialist_profile || {};
+              let verificationStatus = profile.verification_status;
+              let verificationType = profile.verification_type;
+              
+              // Si no tiene status pero tiene documentos, determinar el status
+              if (!verificationStatus) {
+                const hasTitle = !!profile.verification_title_id;
+                const hasStudentCard = !!profile.verification_student_card_id;
+                const hasGraduationLetter = !!profile.verification_graduation_letter_id;
+                
+                if (hasTitle || hasGraduationLetter) {
+                  verificationStatus = 'verified_professional';
+                  verificationType = verificationType || 'Médico Titulado';
+                } else if (hasStudentCard) {
+                  verificationStatus = 'verified_student';
+                  verificationType = verificationType || 'Estudiante';
+                }
+              }
+
               const handleAvatarClick = (e) => {
                 e.stopPropagation(); // Prevenir que se active el chat al hacer clic en el avatar
                 if (otherId) {
@@ -179,9 +339,19 @@ export default function ChatList({
                   </ListItemAvatar>
                   <ListItemText
                     primary={
-                      <Typography sx={{ fontSize: "0.75rem", fontWeight: 500 }}>
-                        {cleanName(displayName)}
-                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
+                        <Typography sx={{ fontSize: "0.75rem", fontWeight: 500 }}>
+                          {cleanName(displayName)}
+                        </Typography>
+                        {/* Badge de verificación si el usuario es especialista */}
+                        {isSpecialist && verificationStatus && (
+                          <VerificationBadge
+                            verificationStatus={verificationStatus}
+                            verificationType={verificationType}
+                            size="small"
+                          />
+                        )}
+                      </Box>
                     }
                     // Render secondary content as inline elements to avoid nesting block <div> inside
                     // the internal <p> that MUI may use for ListItemText secondary.
@@ -237,6 +407,7 @@ export default function ChatList({
             }
           }}
           searchQuery={specialistSearch}
+          professionFilter={professionFilter}
         />
       )}
     </Box>

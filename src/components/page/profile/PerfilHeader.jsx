@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Box, Avatar, Typography, Button, Rating } from "@mui/material";
 import MapOutlinedIcon from "@mui/icons-material/MapOutlined";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
+import VerificationBadge from "./molecules/VerificationBadge";
 
 const PerfilHeader = ({ user, editing, setEditing, isOwnProfile = true }) => {
   const handleEditToggle = () => setEditing && setEditing((prev) => !prev);
@@ -60,6 +61,18 @@ const PerfilHeader = ({ user, editing, setEditing, isOwnProfile = true }) => {
 
   const role = (user?.role || "").toString().toLowerCase();
   
+  // Debug: verificar datos del usuario
+  useEffect(() => {
+    if (role === "specialist") {
+      console.log('[PerfilHeader] 🔍 Datos del especialista:', {
+        hasUser: !!user,
+        hasSpecialistProfile: !!user?.specialist_profile,
+        profession: user?.specialist_profile?.profession,
+        fullSpecialistProfile: user?.specialist_profile,
+      });
+    }
+  }, [user, role]);
+  
   // Gradientes según el rol
   const getGradient = () => {
     if (role === "specialist") {
@@ -75,7 +88,7 @@ const PerfilHeader = ({ user, editing, setEditing, isOwnProfile = true }) => {
       {/* Fondo con gradiente */}
       <Box
         sx={{
-          height: { xs: 140, sm: 180 },
+          height: { xs: 100, sm: 130 },
           background: getGradient(),
           position: "relative",
           "&::before": {
@@ -94,8 +107,8 @@ const PerfilHeader = ({ user, editing, setEditing, isOwnProfile = true }) => {
       {/* Contenido del header */}
       <Box
         sx={{
-          p: { xs: 2, sm: 3 },
-          mt: { xs: -7, sm: -8 },
+          p: { xs: 1.5, sm: 2 },
+          mt: { xs: -5, sm: -6 },
           display: "flex",
           flexDirection: { xs: "column", sm: "row" },
           alignItems: { xs: "center", sm: "flex-end" },
@@ -106,10 +119,10 @@ const PerfilHeader = ({ user, editing, setEditing, isOwnProfile = true }) => {
           src={user?.profile_picture}
           alt={user?.full_name}
           sx={{
-            width: { xs: 100, sm: 120 },
-            height: { xs: 100, sm: 120 },
-            border: "4px solid white",
-            fontSize: { xs: 36, sm: 48 },
+            width: { xs: 70, sm: 85 },
+            height: { xs: 70, sm: 85 },
+            border: "3px solid white",
+            fontSize: { xs: 24, sm: 32 },
             boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
           }}
         >
@@ -129,15 +142,23 @@ const PerfilHeader = ({ user, editing, setEditing, isOwnProfile = true }) => {
             }}
           >
             <Typography
-              variant="h5"
+              variant="h6"
               sx={{
-                fontWeight: 800,
+                fontWeight: 700,
                 color: "#1A202C",
-                fontSize: { xs: "1.5rem", sm: "1.75rem" },
+                fontSize: { xs: "1.1rem", sm: "1.25rem" },
               }}
             >
               {user?.full_name} {user?.last_name}
             </Typography>
+            {/* Badge de verificación para especialistas */}
+            {role === "specialist" && user?.specialist_profile?.verification_status && (
+              <VerificationBadge
+                verificationStatus={user.specialist_profile.verification_status}
+                verificationType={user.specialist_profile.verification_type}
+                size="medium"
+              />
+            )}
             {/* Mostrar puntuación como estrellas para profesionales (specialist) */}
             {role === "specialist" && (
               <Rating
@@ -159,11 +180,15 @@ const PerfilHeader = ({ user, editing, setEditing, isOwnProfile = true }) => {
             sx={{
               color: "#718096",
               fontWeight: 500,
-              fontSize: "0.95rem",
+              fontSize: "0.8rem",
             }}
           >
-            {role === "specialist" && "Especialista"}
-            {role === "businessman" && "Negocio"}
+            {role === "specialist" && (
+              user?.specialist_profile?.profession || "Especialista"
+            )}
+            {role === "businessman" && (
+              user?.businessman_profile?.business_type || "Negocio"
+            )}
             {role === "consumer" && "Consumidor"}
           </Typography>
         </Box>
@@ -181,13 +206,17 @@ const PerfilHeader = ({ user, editing, setEditing, isOwnProfile = true }) => {
               component={RouterLink}
               to={buildMapLinkForBusiness()}
               variant="outlined"
+              size="small"
               startIcon={<MapOutlinedIcon />}
               sx={{
                 textTransform: "none",
-                borderRadius: 2,
+                borderRadius: 1.5,
                 borderColor: "#2AABEE",
                 color: "#2AABEE",
-                fontWeight: 600,
+                fontWeight: 500,
+                fontSize: "0.8rem",
+                px: 1.5,
+                py: 0.5,
                 boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
                 "&:hover": {
                   borderColor: "#1a94d9",
@@ -205,11 +234,14 @@ const PerfilHeader = ({ user, editing, setEditing, isOwnProfile = true }) => {
               onClick={handleEditToggle}
               variant="contained"
               color="primary"
+              size="small"
               sx={{
                 textTransform: "none",
-                borderRadius: 2,
-                fontWeight: 600,
-                px: 3,
+                borderRadius: 1.5,
+                fontWeight: 500,
+                fontSize: "0.8rem",
+                px: 2,
+                py: 0.75,
                 boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
                 "&:hover": {
                   boxShadow: "0 4px 12px rgba(0,0,0,0.3)",

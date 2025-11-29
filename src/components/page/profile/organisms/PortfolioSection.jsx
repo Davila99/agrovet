@@ -164,6 +164,16 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
           }
           
           console.log("✅ Media subido correctamente - ID:", mediaId, "URL:", uploadedMedia.url);
+          console.log("✅ uploadedMedia completo:", JSON.stringify(uploadedMedia, null, 2));
+          
+          // CRÍTICO: Asegurar que la URL esté disponible inmediatamente
+          if (!uploadedMedia.url) {
+            console.error("❌ ERROR CRÍTICO: uploadedMedia no tiene URL después de normalizar");
+            console.error("❌ uploadedMedia keys:", Object.keys(uploadedMedia));
+            alert("Error: No se pudo obtener la URL de la imagen subida. Por favor intenta de nuevo.");
+            setUploading(false);
+            return;
+          }
         } catch (uploadError) {
           console.error("❌ Error al subir media:", uploadError);
           alert("Error al subir la imagen: " + (uploadError.message || "Error desconocido"));
@@ -237,10 +247,11 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
         }
         
             // Usar SIEMPRE la URL del media subido desde Supabase
-            const mediaUrl = uploadedMedia.url;
+            const mediaUrl = uploadedMedia.url || uploadedMedia.public_url || uploadedMedia.publicURL;
             if (!mediaUrl) {
               console.error("❌ Error: No se recibió URL del media subido");
               console.error("❌ uploadedMedia completo:", JSON.stringify(uploadedMedia, null, 2));
+              console.error("❌ uploadedMedia keys:", Object.keys(uploadedMedia));
               alert("Error al subir la imagen. Por favor intenta de nuevo.");
               setUploading(false);
               return;
@@ -252,16 +263,21 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
               name: formData.title,
               description: formData.description,
               title: formData.title, // Para compatibilidad
-              url: mediaUrl, // URL de Supabase
+              url: mediaUrl, // URL de Supabase - CRÍTICO que esté aquí
+              image: mediaUrl, // También en image para compatibilidad
               created_at: uploadedMedia.created_at || new Date().toISOString(),
             };
-            console.log("✅ Nuevo item creado:", newItem);
+            console.log("✅ Nuevo item creado:", JSON.stringify(newItem, null, 2));
             currentItems.push(newItem);
       }
 
       // Actualizar el perfil con los nuevos items
       const itemIds = currentItems.map((item) => item.id).filter(Boolean);
       console.log("💾 Guardando IDs en perfil:", itemIds);
+      console.log("💾 currentItems completo:", currentItems.map(item => ({ id: item.id, name: item.name, url: item.url })));
+      console.log("💾 itemIds filtrados:", itemIds);
+      console.log("💾 itemIds tipo:", typeof itemIds, Array.isArray(itemIds));
+      console.log("💾 itemIds length:", itemIds.length);
       
       // Actualizar el perfil según el rol
       let updatedProfileFromPatch = null;
@@ -269,9 +285,15 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
         if (userRole?.toLowerCase() === "specialist") {
           console.log("=".repeat(60));
           console.log("💾 [PortfolioSection] Actualizando perfil de specialist con work_images_ids:", itemIds);
-          updatedProfileFromPatch = await profilesAPI.patchSpecialistByUser(userId, {
+          console.log("💾 [PortfolioSection] userId:", userId);
+          console.log("💾 [PortfolioSection] token disponible:", !!token);
+          
+          const patchData = {
             work_images_ids: itemIds,
-          }, token);
+          };
+          console.log("💾 [PortfolioSection] Datos del PATCH:", JSON.stringify(patchData, null, 2));
+          
+          updatedProfileFromPatch = await profilesAPI.patchSpecialistByUser(userId, patchData, token);
           console.log("✅ [PortfolioSection] Perfil de specialist actualizado desde PATCH");
           console.log("✅ [PortfolioSection] updatedProfileFromPatch completo:", JSON.stringify(updatedProfileFromPatch, null, 2));
           console.log("✅ [PortfolioSection] work_images_full desde PATCH:", updatedProfileFromPatch?.work_images_full);
@@ -290,18 +312,38 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
           // Si el PATCH devuelve work_images_full válido, usarlo (tiene prioridad)
           if (updatedProfileFromPatch?.work_images_full && Array.isArray(updatedProfileFromPatch.work_images_full) && updatedProfileFromPatch.work_images_full.length > 0) {
             console.log("✅ [PortfolioSection] Usando work_images_full del PATCH response");
-            console.log("✅ [PortfolioSection] Items del PATCH:", updatedProfileFromPatch.work_images_full.map(item => ({
-              id: item.id,
-              name: item.name,
-              url: item.url
-            })));
-            // Forzar actualización del estado
+            // Guardar en localStorage como respaldo
+            try {
+              const backupKey = `portfolio_backup_${userId}`;
+              localStorage.setItem(backupKey, JSON.stringify({
+                work_images_full: updatedProfileFromPatch.work_images_full,
+                work_images_ids: updatedProfileFromPatch.work_images_ids || itemIds,
+                timestamp: Date.now()
+              }));
+            } catch (e) {
+              console.warn("⚠️ [PortfolioSection] No se pudo guardar en localStorage:", e);
+            }
+            // Forzar actualización del estado INMEDIATAMENTE
             if (onUpdate) {
+              console.log("✅ [PortfolioSection] Llamando onUpdate con work_images_full del PATCH");
               onUpdate(updatedProfileFromPatch.work_images_full);
             }
           } else {
             console.log("⚠️ [PortfolioSection] PATCH no devolvió work_images_full válido, usando items locales");
-            console.log("✅ [PortfolioSection] Actualizando con items locales:", itemsToUpdate);
+            // Guardar en localStorage como respaldo
+            if (itemsToUpdate.length > 0) {
+              try {
+                const backupKey = `portfolio_backup_${userId}`;
+                localStorage.setItem(backupKey, JSON.stringify({
+                  work_images_full: itemsToUpdate,
+                  work_images_ids: itemIds,
+                  timestamp: Date.now()
+                }));
+                console.log("✅ [PortfolioSection] Items locales guardados en localStorage como respaldo");
+              } catch (e) {
+                console.warn("⚠️ [PortfolioSection] No se pudo guardar en localStorage:", e);
+              }
+            }
             // Usar los items locales con la URL del media subido
             if (onUpdate && itemsToUpdate.length > 0) {
               onUpdate(itemsToUpdate);
@@ -311,21 +353,64 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
           handleCloseDialog();
           setUploading(false);
           
-          // Recargar desde el backend después de un breve delay para asegurar consistencia
+          // NO recargar inmediatamente - ya actualizamos el estado arriba
+          // Solo recargar después de un delay más largo para sincronizar con el backend
           setTimeout(async () => {
             try {
               console.log("🔄 [PortfolioSection] Recargando desde backend para verificar...");
               const refreshedProfile = await profilesAPI.getSpecialistByUser(userId, token);
+              console.log("🔄 [PortfolioSection] Perfil refrescado completo:", JSON.stringify(refreshedProfile, null, 2));
+              console.log("🔄 [PortfolioSection] work_images_ids desde backend:", refreshedProfile?.work_images_ids);
+              console.log("🔄 [PortfolioSection] work_images_full desde backend:", refreshedProfile?.work_images_full);
+              
               if (refreshedProfile?.work_images_full && Array.isArray(refreshedProfile.work_images_full) && refreshedProfile.work_images_full.length > 0) {
                 console.log("✅ [PortfolioSection] Datos refrescados desde backend:", refreshedProfile.work_images_full.length, "items");
+                // Actualizar localStorage con los datos confirmados del backend
+                try {
+                  const backupKey = `portfolio_backup_${userId}`;
+                  localStorage.setItem(backupKey, JSON.stringify({
+                    work_images_full: refreshedProfile.work_images_full,
+                    work_images_ids: refreshedProfile.work_images_ids || [],
+                    timestamp: Date.now()
+                  }));
+                  console.log("✅ [PortfolioSection] localStorage actualizado con datos confirmados del backend");
+                } catch (e) {
+                  console.warn("⚠️ [PortfolioSection] No se pudo actualizar localStorage:", e);
+                }
                 if (onUpdate) {
                   onUpdate(refreshedProfile.work_images_full);
+                }
+              } else {
+                // Si el backend devuelve vacío pero tenemos items locales, preservarlos
+                console.warn("⚠️ [PortfolioSection] Backend devolvió work_images_full vacío");
+                console.warn("⚠️ [PortfolioSection] work_images_ids desde backend:", refreshedProfile?.work_images_ids);
+                if (currentItems && currentItems.length > 0) {
+                  console.log("🔄 [PortfolioSection] Preservando items locales:", currentItems.length, "items");
+                  const itemsWithUrls = currentItems.map(item => ({
+                    ...item,
+                    url: item.url || null
+                  })).filter(item => item.url && item.id);
+                  if (itemsWithUrls.length > 0 && onUpdate) {
+                    console.log("✅ [PortfolioSection] Actualizando con items locales preservados");
+                    onUpdate(itemsWithUrls);
+                  }
                 }
               }
             } catch (e) {
               console.error("❌ [PortfolioSection] Error al refrescar:", e);
+              // En caso de error, preservar items locales
+              if (currentItems && currentItems.length > 0) {
+                console.log("🔄 [PortfolioSection] Error al refrescar, preservando items locales");
+                const itemsWithUrls = currentItems.map(item => ({
+                  ...item,
+                  url: item.url || null
+                })).filter(item => item.url && item.id);
+                if (itemsWithUrls.length > 0 && onUpdate) {
+                  onUpdate(itemsWithUrls);
+                }
+              }
             }
-          }, 500);
+          }, 1000); // Aumentar delay a 1 segundo para dar más tiempo al backend
           
           return; // Salir después de actualizar
         } else if (userRole?.toLowerCase() === "businessman") {
@@ -375,6 +460,18 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
                 url: item.url,
                 description: item.description
               })));
+              // Actualizar localStorage con los datos confirmados del backend
+              try {
+                const backupKey = `portfolio_backup_${userId}`;
+                localStorage.setItem(backupKey, JSON.stringify({
+                  work_images_full: updatedProfile.work_images_full,
+                  work_images_ids: updatedProfile.work_images_ids || [],
+                  timestamp: Date.now()
+                }));
+                console.log("✅ [PortfolioSection] localStorage actualizado con datos confirmados del backend");
+              } catch (e) {
+                console.warn("⚠️ [PortfolioSection] No se pudo actualizar localStorage:", e);
+              }
               onUpdate && onUpdate(updatedProfile.work_images_full);
             } else {
               // Si no hay work_images_full pero tenemos items locales, usar los locales como fallback
@@ -440,15 +537,42 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
       const updatedItems = portfolio.filter((_, i) => i !== index);
       const itemIds = updatedItems.map((item) => item.id).filter(Boolean);
 
+      console.log("🗑️ [PortfolioSection] Eliminando item en índice:", index);
+      console.log("🗑️ [PortfolioSection] Items actualizados:", updatedItems.length);
+      console.log("🗑️ [PortfolioSection] IDs actualizados:", itemIds);
+
       if (userRole?.toLowerCase() === "specialist") {
-        await profilesAPI.patchSpecialistByUser(userId, {
+        const updatedProfile = await profilesAPI.patchSpecialistByUser(userId, {
           work_images_ids: itemIds,
         }, token);
+        
+        // Actualizar localStorage con los nuevos datos
+        try {
+          const backupKey = `portfolio_backup_${userId}`;
+          const backupData = {
+            work_images_full: updatedProfile?.work_images_full || updatedItems,
+            work_images_ids: updatedProfile?.work_images_ids || itemIds,
+            timestamp: Date.now()
+          };
+          localStorage.setItem(backupKey, JSON.stringify(backupData));
+          console.log("✅ [PortfolioSection] localStorage actualizado después de eliminar");
+        } catch (e) {
+          console.warn("⚠️ [PortfolioSection] No se pudo actualizar localStorage:", e);
+        }
+        
+        // Si el backend devuelve work_images_full, usarlo
+        if (updatedProfile?.work_images_full && Array.isArray(updatedProfile.work_images_full) && updatedProfile.work_images_full.length > 0) {
+          console.log("✅ [PortfolioSection] Usando work_images_full del backend después de eliminar");
+          onUpdate && onUpdate(updatedProfile.work_images_full);
+        } else {
+          console.log("⚠️ [PortfolioSection] Backend no devolvió work_images_full, usando items locales");
+          onUpdate && onUpdate(updatedItems);
+        }
+      } else {
+        onUpdate && onUpdate(updatedItems);
       }
-
-      onUpdate && onUpdate(updatedItems);
     } catch (error) {
-      console.error("Error al eliminar item del portafolio:", error);
+      console.error("❌ [PortfolioSection] Error al eliminar item del portafolio:", error);
       alert("Error al eliminar el proyecto");
     }
   };
@@ -476,9 +600,10 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
         <Typography
           variant="h6"
           sx={{
-            fontWeight: 700,
+            fontWeight: 600,
             color: "#103E68",
-            fontSize: "1.1rem",
+            fontSize: "0.95rem",
+            mb: 1.5,
           }}
         >
           Portafolio
@@ -493,7 +618,7 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
       <Grid container spacing={1.5}>
         {/* Botón de agregar SIEMPRE visible si es mi perfil */}
         {isOwnProfile && (
-          <Grid item xs={6} sm={4} md={3} lg={2.4} sx={{ display: "flex" }}>
+          <Grid item xs={6} sm={5} md={3} lg={3} sx={{ display: "flex" }}>
             <AddProductCard onClick={() => {
               handleOpenDialog();
             }} />
@@ -527,7 +652,7 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
           });
           
           return (
-            <Grid item xs={6} sm={4} md={3} lg={2.4} key={normalizedItem.id || normalizedItem.url || `portfolio-${index}`} sx={{ display: "flex" }}>
+            <Grid item xs={6} sm={4} md={2.4} lg={2} key={normalizedItem.id || normalizedItem.url || `portfolio-${index}`} sx={{ display: "flex" }}>
               <PortfolioCard
                 item={normalizedItem}
                 editing={editing}
@@ -552,7 +677,7 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
                 border: "2px dashed #dee2e6",
               }}
             >
-              <Typography variant="body2" sx={{ color: "text.secondary", fontWeight: 500, fontSize: "0.85rem" }}>
+              <Typography variant="body2" sx={{ color: "text.secondary", fontWeight: 500, fontSize: "0.75rem" }}>
                 No hay proyectos aún.
               </Typography>
             </Box>
@@ -573,7 +698,7 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
                 mt: 2,
               }}
             >
-              <Typography variant="body2" sx={{ color: "text.secondary", fontWeight: 500, fontSize: "0.85rem" }}>
+              <Typography variant="body2" sx={{ color: "text.secondary", fontWeight: 500, fontSize: "0.75rem" }}>
                 Haz clic en "Agregar" para empezar a construir tu portafolio.
               </Typography>
             </Box>
@@ -595,7 +720,7 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
       >
         <Box sx={{ background: 'linear-gradient(90deg, rgba(24,119,242,0.12), rgba(16,142,137,0.06))', p: 1.5 }}>
           <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Typography variant="h6" sx={{ fontWeight: 700, color: '#0f1724', fontSize: "1.1rem" }}>
+            <Typography variant="h6" sx={{ fontWeight: 600, color: '#0f1724', fontSize: "0.95rem" }}>
               {editingIndex !== null ? "Editar Proyecto" : "Agregar Proyecto"}
             </Typography>
             <IconButton onClick={handleCloseDialog} size="small" sx={{ color: '#6b7280' }}>
@@ -607,7 +732,7 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
             {/* Image Upload Section */}
             <Box>
-              <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600, color: '#374151', fontSize: "0.85rem" }}>
+              <Typography variant="subtitle2" sx={{ mb: 0.75, fontWeight: 600, color: '#374151', fontSize: "0.75rem" }}>
                 Foto o Video
               </Typography>
               <input
@@ -642,11 +767,11 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
                     flexDirection: 'column',
                     gap: 0.5
                   }}>
-                    <AddAPhotoIcon sx={{ fontSize: 36, color: '#6b7280' }} />
-                    <Typography sx={{ color: '#6b7280', fontWeight: 600, fontSize: "0.85rem" }}>
+                    <AddAPhotoIcon sx={{ fontSize: 28, color: '#6b7280' }} />
+                    <Typography sx={{ color: '#6b7280', fontWeight: 600, fontSize: "0.75rem" }}>
                       Haz clic para agregar foto o video
                     </Typography>
-                    <Typography variant="caption" sx={{ color: '#9ca3af', fontSize: "0.7rem" }}>
+                    <Typography variant="caption" sx={{ color: '#9ca3af', fontSize: "0.65rem" }}>
                       JPG, PNG o MP4
                     </Typography>
                   </Box>
@@ -762,7 +887,7 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
               borderRadius: 1.5,
               textTransform: 'none',
               px: 2,
-              fontSize: "0.85rem",
+              fontSize: "0.75rem",
             }}
           >
             Cancelar
@@ -775,9 +900,9 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
             sx={{
               borderRadius: 1.5,
               textTransform: 'none',
-              fontWeight: 600,
+              fontWeight: 500,
               px: 2,
-              fontSize: "0.85rem",
+              fontSize: "0.75rem",
               bgcolor: '#00c6a7',
               '&:hover': {
                 bgcolor: '#00b598',

@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { Box, Paper, CircularProgress, Alert } from "@mui/material";
+import React, { useEffect, useState, useRef } from "react";
+import { Box, Paper, CircularProgress, Alert, Typography, Button } from "@mui/material";
 import { getProfile, authAPI, profilesAPI } from "../../../services/endpoints";
 import { authAPI as authAPIEndpoint } from "../../../services/endpoints/auth";
 import { normalizeStoredToken } from "../chat/chatUtils";
@@ -10,11 +10,10 @@ import PerfilPortfolio from "./PerfilPortfolio";
 import PerfilContactHistory from "./PerfilContactHistory";
 import PortfolioSection from "./organisms/PortfolioSection";
 import ProductCatalog from "./organisms/ProductCatalog";
+import VerificationDocumentsSection from "./organisms/VerificationDocumentsSection";
 import authClient from "../../../services/authClient";
 
 const Perfil = () => {
-  console.log('🚀🚀🚀 [Perfil] 🎬 Componente Perfil RENDERIZADO 🚀🚀🚀');
-  console.log('🚀🚀🚀 [Perfil] Stack trace:', new Error().stack);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -22,29 +21,50 @@ const Perfil = () => {
   const [form, setForm] = useState({});
   const location = useLocation();
   const [isOwnProfile, setIsOwnProfile] = useState(true);
+  const fetchInProgressRef = useRef(false);
   
-  console.log('[Perfil] 🎬 Estado actual:', {
-    user: user ? { id: user.id, role: user.role, hasSpecialistProfile: !!user.specialist_profile } : null,
-    loading,
-    error,
-    location: location.pathname + location.search
-  });
+  // Memoizar los valores de location para evitar re-renders innecesarios
+  const pathname = location.pathname;
+  const search = location.search;
 
   useEffect(() => {
-    console.log('🚀🚀🚀 [Perfil] 🔄 useEffect EJECUTADO 🚀🚀🚀');
-    console.log('[Perfil] 🔄 location.pathname:', location.pathname);
-    console.log('[Perfil] 🔄 location.search:', location.search);
-    console.log('[Perfil] 🔄 window.location.href:', window.location.href);
-    console.log('[Perfil] 🔄 Date.now():', Date.now());
+    let isMounted = true;
+    let timeoutId = null;
+    let debounceTimer = null;
     
     const fetchProfile = async () => {
-      console.log('[Perfil] 📥 fetchProfile INICIADO');
+      // Prevenir múltiples ejecuciones - verificar ANTES de establecer el flag
+      if (fetchInProgressRef.current) {
+        return;
+      }
+      
+      fetchInProgressRef.current = true;
+      
+      if (!isMounted) {
+        fetchInProgressRef.current = false;
+        return;
+      }
+      
       setLoading(true);
+      setError("");
+      
+      // Timeout de seguridad: si tarda más de 30 segundos, mostrar error
+      timeoutId = setTimeout(() => {
+        if (isMounted) {
+          setError("La carga del perfil está tardando demasiado. Por favor recarga la página.");
+          setLoading(false);
+          fetchInProgressRef.current = false;
+        }
+      }, 30000);
+      
       try {
         const token = normalizeStoredToken(localStorage.getItem("token"));
-        console.log('[Perfil] 🔑 Token obtenido:', !!token);
+        
+        if (!token) {
+          throw new Error("No se encontró el token de autenticación. Por favor inicia sesión.");
+        }
         // Comprobar si se pasó userId por query param para ver un perfil (visita)
-        const params = new URLSearchParams(location.search);
+        const params = new URLSearchParams(search);
         const requestedId = params.get("userId");
 
         let res;
@@ -66,59 +86,68 @@ const Perfil = () => {
           setIsOwnProfile(true);
         }
         
-        // SIEMPRE obtener el perfil de especialista desde Profiles Service si el usuario es especialista
-        // Esto asegura que tenemos los datos más actualizados, incluso si Auth Service devuelve datos antiguos
+        // Obtener perfil específico según el rol
         const userRole = (res.role || '').toString().toLowerCase();
-        console.log('[Perfil] 🔍 Verificando role del usuario:', userRole, 'res.role original:', res.role);
         
         if (userRole === "specialist") {
-          console.log('[Perfil] ⚠️ Usuario es especialista, obteniendo perfil desde Profiles Service...');
-          console.log('[Perfil] User ID:', res.id, 'tipo:', typeof res.id);
-          console.log('[Perfil] Token disponible:', !!token, 'token:', token ? token.substring(0, 20) + '...' : 'null');
-          console.log('[Perfil] specialist_profile actual (si existe):', res.specialist_profile);
-          
-          // FORZAR la obtención del perfil, incluso si ya existe uno
           try {
-            console.log('[Perfil] 📞 Llamando a profilesAPI.getSpecialistByUser con user_id:', res.id);
-            console.log('[Perfil] 📞 URL que se construirá:', `http://127.0.0.1:8003/api/profiles/specialists/${res.id}/`);
+            // Si ya viene specialist_profile del Auth Service, verificar si tiene profession
+            const existingProfile = res.specialist_profile || {};
+            console.log('[Perfil] 🔍 Perfil existente del Auth Service:', {
+              userId: res.id,
+              hasExistingProfile: !!res.specialist_profile,
+              existingProfession: existingProfile.profession,
+            });
             
+            // Cargar perfil completo desde Profiles Service
             const specialistProfile = await profilesAPI.getSpecialistByUser(res.id, token);
-            
-            console.log('[Perfil] ✅ Perfil de especialista obtenido desde Profiles Service:', JSON.stringify(specialistProfile, null, 2));
-            console.log('[Perfil] ✅ Tipo de specialistProfile:', typeof specialistProfile);
-            console.log('[Perfil] ✅ Es null?', specialistProfile === null);
-            console.log('[Perfil] ✅ Es undefined?', specialistProfile === undefined);
-            console.log('[Perfil] ✅ Tiene keys?', specialistProfile ? Object.keys(specialistProfile) : 'N/A');
-            
+            console.log('[Perfil] 🔍 Perfil de especialista cargado desde Profiles Service:', {
+              userId: res.id,
+              hasProfile: !!specialistProfile,
+              profession: specialistProfile?.profession,
+              fullProfile: specialistProfile,
+            });
             if (specialistProfile) {
-              // SOBRESCRIBIR el specialist_profile con los datos del Profiles Service
-              res.specialist_profile = specialistProfile;
-              // También asignar work_images_full directamente desde el perfil
-              res.work_images_full = specialistProfile.work_images_full || [];
-              console.log('[Perfil] ✅ Perfil de especialista asignado. res.specialist_profile ahora es:', JSON.stringify(res.specialist_profile, null, 2));
-              console.log('[Perfil] ✅ work_images_full:', res.work_images_full);
-              console.log('[Perfil] ✅ work_images_full length:', res.work_images_full?.length);
-              console.log('[Perfil] ✅ work_images_full items:', res.work_images_full?.map(item => ({ id: item.id, name: item.name, url: item.url })));
-              console.log('[Perfil] ✅ profession después de asignar:', res.specialist_profile?.profession);
-              console.log('[Perfil] ✅ experience_years después de asignar:', res.specialist_profile?.experience_years);
-              console.log('[Perfil] ✅ about_us después de asignar:', res.specialist_profile?.about_us);
-            } else {
-              console.warn('[Perfil] ⚠️ getSpecialistByUser devolvió null/undefined');
+              // Combinar datos existentes con el perfil completo
+              res.specialist_profile = {
+                ...existingProfile,
+                ...specialistProfile,
+                // Asegurar que profession esté presente
+                profession: specialistProfile.profession || existingProfile.profession || '',
+              };
+              console.log('[Perfil] ✅ Perfil combinado:', {
+                profession: res.specialist_profile.profession,
+              });
+              let workImagesFull = specialistProfile.work_images_full || [];
+              
+              // Intentar cargar desde localStorage si está vacío
+              if (workImagesFull.length === 0 && specialistProfile.work_images_ids?.length > 0) {
+                try {
+                  const backupKey = `portfolio_backup_${res.id}`;
+                  const backupData = localStorage.getItem(backupKey);
+                  if (backupData) {
+                    const backup = JSON.parse(backupData);
+                    const backupIds = backup.work_images_ids || [];
+                    const currentIds = specialistProfile.work_images_ids || [];
+                    const idsMatch = backupIds.length === currentIds.length && 
+                                     backupIds.every((id, idx) => id === currentIds[idx]);
+                    
+                    if (idsMatch && backup.work_images_full?.length > 0) {
+                      workImagesFull = backup.work_images_full;
+                      specialistProfile.work_images_full = workImagesFull;
+                    }
+                  }
+                } catch (e) {
+                  // Ignorar errores de localStorage
+                }
+              }
+              
+              res.work_images_full = workImagesFull;
             }
           } catch (e) {
-            console.error("❌ [Perfil] Error al cargar el perfil de especialista:", e);
-            console.error("❌ [Perfil] Error details:", {
-              message: e.message,
-              status: e.status,
-              body: e.body,
-              stack: e.stack,
-              name: e.name
-            });
-            // Continuar sin el perfil de especialista si falla, pero mostrar un warning
-            console.warn('[Perfil] ⚠️ Continuando sin perfil de especialista actualizado');
+            // Continuar sin el perfil de especialista si falla
           }
         } else if (userRole === "businessman") {
-          console.log('[Perfil] ⚠️ Usuario es businessman, obteniendo perfil desde Profiles Service...');
           try {
             const businessmanProfile = await profilesAPI.getBusinessmanByUser(res.id, token);
             if (businessmanProfile) {
@@ -126,33 +155,48 @@ const Perfil = () => {
               res.products_and_services_full = businessmanProfile.products_and_services_full || [];
             }
           } catch (e) {
-            console.error("❌ [Perfil] Error al cargar el perfil de businessman:", e);
+            // Continuar sin el perfil de businessman si falla
           }
-        } else {
-          console.log('[Perfil] Usuario no es especialista ni businessman, role:', res.role, 'userRole:', userRole);
         }
         
-        console.log('[Perfil] 📋 Datos finales antes de setUser:', JSON.stringify(res, null, 2));
-        console.log('[Perfil] 📋 specialist_profile final:', JSON.stringify(res.specialist_profile, null, 2));
-        console.log('[Perfil] 📋 profession final:', res.specialist_profile?.profession);
-        console.log('[Perfil] 📋 experience_years final:', res.specialist_profile?.experience_years);
-        console.log('[Perfil] 📋 about_us final:', res.specialist_profile?.about_us);
+        if (!isMounted) {
+          if (timeoutId) clearTimeout(timeoutId);
+          return;
+        }
+        
+        if (!res || !res.id) {
+          throw new Error("No se recibieron datos válidos del usuario");
+        }
         
         setUser(res);
         setForm(res);
-        console.log('[Perfil] ✅ Estado actualizado con setUser y setForm');
       } catch (err) {
-        console.error('[Perfil] ❌ Error en fetchProfile:', err);
-        console.error('[Perfil] ❌ Error stack:', err.stack);
-        setError("No se pudo cargar el perfil");
+        if (isMounted) {
+          const errorMessage = err.message || err.body?.detail || err.body?.error || "No se pudo cargar el perfil";
+          setError(errorMessage);
+          setLoading(false);
+        }
       } finally {
-        setLoading(false);
-        console.log('[Perfil] ✅ fetchProfile completado, loading=false');
+        fetchInProgressRef.current = false;
+        if (timeoutId) clearTimeout(timeoutId);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
-    console.log('[Perfil] 🔄 useEffect ejecutado, location:', location.pathname, location.search);
-    fetchProfile();
-  }, [location.pathname, location.search]); // Recargar cuando cambia la ruta o los query params
+    
+    // Debounce para prevenir múltiples ejecuciones rápidas
+    debounceTimer = setTimeout(() => {
+      fetchProfile();
+    }, 150);
+    
+    return () => {
+      isMounted = false;
+      if (debounceTimer) clearTimeout(debounceTimer);
+      if (timeoutId) clearTimeout(timeoutId);
+      fetchInProgressRef.current = false;
+    };
+  }, [pathname, search]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -177,19 +221,71 @@ const Perfil = () => {
     }
   };
 
-  if (loading)
+  if (loading) {
     return (
       <Box
         display="flex"
+        flexDirection="column"
         justifyContent="center"
         alignItems="center"
         minHeight="60vh"
+        gap={2}
       >
         <CircularProgress />
+        <Typography variant="body2" color="text.secondary">
+          Cargando perfil...
+        </Typography>
       </Box>
     );
+  }
 
-  if (error)
+  if (error) {
+    return (
+      <Box
+        display="flex"
+        flexDirection="column"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="60vh"
+        gap={2}
+        px={2}
+      >
+        <Alert severity="error" sx={{ maxWidth: 600 }}>
+          {error}
+        </Alert>
+        <Button
+          variant="contained"
+          onClick={() => {
+            setError("");
+            setLoading(true);
+            window.location.reload();
+          }}
+        >
+          Reintentar
+        </Button>
+      </Box>
+    );
+  }
+
+  if (!user || !user.id) {
+    if (loading) {
+      return (
+        <Box
+          display="flex"
+          flexDirection="column"
+          justifyContent="center"
+          alignItems="center"
+          minHeight="60vh"
+          gap={2}
+        >
+          <CircularProgress />
+          <Typography variant="body2" color="text.secondary">
+            Cargando perfil...
+          </Typography>
+        </Box>
+      );
+    }
+    
     return (
       <Box
         display="flex"
@@ -197,25 +293,10 @@ const Perfil = () => {
         alignItems="center"
         minHeight="60vh"
       >
-        <Alert severity="error">{error}</Alert>
+        <Alert severity="warning">No se pudo cargar la información del usuario</Alert>
       </Box>
     );
-
-  if (!user) {
-    console.log('[Perfil] ⚠️ No hay usuario, retornando null');
-    return null;
   }
-
-  console.log('[Perfil] 🎨 Renderizando componente con user:', {
-    id: user.id,
-    role: user.role,
-    specialist_profile: user.specialist_profile ? {
-      profession: user.specialist_profile.profession,
-      experience_years: user.specialist_profile.experience_years,
-      about_us: user.specialist_profile.about_us,
-      can_give_consultations: user.specialist_profile.can_give_consultations
-    } : null
-  });
 
   return (
     <Box
@@ -269,14 +350,36 @@ const Perfil = () => {
             />
           </Box>
 
-          {/* Columna derecha - Portafolio, Catálogo o Historial */}
+          {/* Columna derecha - Documentos de verificación, Portafolio, Catálogo o Historial */}
           <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+            {/* Sección de documentos de verificación solo para especialistas - ARRIBA del portafolio */}
+            {(user.role || "").toString().toLowerCase() === "specialist" && isOwnProfile && (
+              <VerificationDocumentsSection
+                specialistProfile={user.specialist_profile || {}}
+                userId={user.id}
+                isOwnProfile={isOwnProfile}
+                onUpdate={(updatedProfile) => {
+                  setUser((prev) => {
+                    const updated = {
+                      ...prev,
+                      specialist_profile: {
+                        ...prev.specialist_profile,
+                        ...updatedProfile,
+                      },
+                    };
+                    return updated;
+                  });
+                }}
+              />
+            )}
+            
             {(user.role || "").toString().toLowerCase() === "consumer" ? (
               <PerfilContactHistory contactHistory={user.contact_history || []} />
             ) : (
               <>
                 {(user.role || "").toString().toLowerCase() === "specialist" && (() => {
-                  const portfolioData = user.work_images_full || user.specialist_profile?.work_images_full || [];
+                  // Priorizar work_images_full del perfil del especialista, luego del usuario directamente
+                  const portfolioData = user.specialist_profile?.work_images_full || user.work_images_full || [];
                   return (
                     <PortfolioSection
                       editing={isOwnProfile} // SIEMPRE editable si es mi perfil, sin importar el modo edición general
@@ -293,6 +396,11 @@ const Perfil = () => {
                           if (prev.specialist_profile) {
                             updated.specialist_profile = {
                               ...prev.specialist_profile,
+                              work_images_full: updatedPortfolio,
+                            };
+                          } else {
+                            // Si no existe specialist_profile, crearlo con el portfolio
+                            updated.specialist_profile = {
                               work_images_full: updatedPortfolio,
                             };
                           }

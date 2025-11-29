@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   Box,
   Avatar,
@@ -10,8 +10,10 @@ import {
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import httpClient from "../../../services/httpClient";
+import { profilesAPI } from "../../../services/endpoints";
+import VerificationBadge from "../profile/molecules/VerificationBadge";
 
-const SpecialistsList = ({ onSelectSpecialist, searchQuery }) => {
+const SpecialistsList = ({ onSelectSpecialist, searchQuery, professionFilter = null }) => {
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState([]);
   const [error, setError] = useState(null);
@@ -75,23 +77,18 @@ const SpecialistsList = ({ onSelectSpecialist, searchQuery }) => {
         const specialists = list.filter((u) => isSpecialistUser(u));
         console.log("🧠 Especialistas candidatas:", specialists.length);
         
-        // Debug: mostrar detalles de los especialistas encontrados
+        // Debug: mostrar detalles COMPLETOS de los especialistas encontrados
         if (specialists.length > 0) {
-          console.log("📋 Especialistas encontrados:", specialists.map(u => ({
-            id: u.id,
-            name: u.full_name || u.username,
-            role: u.role,
-            hasProfile: !!u.specialist_profile
-          })));
-        } else {
-          console.warn("⚠️ No se encontraron especialistas. Total usuarios:", list.length);
-          console.debug("📋 Primeros 5 usuarios para debug:", list.slice(0, 5).map(u => ({
-            id: u.id,
-            name: u.full_name || u.username,
-            role: u.role,
-            is_specialist: u.is_specialist,
-            has_profile: !!u.specialist_profile
-          })));
+          specialists.forEach(u => {
+            const profile = u.specialist_profile || {};
+            console.log(`📋 ESPECIALISTA COMPLETO ${u.full_name || u.username}:`, u);
+            console.log(`📋 specialist_profile:`, u.specialist_profile);
+            console.log(`📋 profile keys:`, Object.keys(profile));
+            console.log(`📋 verification_status:`, profile.verification_status);
+            console.log(`📋 verification_title_id:`, profile.verification_title_id);
+            console.log(`📋 verification_student_card_id:`, profile.verification_student_card_id);
+            console.log(`📋 verification_graduation_letter_id:`, profile.verification_graduation_letter_id);
+          });
         }
 
         try {
@@ -112,9 +109,98 @@ const SpecialistsList = ({ onSelectSpecialist, searchQuery }) => {
           return isNotCurrentUser;
         });
 
-        console.log("✅ Especialistas después de filtrar usuario actual:", filtered.length);
-        setSpecialistsCount(specialists.length);
-        setUsers(filtered);
+        // CARGAR perfiles completos de especialistas para obtener datos de verificación
+        const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+        const enrichedSpecialists = await Promise.all(
+          filtered.map(async (specialist) => {
+            // PRIMERO: Intentar cargar perfil completo del especialista
+            try {
+              if (token && specialist.id) {
+                const specialistProfile = await profilesAPI.getSpecialistByUser(specialist.id, token);
+                if (specialistProfile) {
+                  console.log(`✅ Perfil completo cargado para ${specialist.id}:`, {
+                    verification_status: specialistProfile.verification_status,
+                    verification_type: specialistProfile.verification_type
+                  });
+                  return {
+                    ...specialist,
+                    specialist_profile: specialistProfile
+                  };
+                }
+              }
+            } catch (err) {
+              // Si es 403, intentar usar datos que vengan en /auth/users/
+              if (err.status === 403 || err.message?.includes('403') || err.message?.includes('Forbidden')) {
+                console.log(`⚠️ 403 para ${specialist.id}, verificando datos básicos...`);
+              } else {
+                console.error(`❌ Error cargando perfil ${specialist.id}:`, err);
+              }
+            }
+            
+            // SEGUNDO: Si no se pudo cargar, usar datos existentes y calcular basado en documentos
+            const profile = specialist.specialist_profile || {};
+            
+            // Si ya tiene verification_status, usarlo
+            if (profile.verification_status) {
+              return {
+                ...specialist,
+                specialist_profile: profile
+              };
+            }
+            
+            // Si no tiene status, calcular basado en documentos (igual que el backend)
+            const hasTitle = !!profile.verification_title_id;
+            const hasStudentCard = !!profile.verification_student_card_id;
+            const hasGraduationLetter = !!profile.verification_graduation_letter_id;
+            
+            let verificationStatus = null;
+            let verificationType = null;
+            
+            // Misma lógica que el backend (serializers.py línea 172-196)
+            if (hasStudentCard) {
+              verificationStatus = 'verified_student';
+              verificationType = 'Estudiante';
+            } else if (hasTitle || hasGraduationLetter) {
+              verificationStatus = 'verified_professional';
+              verificationType = 'Médico Titulado';
+            }
+            
+            console.log(`📊 ${specialist.full_name || specialist.username}:`, {
+              hasTitle,
+              hasStudentCard,
+              hasGraduationLetter,
+              verificationStatus,
+              verificationType
+            });
+            
+            return {
+              ...specialist,
+              specialist_profile: {
+                ...profile,
+                verification_status: verificationStatus,
+                verification_type: verificationType,
+              }
+            };
+          })
+        );
+
+        // Aplicar filtro de profesión si está activo
+        let filteredSpecialists = enrichedSpecialists;
+        if (professionFilter) {
+          console.log(`[SpecialistsList] 🔍 Aplicando filtro de profesión: ${professionFilter}`);
+          filteredSpecialists = enrichedSpecialists.filter(s => {
+            const profession = s.specialist_profile?.profession || '';
+            const matches = profession === professionFilter;
+            console.log(`[SpecialistsList] ${s.full_name || s.username}: profession="${profession}", matches=${matches}`);
+            return matches;
+          });
+          console.log(`[SpecialistsList] ✅ Filtrados ${filteredSpecialists.length} de ${enrichedSpecialists.length} especialistas`);
+        } else {
+          console.log(`[SpecialistsList] 🔍 Sin filtro de profesión, mostrando todos`);
+        }
+        
+        setSpecialistsCount(filteredSpecialists.length);
+        setUsers(filteredSpecialists);
       } catch (e) {
         setError(e.message || String(e));
       } finally {
@@ -127,7 +213,7 @@ const SpecialistsList = ({ onSelectSpecialist, searchQuery }) => {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [professionFilter]); // Re-ejecutar cuando cambie el filtro
 
   // 🌀 Estado de carga
   if (loading)
@@ -199,7 +285,36 @@ const SpecialistsList = ({ onSelectSpecialist, searchQuery }) => {
           },
         }}
       >
-        {users.length === 0 ? (
+        {(() => {
+          // Aplicar filtros: primero por profesión, luego por búsqueda
+          let filtered = users;
+          
+          // Filtro por profesión
+          if (professionFilter) {
+            console.log(`[SpecialistsList] 🔍 Aplicando filtro de profesión: ${professionFilter}`);
+            filtered = filtered.filter(s => {
+              const profession = s.specialist_profile?.profession || '';
+              const matches = profession === professionFilter;
+              if (matches) {
+                console.log(`[SpecialistsList] ✅ ${s.full_name || s.username}: profession="${profession}" MATCH`);
+              }
+              return matches;
+            });
+            console.log(`[SpecialistsList] ✅ Filtrados ${filtered.length} de ${users.length} especialistas`);
+          }
+          
+          // Filtro por búsqueda
+          const q = String(searchQuery || "").trim().toLowerCase();
+          if (q) {
+            filtered = filtered.filter((u) => {
+              const name = (u.full_name || u.username || "").toLowerCase();
+              const prof = (u.specialist_profile?.profession || "").toLowerCase();
+              return name.includes(q) || prof.includes(q);
+            });
+          }
+          
+          return filtered;
+        })().length === 0 ? (
           <Box
             sx={{
               p: 3,
@@ -211,21 +326,38 @@ const SpecialistsList = ({ onSelectSpecialist, searchQuery }) => {
               No hay especialistas disponibles
             </Typography>
             <Typography variant="caption" sx={{ color: "text.secondary" }}>
-              {specialistsCount > 0 
+              {professionFilter 
+                ? `No se encontraron especialistas con profesión "${professionFilter}"`
+                : specialistsCount > 0 
                 ? "El único especialista encontrado eres tú" 
                 : "No se encontraron usuarios con rol de especialista"}
             </Typography>
           </Box>
         ) : (
-          users
-            .filter((u) => {
-              const q = String(searchQuery || "").trim().toLowerCase();
-              if (!q) return true;
-              const name = (u.full_name || u.username || "").toLowerCase();
-              const prof = (u.specialist_profile?.profession || "").toLowerCase();
-              return name.includes(q) || prof.includes(q);
-            })
-            .map((u) => {
+          (() => {
+            // Aplicar filtros: primero por profesión, luego por búsqueda
+            let filtered = users;
+            
+            // Filtro por profesión
+            if (professionFilter) {
+              filtered = filtered.filter(s => {
+                const profession = s.specialist_profile?.profession || '';
+                return profession === professionFilter;
+              });
+            }
+            
+            // Filtro por búsqueda
+            const q = String(searchQuery || "").trim().toLowerCase();
+            if (q) {
+              filtered = filtered.filter((u) => {
+                const name = (u.full_name || u.username || "").toLowerCase();
+                const prof = (u.specialist_profile?.profession || "").toLowerCase();
+                return name.includes(q) || prof.includes(q);
+              });
+            }
+            
+            return filtered;
+          })().map((u) => {
             const rating = Number(u?.specialist_profile?.puntuations) || 0;
             const profession =
               u.specialist_profile?.profession || "Veterinario";
@@ -233,7 +365,7 @@ const SpecialistsList = ({ onSelectSpecialist, searchQuery }) => {
             return (
               <Card
                 key={u.id}
-                onClick={() => navigate(`/profile/${u.id}`)}
+                onClick={() => navigate(`/perfil?userId=${u.id}`)}
                 sx={{
                   mb: 1.5,
                   borderRadius: 2,
@@ -277,17 +409,54 @@ const SpecialistsList = ({ onSelectSpecialist, searchQuery }) => {
                     }}
                   />
                   <Box sx={{ flex: 1, minWidth: 0, overflow: "hidden", pr: 1 }}>
-                    <Typography
-                      variant="subtitle2"
-                      sx={{
-                        fontWeight: 600,
-                        color: textDark,
-                        fontSize: "0.9rem",
-                      }}
-                      noWrap
-                    >
-                      {u.full_name || u.username}
-                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
+                      <Typography
+                        variant="subtitle2"
+                        sx={{
+                          fontWeight: 600,
+                          color: textDark,
+                          fontSize: "0.9rem",
+                        }}
+                        noWrap
+                      >
+                        {u.full_name || u.username}
+                      </Typography>
+                      {/* Badge de verificación - FORZAR: mostrar siempre que sea especialista y tenga documentos */}
+                      {(() => {
+                        const profile = u.specialist_profile || {};
+                        const hasTitle = !!(profile.verification_title_id || profile.verification_title);
+                        const hasStudentCard = !!(profile.verification_student_card_id || profile.verification_student_card);
+                        const hasGraduationLetter = !!(profile.verification_graduation_letter_id || profile.verification_graduation_letter);
+                        const hasAnyDoc = hasTitle || hasStudentCard || hasGraduationLetter;
+                        
+                        // Usar verification_status si existe, sino determinar basado en documentos
+                        let verificationStatus = profile.verification_status;
+                        let verificationType = profile.verification_type;
+                        
+                        if (!verificationStatus && hasAnyDoc) {
+                          if (hasTitle || hasGraduationLetter) {
+                            verificationStatus = 'verified_professional';
+                            verificationType = verificationType || 'Médico Titulado';
+                          } else if (hasStudentCard) {
+                            verificationStatus = 'verified_student';
+                            verificationType = verificationType || 'Estudiante';
+                          }
+                        }
+                        
+                        // MOSTRAR BADGE si tiene status O si tiene documentos (inferir status)
+                        if (verificationStatus) {
+                          return (
+                            <VerificationBadge
+                              verificationStatus={verificationStatus}
+                              verificationType={verificationType}
+                              size="small"
+                            />
+                          );
+                        }
+                        
+                        return null;
+                      })()}
+                    </Box>
                     <Typography
                       variant="caption"
                       sx={{

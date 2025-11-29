@@ -69,16 +69,19 @@ export function normalizeMessage(raw) {
         }
     }
     
-    if (raw.media_url) {
-        const url = raw.media_url.toLowerCase();
-        if (url.match(/\.(mp4|webm|mov)$/i)) {
+    // Priorizar file_url del backend, luego media_url, luego attachments
+    const finalMediaUrl = raw.file_url || raw.media_url || (raw.media && raw.media.file_url) || (raw.media && raw.media.url);
+    
+    if (finalMediaUrl) {
+        const url = String(finalMediaUrl).toLowerCase();
+        if (url.match(/\.(mp4|webm|mov|mkv|avi)$/i)) {
             mediaType = 'video';
-        } else if (url.match(/\.(mp3|wav|ogg|webm|m4a|aac)$/i)) {
+        } else if (url.match(/\.(mp3|wav|ogg|webm|m4a|aac|oga|opus)$/i)) {
             mediaType = 'audio';
         }
         attachments = [{
-            id: raw.media_id,
-            url: raw.media_url,
+            id: raw.media_id || (raw.media && raw.media.id),
+            url: finalMediaUrl,
             type: mediaType
         }];
     } else if (Array.isArray(raw.attachments)) {
@@ -96,9 +99,11 @@ export function normalizeMessage(raw) {
         is_read,
         attachments,
         room_id,
-        media_id: raw.media_id,
-        media_url: raw.media_url,
+        media_id: raw.media_id || (raw.media && raw.media.id),
+        media_url: finalMediaUrl || raw.media_url,
+        file_url: raw.file_url || (raw.media && raw.media.file_url),
         media_spectrum: mediaSpectrum,
+        media_file_size: raw.media_file_size || (raw.media && raw.media.file_size) || (raw.media && raw.media.size),
         delivered: raw.delivered || false,
         read: raw.read || false,
     };

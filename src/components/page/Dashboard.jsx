@@ -231,7 +231,7 @@ const Dashboard = () => {
                     primary={item.label}
                     primaryTypographyProps={{
                       fontWeight: selected === item.id ? 600 : 500,
-                      fontSize: "0.95rem",
+                      fontSize: "0.8rem",
                     }}
                   />
                 )}
@@ -273,12 +273,12 @@ const Dashboard = () => {
               src={user?.profile_picture || ""}
               variant="rounded"
               sx={{
-                width: 48,
-                height: 48,
+                width: 40,
+                height: 40,
                 borderRadius: 1.5,
                 border: "2px solid rgba(255, 255, 255, 0.15)",
                 transition: "all 0.2s",
-                fontSize: "1.2rem",
+                fontSize: "1rem",
                 fontWeight: 600,
                 "&:hover": { 
                   borderColor: "#00c6a7",
@@ -294,11 +294,11 @@ const Dashboard = () => {
                   variant="subtitle2"
                   sx={{
                     color: "#fff",
-                    fontWeight: 700,
+                    fontWeight: 600,
                     whiteSpace: "nowrap",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
-                    fontSize: "1rem",
+                    fontSize: "0.85rem",
                     lineHeight: 1.3,
                     mb: 0.25
                   }}
@@ -310,7 +310,7 @@ const Dashboard = () => {
                   sx={{
                     color: "rgba(255, 255, 255, 0.6)",
                     display: "block",
-                    fontSize: "0.85rem",
+                    fontSize: "0.75rem",
                     lineHeight: 1.3,
                     fontWeight: 500
                   }}

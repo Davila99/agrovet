@@ -66,37 +66,25 @@ export const chatService = {
     },
 
     // Enviar mensaje con imagen/video/audio (archivo)
-    sendMessageWithImage: async (roomId, file, token, content = '', spectrum = null) => {
-        // Primero subir archivo a Media Service
-        // MEDIA service URL ya incluye /api, así que solo agregamos /media/
-        const mediaUrl = env.buildUrl('MEDIA', '/media/');
-        const formData = new FormData();
+    sendMessageWithImage: async (roomId, file, token, content = '', spectrum = null, onProgress = null) => {
+        // Importar el uploader con progreso
+        const { uploadMediaFile } = await import('../chat/mediaUploader');
         
-        // Determinar el tipo de archivo y usar el nombre de campo apropiado
+        // Determinar el tipo de archivo
         const fileType = file.type?.split('/')[0] || 'image';
-        const fieldName = fileType === 'audio' ? 'audio' : 'image';
-        formData.append(fieldName, file);
-        formData.append('folder', 'chat');
         
-        // Si hay spectrum data (para audio), intentar enviarlo en description
+        // Preparar metadata
+        const meta = {};
         if (spectrum && Array.isArray(spectrum) && fileType === 'audio') {
-            try {
-                formData.append('description', JSON.stringify({ spectrum }));
-            } catch (e) {
-                console.warn('Error serializing spectrum data:', e);
-            }
+            meta.description = { spectrum };
         }
         
         try {
-            const mediaRes = await httpClient(mediaUrl, {
-                method: "POST",
-                body: formData,
-                headers: authHeaders(token)
-            });
+            // Subir archivo con progreso
+            const mediaRes = await uploadMediaFile(file, onProgress, meta);
             
             if (mediaRes && mediaRes.id) {
                 // Enviar mensaje con media_id
-                // El spectrum se almacenará en el media description y será recuperado por el adapter
                 return await chatService.sendMessage(roomId, content, token, mediaRes.id);
             }
             throw new Error('No se recibió ID del media después de subir');
