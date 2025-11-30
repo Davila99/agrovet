@@ -17,12 +17,11 @@ const Perfil = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({});
   const location = useLocation();
   const [isOwnProfile, setIsOwnProfile] = useState(true);
   const fetchInProgressRef = useRef(false);
-  
+
   // Memoizar los valores de location para evitar re-renders innecesarios
   const pathname = location.pathname;
   const search = location.search;
@@ -31,23 +30,23 @@ const Perfil = () => {
     let isMounted = true;
     let timeoutId = null;
     let debounceTimer = null;
-    
+
     const fetchProfile = async () => {
       // Prevenir múltiples ejecuciones - verificar ANTES de establecer el flag
       if (fetchInProgressRef.current) {
         return;
       }
-      
+
       fetchInProgressRef.current = true;
-      
+
       if (!isMounted) {
         fetchInProgressRef.current = false;
         return;
       }
-      
+
       setLoading(true);
       setError("");
-      
+
       // Timeout de seguridad: si tarda más de 30 segundos, mostrar error
       timeoutId = setTimeout(() => {
         if (isMounted) {
@@ -56,10 +55,10 @@ const Perfil = () => {
           fetchInProgressRef.current = false;
         }
       }, 30000);
-      
+
       try {
         const token = normalizeStoredToken(localStorage.getItem("token"));
-        
+
         if (!token) {
           throw new Error("No se encontró el token de autenticación. Por favor inicia sesión.");
         }
@@ -85,10 +84,15 @@ const Perfil = () => {
           res = await getProfile(token);
           setIsOwnProfile(true);
         }
-        
+
         // Obtener perfil específico según el rol
         const userRole = (res.role || '').toString().toLowerCase();
-        
+        console.log('[Perfil] 🟢 Usuario cargado:', {
+          userId: res.id,
+          role: userRole,
+          rawRole: res.role,
+        });
+
         if (userRole === "specialist") {
           try {
             // Si ya viene specialist_profile del Auth Service, verificar si tiene profession
@@ -98,7 +102,7 @@ const Perfil = () => {
               hasExistingProfile: !!res.specialist_profile,
               existingProfession: existingProfile.profession,
             });
-            
+
             // Cargar perfil completo desde Profiles Service
             const specialistProfile = await profilesAPI.getSpecialistByUser(res.id, token);
             console.log('[Perfil] 🔍 Perfil de especialista cargado desde Profiles Service:', {
@@ -119,7 +123,7 @@ const Perfil = () => {
                 profession: res.specialist_profile.profession,
               });
               let workImagesFull = specialistProfile.work_images_full || [];
-              
+
               // Intentar cargar desde localStorage si está vacío
               if (workImagesFull.length === 0 && specialistProfile.work_images_ids?.length > 0) {
                 try {
@@ -129,9 +133,9 @@ const Perfil = () => {
                     const backup = JSON.parse(backupData);
                     const backupIds = backup.work_images_ids || [];
                     const currentIds = specialistProfile.work_images_ids || [];
-                    const idsMatch = backupIds.length === currentIds.length && 
-                                     backupIds.every((id, idx) => id === currentIds[idx]);
-                    
+                    const idsMatch = backupIds.length === currentIds.length &&
+                      backupIds.every((id, idx) => id === currentIds[idx]);
+
                     if (idsMatch && backup.work_images_full?.length > 0) {
                       workImagesFull = backup.work_images_full;
                       specialistProfile.work_images_full = workImagesFull;
@@ -141,7 +145,7 @@ const Perfil = () => {
                   // Ignorar errores de localStorage
                 }
               }
-              
+
               res.work_images_full = workImagesFull;
             }
           } catch (e) {
@@ -149,25 +153,95 @@ const Perfil = () => {
           }
         } else if (userRole === "businessman") {
           try {
+            console.log('[Perfil] 🔵 Cargando perfil de businessman para userId:', res.id);
             const businessmanProfile = await profilesAPI.getBusinessmanByUser(res.id, token);
+            console.log('[Perfil] 🟢 Respuesta businessman profile:', {
+              hasProfile: !!businessmanProfile,
+              products_ids: businessmanProfile?.products_and_services_ids,
+              products_full_length: businessmanProfile?.products_and_services_full?.length,
+              products_full: businessmanProfile?.products_and_services_full,
+            });
+            
             if (businessmanProfile) {
               res.businessman_profile = businessmanProfile;
-              res.products_and_services_full = businessmanProfile.products_and_services_full || [];
+              let productsFull = businessmanProfile.products_and_services_full || [];
+              
+              // Si products_and_services_full está vacío pero hay IDs, intentar recuperar de localStorage
+              const productIds = businessmanProfile.products_and_services_ids || [];
+              if (productsFull.length === 0 && productIds.length > 0) {
+                console.warn('[Perfil] ⚠️ products_and_services_full vacío pero hay IDs:', productIds);
+                try {
+                  const backupKey = `products_backup_${res.id}`;
+                  const backupData = localStorage.getItem(backupKey);
+                  console.log('[Perfil] 🔍 Buscando backup en localStorage:', backupKey, '- existe:', !!backupData);
+                  if (backupData) {
+                    const backup = JSON.parse(backupData);
+                    const backupIds = backup.products_and_services_ids || [];
+                    // Verificar que los IDs coincidan
+                    const idsMatch = backupIds.length === productIds.length &&
+                      backupIds.every((id, idx) => String(id) === String(productIds[idx]));
+                    
+                    console.log('[Perfil] 🔍 Backup IDs match:', idsMatch, 'backupIds:', backupIds, 'productIds:', productIds);
+                    
+                    if (idsMatch && backup.products_and_services_full?.length > 0) {
+                      productsFull = backup.products_and_services_full;
+                      console.log('[Perfil] ✅ Productos recuperados de localStorage:', productsFull.length);
+                    } else if (backup.products_and_services_full?.length > 0) {
+                      // Usar backup aunque los IDs no coincidan exactamente
+                      productsFull = backup.products_and_services_full;
+                      console.log('[Perfil] ⚠️ Usando backup aunque IDs no coinciden:', productsFull.length);
+                    }
+                  }
+                } catch (backupError) {
+                  console.warn('[Perfil] Error recuperando backup:', backupError);
+                }
+              }
+              
+              // Si aún no hay productos, intentar cargar de localStorage sin verificar IDs
+              if (productsFull.length === 0) {
+                try {
+                  const backupKey = `products_backup_${res.id}`;
+                  const backupData = localStorage.getItem(backupKey);
+                  if (backupData) {
+                    const backup = JSON.parse(backupData);
+                    if (backup.products_and_services_full?.length > 0) {
+                      productsFull = backup.products_and_services_full;
+                      console.log('[Perfil] 🔄 Usando backup como último recurso:', productsFull.length);
+                    }
+                  }
+                } catch (e) {
+                  // Ignorar
+                }
+              }
+              
+              res.products_and_services_full = productsFull;
             }
           } catch (e) {
+            console.error('[Perfil] ❌ Error cargando businessman profile:', e);
             // Continuar sin el perfil de businessman si falla
           }
         }
-        
+
         if (!isMounted) {
           if (timeoutId) clearTimeout(timeoutId);
           return;
         }
-        
+
         if (!res || !res.id) {
           throw new Error("No se recibieron datos válidos del usuario");
         }
-        
+
+        console.log('[Perfil] ✅ Datos finales del usuario:', {
+          id: res.id,
+          role: res.role,
+          hasSpecialistProfile: !!res.specialist_profile,
+          hasBusinessmanProfile: !!res.businessman_profile,
+          work_images_full: res.work_images_full?.length,
+          products_and_services_full: res.products_and_services_full?.length,
+          specialist_work_images_full: res.specialist_profile?.work_images_full?.length,
+          businessman_products: res.businessman_profile?.products_and_services_full?.length,
+        });
+
         setUser(res);
         setForm(res);
       } catch (err) {
@@ -184,12 +258,12 @@ const Perfil = () => {
         }
       }
     };
-    
+
     // Debounce para prevenir múltiples ejecuciones rápidas
     debounceTimer = setTimeout(() => {
       fetchProfile();
     }, 150);
-    
+
     return () => {
       isMounted = false;
       if (debounceTimer) clearTimeout(debounceTimer);
@@ -200,25 +274,94 @@ const Perfil = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    
+    // Manejar propiedades anidadas como "businessman_profile.field_name"
+    if (name.includes('.')) {
+      const [parent, child] = name.split('.');
+      setForm((prev) => ({
+        ...prev,
+        [parent]: {
+          ...prev[parent],
+          [child]: value,
+        },
+      }));
+    } else {
+      setForm((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
-  const handleSave = async () => {
+  // Guardar información personal (bio, teléfono, ubicación)
+  const handleSavePersonal = async () => {
     try {
       const token = normalizeStoredToken(localStorage.getItem("token"));
-      // Si es businessman y tiene coordenadas, actualizar también la ubicación
-      if ((form.role || "").toString().toLowerCase() === "businessman" && (form.latitude || form.longitude)) {
-        await authAPIEndpoint.updateUser(user.id, {
-          latitude: form.latitude || null,
-          longitude: form.longitude || null,
-        }, token);
+      
+      const updateData = {
+        bio: form.bio,
+        phone_number: form.phone_number,
+      };
+      
+      // Si es businessman y tiene coordenadas, incluirlas
+      if ((form.role || "").toString().toLowerCase() === "businessman") {
+        if (form.latitude) updateData.latitude = form.latitude;
+        if (form.longitude) updateData.longitude = form.longitude;
       }
+      
+      await authAPIEndpoint.updateUser(user.id, updateData, token);
       setUser(form);
-      setEditing(false);
     } catch (error) {
-      console.error("Error al guardar cambios:", error);
-      alert("Error al guardar los cambios");
+      console.error("Error al guardar información personal:", error);
+      alert("Error al guardar los cambios personales");
     }
+  };
+
+  // Guardar información del negocio (solo para businessman)
+  const handleSaveBusiness = async () => {
+    try {
+      const token = normalizeStoredToken(localStorage.getItem("token"));
+      
+      // Solo guardar si hay un perfil de businessman con campos requeridos
+      if (form.businessman_profile && 
+          form.businessman_profile.business_name && 
+          form.businessman_profile.descriptions) {
+        
+        const businessData = {
+          business_name: form.businessman_profile.business_name,
+          descriptions: form.businessman_profile.descriptions,
+        };
+        
+        // Agregar campos opcionales si existen
+        if (form.businessman_profile.user_display) {
+          businessData.user_display = form.businessman_profile.user_display;
+        }
+        if (form.businessman_profile.business_type) {
+          businessData.business_type = form.businessman_profile.business_type;
+        }
+        if (form.businessman_profile.offers_local_products !== undefined) {
+          businessData.offers_local_products = form.businessman_profile.offers_local_products;
+        }
+        
+        console.log('[Perfil] Guardando datos del negocio:', businessData);
+        await profilesAPI.patchBusinessmanByUser(user.id, businessData, token);
+        setUser(form);
+      } else {
+        console.log('[Perfil] No hay datos suficientes del negocio para guardar');
+      }
+    } catch (error) {
+      console.error("Error al guardar información del negocio:", error);
+      alert("Error al guardar los cambios del negocio: " + (error.message || "Error desconocido"));
+    }
+  };
+
+  // Handler que decide qué guardar según la sección
+  const handleSave = async (section = 'personal') => {
+    console.log('[Perfil] handleSave llamado con sección:', section);
+    
+    if (section === 'personal') {
+      await handleSavePersonal();
+    } else if (section === 'business') {
+      await handleSaveBusiness();
+    }
+    // Ya no hay opción 'all' - cada sección se guarda independientemente
   };
 
   if (loading) {
@@ -285,7 +428,7 @@ const Perfil = () => {
         </Box>
       );
     }
-    
+
     return (
       <Box
         display="flex"
@@ -325,9 +468,6 @@ const Perfil = () => {
         >
           <PerfilHeader
             user={user}
-            editing={editing}
-            setEditing={setEditing}
-            form={form}
             isOwnProfile={isOwnProfile}
           />
         </Paper>
@@ -343,14 +483,14 @@ const Perfil = () => {
           {/* Columna izquierda - Información personal y profesional */}
           <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
             <PerfilForm
-              editing={editing && isOwnProfile}
-              form={user}
+              form={form}
               onChange={handleChange}
               onSave={handleSave}
+              isOwnProfile={isOwnProfile}
             />
           </Box>
 
-          {/* Columna derecha - Documentos de verificación, Portafolio, Catálogo o Historial */}
+          {/* Columna derecha - Documentos de verificación, Servicios, Catálogo o Historial */}
           <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
             {/* Sección de documentos de verificación solo para especialistas - ARRIBA del portafolio */}
             {(user.role || "").toString().toLowerCase() === "specialist" && isOwnProfile && (
@@ -372,7 +512,7 @@ const Perfil = () => {
                 }}
               />
             )}
-            
+
             {(user.role || "").toString().toLowerCase() === "consumer" ? (
               <PerfilContactHistory contactHistory={user.contact_history || []} />
             ) : (
@@ -412,6 +552,7 @@ const Perfil = () => {
                 })()}
                 {(user.role || "").toString().toLowerCase() === "businessman" && (
                   <>
+                    {/* Sección de Servicios para businessman */}
                     <PortfolioSection
                       editing={isOwnProfile}
                       portfolio={user.work_images_full || []}
@@ -425,12 +566,18 @@ const Perfil = () => {
                         }));
                       }}
                     />
+                    {/* ProductCatalog para productos del negocio */}
                     <ProductCatalog
                       editing={isOwnProfile}
                       products={user.products_and_services_full || user.businessman_profile?.products_and_services_full || []}
                       userRole={user.role}
                       userId={user.id}
                       isOwnProfile={isOwnProfile}
+                      userLocation={{
+                        latitude: user.latitude || user.businessman_profile?.latitude,
+                        longitude: user.longitude || user.businessman_profile?.longitude,
+                        location_name: user.location_description || user.businessman_profile?.business_name || "",
+                      }}
                       onUpdate={(updatedProducts) => {
                         setUser((prev) => ({
                           ...prev,

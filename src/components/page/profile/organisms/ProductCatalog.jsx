@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -12,44 +12,71 @@ import {
   Button,
   IconButton,
   CircularProgress,
+  Chip,
+  InputAdornment,
 } from "@mui/material";
-import { Close } from "@mui/icons-material";
+import { Close, AddAPhoto } from "@mui/icons-material";
 import ProductCard from "../molecules/ProductCard";
 import AddProductCard from "../molecules/AddProductCard";
-import { uploadMedia } from "../../../../services/endpoints/media";
+import ImageCarousel from "../../../atoms/add/ImageCarousel";
 import { normalizeStoredToken } from "../../chat/chatUtils";
 import { profilesAPI } from "../../../../services/endpoints";
+import { buildUrl } from "../../../../services/env";
+import useCurrency from "../../../../hooks/useCurrency";
 
-const ProductCatalog = ({ products = [], editing, userId, userRole, onUpdate }) => {
+const ProductCatalog = ({ products = [], editing, userId, userRole, onUpdate, isOwnProfile, userLocation }) => {
+  const { symbol: currencySymbol } = useCurrency();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingIndex, setEditingIndex] = useState(null);
   const [formData, setFormData] = useState({
-    name: "",
+    title: "",
     description: "",
     price: "",
-    image: null,
-    imagePreview: null,
+    main_image: null,
+    secondary_images: [],
   });
   const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
+
+  // Intentar recuperar productos de localStorage si products está vacío
+  useEffect(() => {
+    if (products.length === 0 && userId && onUpdate) {
+      try {
+        const backupKey = `products_backup_${userId}`;
+        const backupData = localStorage.getItem(backupKey);
+        if (backupData) {
+          const backup = JSON.parse(backupData);
+          if (backup.products_and_services_full?.length > 0) {
+            console.log('[ProductCatalog] 🔄 Recuperando productos de localStorage:', backup.products_and_services_full.length);
+            onUpdate(backup.products_and_services_full);
+          }
+        }
+      } catch (e) {
+        console.warn('[ProductCatalog] Error recuperando backup:', e);
+      }
+    }
+  }, [products.length, userId, onUpdate]);
 
   const handleOpenDialog = (index = null) => {
     if (index !== null) {
       const product = products[index];
+      // Si el producto tiene múltiples imágenes, separarlas
+      const images = product.images || (product.url ? [product.url] : []);
       setFormData({
-        name: product.name || "",
+        title: product.title || product.name || "",
         description: product.description || "",
         price: product.price || "",
-        image: null,
-        imagePreview: product.url || product.image || null,
+        main_image: images[0] || null,
+        secondary_images: images.slice(1) || [],
       });
       setEditingIndex(index);
     } else {
       setFormData({
-        name: "",
+        title: "",
         description: "",
         price: "",
-        image: null,
-        imagePreview: null,
+        main_image: null,
+        secondary_images: [],
       });
       setEditingIndex(null);
     }
@@ -59,13 +86,16 @@ const ProductCatalog = ({ products = [], editing, userId, userRole, onUpdate }) 
   const handleCloseDialog = () => {
     setDialogOpen(false);
     setFormData({
-      name: "",
+      title: "",
       description: "",
       price: "",
-      image: null,
-      imagePreview: null,
+      main_image: null,
+      secondary_images: [],
     });
     setEditingIndex(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   const handleInputChange = (e) => {
@@ -73,84 +103,174 @@ const ProductCatalog = ({ products = [], editing, userId, userRole, onUpdate }) 
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setFormData((prev) => ({
-        ...prev,
-        image: file,
-        imagePreview: URL.createObjectURL(file),
-      }));
-    }
+  const handleFiles = (fileList) => {
+    if (!fileList) return;
+    const arr = Array.from(fileList || []).slice(0, 5);
+    if (!arr.length) return;
+    setFormData((prev) => {
+      const prevSecondary = Array.isArray(prev.secondary_images) ? [...prev.secondary_images] : [];
+      if (!prev.main_image) {
+        const [first, ...rest] = arr;
+        const newSecondaries = [...prevSecondary, ...rest].slice(0, 4);
+        return { ...prev, main_image: first, secondary_images: newSecondaries };
+      }
+      const combined = [...prevSecondary, ...arr].slice(0, 4);
+      return { ...prev, secondary_images: combined };
+    });
+  };
+
+  const onFileChange = (e) => {
+    handleFiles(e.target.files);
+    e.target.value = "";
+  };
+
+  const removeImage = (index, isMain = false) => {
+    setFormData((prev) => {
+      if (isMain) {
+        const newSecondaries = prev.secondary_images || [];
+        const newMain = newSecondaries[0] || null;
+        return {
+          ...prev,
+          main_image: newMain,
+          secondary_images: newSecondaries.slice(1),
+        };
+      } else {
+        const newSecondaries = [...(prev.secondary_images || [])];
+        newSecondaries.splice(index, 1);
+        return { ...prev, secondary_images: newSecondaries };
+      }
+    });
   };
 
   const handleSubmit = async () => {
-    if (!formData.description.trim()) {
-      alert("La descripción es obligatoria");
+    if (!formData.title || formData.title.trim().length < 3) {
+      alert("El título es obligatorio y debe tener al menos 3 caracteres");
+      return;
+    }
+    if (!formData.main_image && editingIndex === null) {
+      alert("Debes subir al menos una imagen para el producto");
       return;
     }
 
     setUploading(true);
     try {
       const token = normalizeStoredToken(localStorage.getItem("token"));
-      let mediaId = null;
 
-      // Si hay una nueva imagen, subirla
-      if (formData.image) {
-        const formDataToSend = new FormData();
-        formDataToSend.append("image", formData.image);
-        formDataToSend.append("name", formData.name || formData.description);
-        formDataToSend.append("description", formData.description);
-        if (formData.price) {
-          formDataToSend.append("price", formData.price);
+      // Helper para subir un archivo al servicio de media
+      // Retorna { id, url } para guardar la URL permanente
+      const uploadFile = async (file) => {
+        try {
+          const mfd = new FormData();
+          mfd.append("image", file, file.name);
+          mfd.append("name", formData.title);
+          mfd.append("description", formData.description || "");
+          if (formData.price) {
+            mfd.append("price", formData.price);
+          }
+          mfd.append("folder", "products");
+
+          const mediaUrl = buildUrl("MEDIA", "/media/");
+          const response = await fetch(mediaUrl, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            body: mfd,
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+
+          const resp = await response.json();
+          console.log('[ProductCatalog] 📤 Respuesta del media service:', JSON.stringify(resp, null, 2));
+          // Retornar tanto el ID como la URL permanente
+          const uploadedUrl = resp?.file_url || resp?.url || resp?.image_url || resp?.public_url || null;
+          console.log('[ProductCatalog] 📤 URL extraída:', uploadedUrl);
+          return resp ? { 
+            id: resp.id, 
+            url: uploadedUrl
+          } : null;
+        } catch (e) {
+          console.error("uploadFile error", e);
+          return null;
         }
-        formDataToSend.append("folder", "products");
+      };
 
-        const uploadedMedia = await uploadMedia(formDataToSend, token);
-        mediaId = uploadedMedia.id;
+      // Subir imágenes
+      let mainMedia = null;
+      const secondaryMedia = [];
+
+      if (formData.main_image instanceof File) {
+        console.log('[ProductCatalog] 📤 Subiendo imagen principal...');
+        mainMedia = await uploadFile(formData.main_image);
+        console.log('[ProductCatalog] 📤 mainMedia resultado:', mainMedia);
+        if (!mainMedia || !mainMedia.id) throw new Error("No se pudo subir la imagen principal");
+      } else if (formData.main_image && typeof formData.main_image === "string") {
+        // Si es una URL (imagen existente), buscar el ID del producto existente
+        const existingProduct = editingIndex !== null ? products[editingIndex] : null;
+        if (existingProduct && existingProduct.id) {
+          mainMedia = { id: existingProduct.id, url: existingProduct.url };
+        }
+      }
+
+      // Subir imágenes secundarias
+      for (const img of formData.secondary_images || []) {
+        if (img instanceof File) {
+          const media = await uploadFile(img);
+          if (media && media.id) secondaryMedia.push(media);
+        } else if (img && typeof img === "string") {
+          // Si es una URL existente, mantenerla
+          secondaryMedia.push({ id: null, url: img });
+        }
       }
 
       // Obtener productos actuales
       const currentProducts = [...products];
-      
+
       if (editingIndex !== null) {
         // Editar producto existente
         const existingProduct = currentProducts[editingIndex];
         const updatedProduct = {
           ...existingProduct,
-          name: formData.name || null,
-          description: formData.description,
+          title: formData.title,
+          name: formData.title,
+          description: formData.description || null,
           price: formData.price || null,
+          images: [mainMedia?.id, ...secondaryMedia.map(m => m.id)].filter(Boolean),
         };
-        
-        // Si hay nueva imagen, crear nuevo media y mantener el ID anterior para referencia
-        if (mediaId && formData.image) {
-          updatedProduct.id = mediaId;
-          updatedProduct.url = formData.imagePreview;
+
+        // Si hay nueva imagen principal, actualizar con URL permanente
+        if (mainMedia && formData.main_image instanceof File) {
+          updatedProduct.id = mainMedia.id;
+          updatedProduct.url = mainMedia.url; // URL permanente del servidor
         }
-        // Si no hay nueva imagen, mantener el ID y URL existentes
-        
+
         currentProducts[editingIndex] = updatedProduct;
       } else {
         // Agregar nuevo producto
-        if (!mediaId) {
-          alert("Debes subir una imagen para el producto");
+        if (!mainMedia || !mainMedia.id) {
+          alert("Debes subir al menos una imagen para el producto");
           setUploading(false);
           return;
         }
-        
-        currentProducts.push({
-          id: mediaId,
-          name: formData.name || null,
-          description: formData.description,
+
+        const newProduct = {
+          id: mainMedia.id,
+          title: formData.title,
+          name: formData.title,
+          description: formData.description || null,
           price: formData.price || null,
-          url: formData.imagePreview,
-        });
+          url: mainMedia.url, // URL permanente del servidor, no blob URL
+          images: [mainMedia.id, ...secondaryMedia.map(m => m.id)].filter(Boolean),
+        };
+        console.log('[ProductCatalog] ✅ Nuevo producto creado:', newProduct);
+        currentProducts.push(newProduct);
       }
 
       // Actualizar el perfil con los nuevos productos
       const productIds = currentProducts.map((p) => p.id).filter(Boolean);
-      
+
       // Actualizar el perfil de businessman
       if (userRole?.toLowerCase() === "businessman") {
         await profilesAPI.patchBusinessmanByUser(userId, {
@@ -158,11 +278,25 @@ const ProductCatalog = ({ products = [], editing, userId, userRole, onUpdate }) 
         }, token);
       }
 
+      // Guardar backup en localStorage para recuperación
+      try {
+        const backupKey = `products_backup_${userId}`;
+        const backupData = {
+          products_and_services_ids: productIds,
+          products_and_services_full: currentProducts,
+          timestamp: Date.now(),
+        };
+        localStorage.setItem(backupKey, JSON.stringify(backupData));
+        console.log('[ProductCatalog] ✅ Backup guardado en localStorage:', productIds.length, 'productos');
+      } catch (e) {
+        console.warn('[ProductCatalog] No se pudo guardar backup:', e);
+      }
+
       onUpdate && onUpdate(currentProducts);
       handleCloseDialog();
     } catch (error) {
       console.error("Error al guardar producto:", error);
-      alert("Error al guardar el producto");
+      alert("Error al guardar el producto: " + (error.message || "Error desconocido"));
     } finally {
       setUploading(false);
     }
@@ -182,12 +316,30 @@ const ProductCatalog = ({ products = [], editing, userId, userRole, onUpdate }) 
         }, token);
       }
 
+      // Actualizar backup en localStorage
+      try {
+        const backupKey = `products_backup_${userId}`;
+        const backupData = {
+          products_and_services_ids: productIds,
+          products_and_services_full: updatedProducts,
+          timestamp: Date.now(),
+        };
+        localStorage.setItem(backupKey, JSON.stringify(backupData));
+      } catch (e) {
+        // Ignorar errores de localStorage
+      }
+
       onUpdate && onUpdate(updatedProducts);
     } catch (error) {
       console.error("Error al eliminar producto:", error);
       alert("Error al eliminar el producto");
     }
   };
+
+  const allImages = [
+    ...(formData.main_image ? [formData.main_image] : []),
+    ...(formData.secondary_images || []),
+  ];
 
   return (
     <Paper
@@ -224,7 +376,7 @@ const ProductCatalog = ({ products = [], editing, userId, userRole, onUpdate }) 
             py: 6,
             px: 2,
             borderRadius: 2,
-            bgcolor: "#f8f9fa",
+            bgcolor: "transparent",
             border: "2px dashed #dee2e6",
           }}
         >
@@ -254,7 +406,15 @@ const ProductCatalog = ({ products = [], editing, userId, userRole, onUpdate }) 
         </Grid>
       )}
 
-      <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+      <Dialog
+        open={dialogOpen}
+        onClose={handleCloseDialog}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: { maxHeight: "90vh" }
+        }}
+      >
         <DialogTitle>
           <Box display="flex" justifyContent="space-between" alignItems="center">
             <Typography variant="h6">
@@ -267,63 +427,110 @@ const ProductCatalog = ({ products = [], editing, userId, userRole, onUpdate }) 
         </DialogTitle>
         <DialogContent>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
+            {/* Sección de fotos */}
+            <Box>
+              <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+                Fotos
+              </Typography>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                style={{ display: "none" }}
+                onChange={onFileChange}
+              />
+              <Box
+                sx={{
+                  mt: 1,
+                  borderRadius: 2,
+                  border: "1px dashed rgba(16,24,40,0.06)",
+                  overflow: "hidden",
+                  bgcolor: "#ffffff",
+                  cursor: "pointer",
+                }}
+                onClick={() => fileInputRef.current && fileInputRef.current.click()}
+              >
+                {allImages.length === 0 ? (
+                  <Box
+                    sx={{
+                      width: "100%",
+                      height: 200,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Box sx={{ textAlign: "center", color: "#6b7280" }}>
+                      <AddAPhoto sx={{ fontSize: 42 }} />
+                      <Typography sx={{ mt: 1, color: "#6b7280", fontWeight: 600 }}>
+                        Agregar fotos
+                      </Typography>
+                    </Box>
+                  </Box>
+                ) : (
+                  <Box sx={{ position: "relative" }}>
+                    <ImageCarousel images={allImages} height={200} />
+                    <Chip
+                      label={`${allImages.length} foto${allImages.length !== 1 ? "s" : ""}`}
+                      size="small"
+                      sx={{
+                        position: "absolute",
+                        top: 8,
+                        right: 8,
+                        bgcolor: "rgba(0,0,0,0.55)",
+                        color: "#fff",
+                      }}
+                    />
+                  </Box>
+                )}
+              </Box>
+            </Box>
+
+            {/* Título (obligatorio) */}
             <TextField
               fullWidth
-              label="Nombre del producto (opcional)"
-              name="name"
-              value={formData.name}
+              label="Título *"
+              name="title"
+              value={formData.title}
               onChange={handleInputChange}
+              required
               size="small"
+              helperText="Mínimo 3 caracteres"
             />
+
+            {/* Descripción (opcional) */}
             <TextField
               fullWidth
-              label="Descripción *"
+              label="Descripción"
               name="description"
               value={formData.description}
               onChange={handleInputChange}
               multiline
               rows={3}
-              required
               size="small"
             />
+
+            {/* Precio (opcional) */}
             <TextField
               fullWidth
-              label="Precio (opcional)"
+              label="Precio"
               name="price"
-              type="number"
               value={formData.price}
-              onChange={handleInputChange}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (v === "" || /^\d*(\.\d{0,2})?$/.test(v)) {
+                  handleInputChange(e);
+                }
+              }}
+              inputProps={{ inputMode: "decimal", pattern: "^\\d*(\\.\\d{0,2})?$" }}
+              InputProps={{
+                startAdornment: <InputAdornment position="start">{currencySymbol}</InputAdornment>,
+              }}
               size="small"
-              inputProps={{ step: "0.01", min: "0" }}
             />
-            <Box>
-              <input
-                accept="image/*"
-                style={{ display: "none" }}
-                id="product-image-upload"
-                type="file"
-                onChange={handleImageChange}
-              />
-              <label htmlFor="product-image-upload">
-                <Button variant="outlined" component="span" fullWidth>
-                  {formData.imagePreview ? "Cambiar imagen" : "Subir imagen"}
-                </Button>
-              </label>
-              {formData.imagePreview && (
-                <Box sx={{ mt: 2 }}>
-                  <img
-                    src={formData.imagePreview}
-                    alt="Preview"
-                    style={{
-                      width: "100%",
-                      maxHeight: "200px",
-                      objectFit: "cover",
-                      borderRadius: "8px",
-                    }}
-                  />
-                </Box>
-              )}
-            </Box>
+
+
           </Box>
         </DialogContent>
         <DialogActions>
@@ -331,7 +538,7 @@ const ProductCatalog = ({ products = [], editing, userId, userRole, onUpdate }) 
           <Button
             onClick={handleSubmit}
             variant="contained"
-            disabled={uploading || !formData.description.trim()}
+            disabled={uploading || !formData.title || formData.title.trim().length < 3}
           >
             {uploading ? <CircularProgress size={20} /> : "Guardar"}
           </Button>
@@ -342,4 +549,3 @@ const ProductCatalog = ({ products = [], editing, userId, userRole, onUpdate }) 
 };
 
 export default ProductCatalog;
-

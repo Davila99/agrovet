@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import {
   Box,
   Typography,
-  Paper,
   Alert,
   Stack,
   Dialog,
@@ -17,6 +16,7 @@ import { Link, useNavigate } from "react-router-dom";
 import RegisterFormFields from "./RegisterFormFields";
 import RegisterButton from "./RegisterButton";
 import { authAPI } from "../../../services/endpoints";
+import { FormContainer } from "../../atoms/form";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -129,7 +129,7 @@ const RegisterPage = () => {
     Object.entries(source).forEach(([key, value]) => {
       // no enviar confirm_password
       if (key === "confirm_password") return;
-      
+
       // Manejar specialist_profile como objeto anidado
       // Enviar profession como specialist_profile_profession para que el backend lo reconozca
       if (key === "specialist_profile" && value && typeof value === "object") {
@@ -145,7 +145,7 @@ const RegisterPage = () => {
         });
         return;
       }
-      
+
       // Manejar businessman_profile como objeto anidado
       // Enviar business_type como businessman_profile_business_type para que el backend lo reconozca
       if (key === "businessman_profile" && value && typeof value === "object") {
@@ -161,7 +161,7 @@ const RegisterPage = () => {
         });
         return;
       }
-      
+
       let toAppend = value;
       if (
         (key === "latitude" || key === "longitude") &&
@@ -174,11 +174,19 @@ const RegisterPage = () => {
         formData.append(key, toAppend);
     });
 
+    // Combine country code and phone number if both exist
+    if (source.country_code && source.phone_number) {
+      // Remove country_code from formData if it was added (optional, but cleaner)
+      formData.delete("country_code");
+      // Overwrite phone_number with combined value
+      formData.set("phone_number", `${source.country_code} ${source.phone_number}`);
+    }
+
     setLoading(true);
     try {
       const res = await authAPI.register(formData);
       console.log("Registro exitoso:", res);
-      
+
       // Auto-join communities based on role (best effort, don't block registration)
       if (res.user && res.user.role) {
         try {
@@ -189,7 +197,7 @@ const RegisterPage = () => {
           // Don't block registration if this fails
         }
       }
-      
+
       navigate("/login");
     } catch (err) {
       console.error("Error al registrar:", err);
@@ -214,19 +222,19 @@ const RegisterPage = () => {
         return false;
       }
       // Validar que si es especialista (Veterinario, Agrónomo, Zootecnista), tenga profesión seleccionada
-      const isSpecialistRole = form.role === "Specialist" || 
-                                form.specialist_profile?.profession === "Veterinario" ||
-                                form.specialist_profile?.profession === "Agrónomo" ||
-                                form.specialist_profile?.profession === "Zootecnista";
+      const isSpecialistRole = form.role === "Specialist" ||
+        form.specialist_profile?.profession === "Veterinario" ||
+        form.specialist_profile?.profession === "Agrónomo" ||
+        form.specialist_profile?.profession === "Zootecnista";
       if (isSpecialistRole && !form.specialist_profile?.profession) {
         setError("Debes seleccionar una profesión");
         return false;
       }
-      
+
       // Validar que si es businessman (Agroveterinaria, Empresa Agropecuaria), tenga business_type seleccionado
       const isBusinessmanRole = form.role === "businessman" ||
-                                 form.businessman_profile?.business_type === "Agroveterinaria" ||
-                                 form.businessman_profile?.business_type === "Empresa Agropecuaria";
+        form.businessman_profile?.business_type === "Agroveterinaria" ||
+        form.businessman_profile?.business_type === "Empresa Agropecuaria";
       if (isBusinessmanRole && !form.businessman_profile?.business_type) {
         setError("Debes seleccionar un tipo de negocio");
         return false;
@@ -322,25 +330,12 @@ const RegisterPage = () => {
         alignItems: "center",
         justifyContent: "center",
         bgcolor: "#f5f7fa",
-        p: 2,
+        p: { xs: 2, sm: 3 },
       }}
     >
-      <Paper
-        elevation={4}
-        sx={{
-          p: 4,
-          maxWidth: 420,
-          width: "100%",
-          borderRadius: 3,
-          textAlign: "center",
-        }}
-      >
-        <Typography variant="h5" fontWeight="bold" gutterBottom color="#103E68">
-          Crear Cuenta
-        </Typography>
-
+      <FormContainer title="Crear Cuenta" variant="standard">
         {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
+          <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
             {error}
           </Alert>
         )}
@@ -352,7 +347,7 @@ const RegisterPage = () => {
             step={step}
           />
 
-          <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
+          <Stack direction="row" spacing={2} sx={{ mt: 3 }}>
             {step === 2 && (
               <RegisterButton label="Atrás" type="button" onClick={prevStep} />
             )}
@@ -373,13 +368,13 @@ const RegisterPage = () => {
           </Stack>
         </form>
 
-        {/* Diálogo para preguntar si guardar ubicación (estilizado) */}
+        {/* Diálogo para preguntar si guardar ubicación */}
         <Dialog
           open={showLocationDialog}
           onClose={handleAskLocationConfirm}
           PaperProps={{ sx: { borderRadius: 3, p: 1 } }}
         >
-          <DialogTitle sx={{ color: "#103E68", fontWeight: "bold" }}>
+          <DialogTitle sx={{ color: "#103E68", fontWeight: 700 }}>
             ¿Deseas guardar tu ubicación?
           </DialogTitle>
           <DialogContent dividers>
@@ -390,7 +385,7 @@ const RegisterPage = () => {
               Puedes revisar los{" "}
               <Link
                 to="/terms"
-                style={{ color: "#103E68", fontWeight: "bold" }}
+                style={{ color: "#103E68", fontWeight: 600 }}
               >
                 Términos y Condiciones
               </Link>{" "}
@@ -413,9 +408,10 @@ const RegisterPage = () => {
               }
               sx={{
                 bgcolor: "#103E68",
-                "&:hover": { bgcolor: "#35722b" },
+                "&:hover": { bgcolor: "#0d3254" },
                 textTransform: "none",
-                borderRadius: 3,
+                borderRadius: 2,
+                fontWeight: 600,
               }}
             >
               {locationLoading ? "Obteniendo..." : "Aceptar"}
@@ -423,13 +419,15 @@ const RegisterPage = () => {
           </DialogActions>
         </Dialog>
 
-        <Typography variant="body2" sx={{ mt: 2 }}>
-          ¿Ya tienes cuenta?{" "}
-          <Link to="/login" style={{ color: "#103E68", fontWeight: "bold" }}>
-            Inicia sesión
-          </Link>
-        </Typography>
-      </Paper>
+        <Box sx={{ textAlign: "center", mt: 2 }}>
+          <Typography variant="body2">
+            ¿Ya tienes cuenta?{" "}
+            <Link to="/login" style={{ color: "#103E68", fontWeight: 600 }}>
+              Inicia sesión
+            </Link>
+          </Typography>
+        </Box>
+      </FormContainer>
     </Box>
   );
 };

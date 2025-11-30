@@ -51,7 +51,7 @@ const PerfilPortfolio = ({
             fontSize: "1.25rem",
           }}
         >
-          Portafolio
+          Servicios
         </Typography>
 
         {editing && (

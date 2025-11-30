@@ -1,6 +1,22 @@
 // Adapter to normalize Profile/Specialist objects
 import { normalizeMedia } from './mediaAdapter';
 
+// Normalizar un producto/servicio individual
+function normalizeProduct(raw) {
+    if (!raw) return raw;
+    return {
+        ...raw,
+        id: raw.id || raw.pk || raw.media_id,
+        title: raw.title || raw.name || 'Sin título',
+        name: raw.name || raw.title || 'Sin título',
+        description: raw.description || '',
+        price: raw.price || null,
+        // Buscar URL en múltiples campos posibles
+        url: raw.url || raw.file_url || raw.public_url || raw.image || raw.image_url || raw.path || null,
+        created_at: raw.created_at || raw.createdAt || null,
+    };
+}
+
 export function normalizeProfile(raw) {
     if (!raw) return raw;
     const id = raw.id || raw.user_id || raw.pk;
@@ -47,6 +63,30 @@ export function normalizeProfile(raw) {
         }
     }
 
+    // Normalizar products_and_services_full para businessman
+    let productsAndServicesFull = raw.products_and_services_full;
+    let productsAndServicesIds = raw.products_and_services_ids || [];
+    
+    if (Array.isArray(productsAndServicesFull) && productsAndServicesFull.length > 0) {
+        productsAndServicesFull = productsAndServicesFull.map(normalizeProduct);
+        console.log('[profileAdapter] 🛒 Productos normalizados:', productsAndServicesFull.length, 'items');
+    } else {
+        productsAndServicesFull = [];
+    }
+    
+    // Si products_and_services_full está vacío pero hay IDs, intentar construir objetos básicos
+    if (productsAndServicesFull.length === 0 && productsAndServicesIds.length > 0) {
+        console.warn('[profileAdapter] ⚠️ products_and_services_full vacío pero hay IDs:', productsAndServicesIds);
+        // Crear objetos básicos con los IDs para que el frontend pueda mostrar algo
+        productsAndServicesFull = productsAndServicesIds.map((id) => ({
+            id: id,
+            url: null,
+            title: `Producto ${id}`,
+            name: `Producto ${id}`,
+        }));
+        console.log('[profileAdapter] 🔄 Construyendo products_and_services_full básico desde IDs:', productsAndServicesFull.length, 'items');
+    }
+
     // Preservar todos los campos del perfil de especialista
     return {
         ...raw, // Preservar todos los campos originales primero
@@ -65,6 +105,9 @@ export function normalizeProfile(raw) {
         work_images: raw.work_images,
         work_images_ids: workImagesIds, // Preservar también los IDs normalizados
         work_images_full: workImagesFull,
+        // Productos y servicios (businessman)
+        products_and_services_full: productsAndServicesFull,
+        products_and_services_ids: raw.products_and_services_ids || [],
         // Campos de verificación
         verification_title_id: raw.verification_title_id,
         verification_student_card_id: raw.verification_student_card_id,

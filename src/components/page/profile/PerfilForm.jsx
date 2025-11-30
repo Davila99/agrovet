@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Box,
   Stack,
@@ -7,26 +7,40 @@ import {
   Typography,
   Divider,
   Paper,
+  IconButton,
+  Tooltip,
 } from "@mui/material";
-import { Save } from "@mui/icons-material";
+import { Save, Edit, Close } from "@mui/icons-material";
 import BusinessmanProfile from "./RoleProfile/Businessman";
 import SpecialistProfile from "./RoleProfile/Specialist";
 
-const PerfilForm = ({ editing, form, onChange, onSave }) => {
+const PerfilForm = ({ form, onChange, onSave, isOwnProfile = false }) => {
+  const [editingPersonal, setEditingPersonal] = useState(false);
   const isBusinessman = (form.role || "").toString().toLowerCase() === "businessman";
   
-  const fields = [
+  // Campos editables
+  const editableFields = [
     { name: "bio", label: "Breve descripción" },
+  ];
+  
+  // Campos de solo lectura
+  const readOnlyFields = [
     { name: "phone_number", label: "Teléfono" },
   ];
   
-  // Agregar campos de ubicación para businessman
-  if (isBusinessman && editing) {
-    fields.push(
-      { name: "latitude", label: "Latitud", type: "number" },
-      { name: "longitude", label: "Longitud", type: "number" }
+  // Agregar coordenadas como solo lectura para businessman
+  if (isBusinessman) {
+    readOnlyFields.push(
+      { name: "latitude", label: "Latitud" },
+      { name: "longitude", label: "Longitud" }
     );
   }
+
+  const handleSavePersonal = async () => {
+    // Llamar onSave con 'personal' para indicar que solo guardamos info personal
+    await onSave('personal');
+    setEditingPersonal(false);
+  };
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
@@ -45,20 +59,55 @@ const PerfilForm = ({ editing, form, onChange, onSave }) => {
           },
         }}
       >
-        <Typography
-          variant="h6"
-          sx={{
-            fontWeight: 600,
-            color: "#103E68",
-            mb: 1.5,
-            fontSize: "1rem",
-          }}
-        >
-          Información Personal
-        </Typography>
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1.5 }}>
+          <Typography
+            variant="h6"
+            sx={{
+              fontWeight: 600,
+              color: "#103E68",
+              fontSize: "1rem",
+            }}
+          >
+            Información Personal
+          </Typography>
+          {isOwnProfile && !editingPersonal && (
+            <Tooltip title="Editar información personal">
+              <IconButton
+                size="small"
+                onClick={() => setEditingPersonal(true)}
+                sx={{
+                  color: "#1877F2",
+                  bgcolor: "rgba(24, 119, 242, 0.08)",
+                  "&:hover": {
+                    bgcolor: "rgba(24, 119, 242, 0.15)",
+                  },
+                }}
+              >
+                <Edit fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+          {editingPersonal && (
+            <Tooltip title="Cancelar edición">
+              <IconButton
+                size="small"
+                onClick={() => setEditingPersonal(false)}
+                sx={{
+                  color: "#666",
+                  "&:hover": {
+                    bgcolor: "rgba(0,0,0,0.08)",
+                  },
+                }}
+              >
+                <Close fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+        </Box>
         <Divider sx={{ mb: 2 }} />
         <Stack spacing={2.5}>
-          {fields.map((field, index) => (
+          {/* Campos editables */}
+          {editableFields.map((field, index) => (
             <Box key={field.name}>
               <Typography
                 variant="subtitle2"
@@ -72,7 +121,7 @@ const PerfilForm = ({ editing, form, onChange, onSave }) => {
                 {field.label}
               </Typography>
 
-              {editing ? (
+              {editingPersonal ? (
                 <TextField
                   fullWidth
                   size="small"
@@ -82,7 +131,6 @@ const PerfilForm = ({ editing, form, onChange, onSave }) => {
                   onChange={onChange}
                   multiline={field.name === "bio"}
                   rows={field.name === "bio" ? 4 : 1}
-                  inputProps={field.type === "number" ? { step: "any" } : {}}
                   sx={{
                     "& .MuiOutlinedInput-root": {
                       borderRadius: 2,
@@ -105,14 +153,48 @@ const PerfilForm = ({ editing, form, onChange, onSave }) => {
                 </Typography>
               )}
 
-              {index < fields.length - 1 && (
+              {index < editableFields.length - 1 && (
+                <Divider sx={{ my: 2, opacity: 0.2 }} />
+              )}
+            </Box>
+          ))}
+
+          {/* Campos de solo lectura */}
+          {readOnlyFields.length > 0 && <Divider sx={{ my: 2, opacity: 0.2 }} />}
+          {readOnlyFields.map((field, index) => (
+            <Box key={field.name}>
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  color: "text.secondary",
+                  mb: 0.75,
+                  fontWeight: 600,
+                  fontSize: "0.75rem",
+                }}
+              >
+                {field.label}
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: form[field.name] ? "text.primary" : "text.disabled",
+                  whiteSpace: "pre-line",
+                  lineHeight: 1.7,
+                  p: form[field.name] ? 1.5 : 0,
+                  bgcolor: form[field.name] ? "#f8f9fa" : "transparent",
+                  borderRadius: 2,
+                }}
+              >
+                {form[field.name] || "— Sin información —"}
+              </Typography>
+              {index < readOnlyFields.length - 1 && (
                 <Divider sx={{ my: 2, opacity: 0.2 }} />
               )}
             </Box>
           ))}
         </Stack>
 
-        {editing && (
+        {editingPersonal && (
           <Box textAlign="right" mt={3}>
             <Button
               variant="contained"
@@ -131,7 +213,7 @@ const PerfilForm = ({ editing, form, onChange, onSave }) => {
                   boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
                 },
               }}
-              onClick={onSave}
+              onClick={handleSavePersonal}
             >
               Guardar cambios
             </Button>
@@ -139,17 +221,20 @@ const PerfilForm = ({ editing, form, onChange, onSave }) => {
         )}
       </Paper>
 
-      {/* Card de Información Profesional */}
-      {!editing && (
-        <Box>
-          {(form.role || "").toString().toLowerCase() === "businessman" && (
-            <BusinessmanProfile user={form} />
-          )}
-          {(form.role || "").toString().toLowerCase() === "specialist" && (
-            <SpecialistProfile user={form} />
-          )}
-        </Box>
-      )}
+      {/* Card de Información Profesional/Negocio */}
+      <Box>
+        {(form.role || "").toString().toLowerCase() === "businessman" && (
+          <BusinessmanProfile 
+            user={form} 
+            isOwnProfile={isOwnProfile}
+            onChange={onChange}
+            onSave={onSave}
+          />
+        )}
+        {(form.role || "").toString().toLowerCase() === "specialist" && (
+          <SpecialistProfile user={form} />
+        )}
+      </Box>
     </Box>
   );
 };

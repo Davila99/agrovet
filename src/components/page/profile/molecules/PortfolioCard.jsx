@@ -92,7 +92,7 @@ const PortfolioCard = ({ item, editing, onEdit, onDelete, index }) => {
           <CardMedia
             component="img"
             image={imageUrl}
-            alt={item?.title || item?.name || "Portafolio"}
+            alt={item?.title || item?.name || "Servicios"}
             onError={(e) => {
               console.error(`[PortfolioCard ${index}] Error al cargar imagen:`, imageUrl, e);
               e.target.style.display = 'none';

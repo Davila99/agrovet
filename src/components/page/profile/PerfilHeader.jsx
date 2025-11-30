@@ -1,11 +1,10 @@
 import React, { useEffect } from "react";
 import { Box, Avatar, Typography, Button, Rating } from "@mui/material";
 import MapOutlinedIcon from "@mui/icons-material/MapOutlined";
-import { Link as RouterLink, useNavigate } from "react-router-dom";
+import { Link as RouterLink } from "react-router-dom";
 import VerificationBadge from "./molecules/VerificationBadge";
 
-const PerfilHeader = ({ user, editing, setEditing, isOwnProfile = true }) => {
-  const handleEditToggle = () => setEditing && setEditing((prev) => !prev);
+const PerfilHeader = ({ user, isOwnProfile = true }) => {
 
   const buildMapLinkForBusiness = () => {
     const profile = (user && user.businessman_profile) || {};
@@ -31,32 +30,6 @@ const PerfilHeader = ({ user, editing, setEditing, isOwnProfile = true }) => {
       )}&lon=${encodeURIComponent(lon)}`;
     }
     return `/comunidad/mapa?q=${encodeURIComponent(q)}`;
-  };
-
-  const navigate = useNavigate();
-
-  const handleEditClick = () => {
-    const target = `/perfil/editar/${
-      user?.id || localStorage.getItem("userId")
-    }`;
-    try {
-      const token =
-        typeof window !== "undefined" ? localStorage.getItem("token") : null;
-      if (!token) {
-        // No token: redirigir al login (evita 403 al abrir editor sin credenciales)
-        // También podemos mostrar una alerta breve
-        try {
-          window.alert("Debes iniciar sesión para editar el perfil.");
-        } catch (e) {}
-        navigate("/auth/login");
-        return;
-      }
-    } catch (e) {
-      // Si falla el acceso a localStorage, prevenir navegación insegura
-      navigate("/auth/login");
-      return;
-    }
-    navigate(target);
   };
 
   const role = (user?.role || "").toString().toLowerCase();
@@ -229,30 +202,6 @@ const PerfilHeader = ({ user, editing, setEditing, isOwnProfile = true }) => {
             </Button>
           )}
 
-          {isOwnProfile && (
-            <Button
-              onClick={handleEditToggle}
-              variant="contained"
-              color="primary"
-              size="small"
-              sx={{
-                textTransform: "none",
-                borderRadius: 1.5,
-                fontWeight: 500,
-                fontSize: "0.8rem",
-                px: 2,
-                py: 0.75,
-                boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
-                "&:hover": {
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
-                  transform: "translateY(-1px)",
-                },
-                transition: "all 0.2s",
-              }}
-            >
-              Editar usuario
-            </Button>
-          )}
         </Box>
       </Box>
     </Box>

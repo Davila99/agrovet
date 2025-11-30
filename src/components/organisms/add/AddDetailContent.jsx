@@ -3,28 +3,14 @@ import { Box, Typography, Chip, Avatar, Button, Stack, Card, CardContent } from 
 import { Link } from 'react-router-dom';
 import { authAPI } from '/src/services/endpoints/index.js';
 import ImageCarousel from '../../atoms/add/ImageCarousel';
-
-// simple in-memory cache to avoid repeating reverse-geocode requests for same coords
-const geoCurrencyCache = new Map();
-
-const COUNTRY_CURRENCY_MAP = {
-  'US': { code: 'USD', symbol: '$' },
-  'NI': { code: 'NIO', symbol: 'C$' },
-  'BO': { code: 'BOB', symbol: 'Bs' },
-  'AR': { code: 'ARS', symbol: '$' },
-  'CL': { code: 'CLP', symbol: '$' },
-  'PE': { code: 'PEN', symbol: 'S/' },
-  'UY': { code: 'UYU', symbol: '$U' },
-  'ES': { code: 'EUR', symbol: '€' },
-  'MX': { code: 'MXN', symbol: '$' },
-  // add others as needed
-};
+import useCurrency from '../../../hooks/useCurrency';
 
 export default function AddDetailContent({ add }) {
+  const { formatPrice } = useCurrency();
+  
   if (!add) return <Typography>Loading...</Typography>;
 
   const [publisher, setPublisher] = useState(null);
-  const [currency, setCurrency] = useState(null);
 
   useEffect(() => {
     let mounted = true;
@@ -42,40 +28,8 @@ export default function AddDetailContent({ add }) {
     return () => { mounted = false; };
   }, [add.publisher]);
 
-  // determine currency by reverse-geocoding ad coordinates (if present)
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        if (!add) return;
-        const lat = add.latitude;
-        const lon = add.longitude;
-        if (!lat || !lon) return;
-        const key = `${Number(lat).toFixed(4)},${Number(lon).toFixed(4)}`;
-        if (geoCurrencyCache.has(key)) {
-          if (mounted) setCurrency(geoCurrencyCache.get(key));
-          return;
-        }
-        const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&addressdetails=1`;
-        const r = await fetch(url);
-        if (!r.ok) return;
-        const j = await r.json();
-        const addr = j.address || {};
-        const cc = (addr.country_code || '').toString().toUpperCase();
-        const mapped = COUNTRY_CURRENCY_MAP[cc] || null;
-        if (mapped) {
-          geoCurrencyCache.set(key, mapped);
-          if (mounted) setCurrency(mapped);
-        }
-      } catch (e) {
-        console.warn('currency reverse geocode failed', e);
-      }
-    })();
-    return () => { mounted = false; };
-  }, [add.latitude, add.longitude]);
-
-    const currentUserId = typeof window !== 'undefined' ? localStorage.getItem('userId') : null;
-    const isOwn = currentUserId && String(currentUserId) === String(add.publisher);
+  const currentUserId = typeof window !== 'undefined' ? localStorage.getItem('userId') : null;
+  const isOwn = currentUserId && String(currentUserId) === String(add.publisher);
   const images = [];
   if (add?.main_image) images.push(add.main_image.file_url || add.main_image.url || add.main_image);
   if (Array.isArray(add?.secondary_images)) {
@@ -86,7 +40,7 @@ export default function AddDetailContent({ add }) {
   const osmEmbedUrl = (lat, lon) => {
     const latN = Number(lat);
     const lonN = Number(lon);
-    const delta = 0.02; // ~2km bbox depends on lat
+    const delta = 0.02;
     const left = lonN - delta;
     const right = lonN + delta;
     const top = latN + delta;
@@ -99,6 +53,8 @@ export default function AddDetailContent({ add }) {
     const map = { new: 'Nuevo', used: 'Usado', semi_new: 'Seminuevo' };
     return map[c] || c;
   };
+
+  const price = typeof add.price === 'number' ? add.price : parseFloat(add.price || 0);
 
   return (
     <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
@@ -123,7 +79,6 @@ export default function AddDetailContent({ add }) {
               border: '1px solid rgba(16,24,40,0.06)',
               position: 'relative',
               zIndex: 4,
-              // lift the details card so it 'pops out' on larger screens
               transform: { xs: 'none', md: 'translateY(-28px)' },
               transition: 'transform 220ms ease, box-shadow 220ms ease',
             }}
@@ -146,21 +101,12 @@ export default function AddDetailContent({ add }) {
 
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1, flexWrap: 'wrap' }}>
                 <Typography sx={{ fontWeight: 900, fontSize: '1.25rem', color: '#0b3b1f' }}>
-                  {(() => {
-                    const price = typeof add.price === 'number' ? add.price : parseFloat(add.price || 0);
-                    const curr = currency || null;
-                    try {
-                      if (curr && curr.code) {
-                        return new Intl.NumberFormat(undefined, { style: 'currency', currency: curr.code, maximumFractionDigits: 2 }).format(price);
-                      }
-                    } catch (e) {}
-                    // fallback to symbol or raw value
-                    const symbol = curr && curr.symbol ? curr.symbol : 'Bs';
-                    return `${symbol} ${price}`;
-                  })()}
+                  {formatPrice(price)}
                 </Typography>
                 <Chip label={formatCondition(add.condition)} color="primary" sx={{ textTransform: 'capitalize' }} />
-                <Chip label={add.location_name || 'Sin ubicación'} variant="outlined" />
+                {add.location_name && (
+                  <Chip label={add.location_name} variant="outlined" />
+                )}
               </Box>
 
               <Typography variant="subtitle2" sx={{ mt: 2, fontWeight: 700, fontFamily: 'Inter, system-ui, sans-serif' }}>Descripción</Typography>

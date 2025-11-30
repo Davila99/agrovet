@@ -141,14 +141,14 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
         formDataToSend.append("image", formData.image);
         formDataToSend.append("name", formData.title);
         formDataToSend.append("description", formData.description);
-        formDataToSend.append("folder", "portfolio");
+        formDataToSend.append("folder", "services");
 
         try {
           uploadedMedia = await uploadMedia(formDataToSend, token);
           console.log("✅ Media subido - Respuesta completa:", JSON.stringify(uploadedMedia, null, 2));
-          
+
           mediaId = uploadedMedia?.id || uploadedMedia?.pk;
-          
+
           // Validar que tenemos la URL de Supabase
           const mediaUrl = uploadedMedia?.url || uploadedMedia?.public_url || uploadedMedia?.path;
           if (!mediaUrl) {
@@ -157,15 +157,15 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
             setUploading(false);
             return;
           }
-          
+
           // Asegurar que uploadedMedia tenga la URL correcta
           if (!uploadedMedia.url) {
             uploadedMedia.url = mediaUrl;
           }
-          
+
           console.log("✅ Media subido correctamente - ID:", mediaId, "URL:", uploadedMedia.url);
           console.log("✅ uploadedMedia completo:", JSON.stringify(uploadedMedia, null, 2));
-          
+
           // CRÍTICO: Asegurar que la URL esté disponible inmediatamente
           if (!uploadedMedia.url) {
             console.error("❌ ERROR CRÍTICO: uploadedMedia no tiene URL después de normalizar");
@@ -184,12 +184,12 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
 
       // Obtener items actuales
       const currentItems = [...portfolio];
-      
+
       if (editingIndex !== null) {
         // Editar item existente - necesitamos actualizar el media existente
         const existingItem = currentItems[editingIndex];
         const existingMediaId = existingItem.id;
-        
+
         // Si hay nueva imagen, crear nuevo media y reemplazar el anterior
         if (mediaId && formData.image && uploadedMedia) {
           // Usar la URL del media subido (de Supabase), no el preview temporal
@@ -218,7 +218,7 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
                 description: formData.description,
               },
             });
-            
+
             // Actualizar el item localmente manteniendo la URL original de Supabase
             currentItems[editingIndex] = {
               ...existingItem,
@@ -245,30 +245,30 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
           setUploading(false);
           return;
         }
-        
-            // Usar SIEMPRE la URL del media subido desde Supabase
-            const mediaUrl = uploadedMedia.url || uploadedMedia.public_url || uploadedMedia.publicURL;
-            if (!mediaUrl) {
-              console.error("❌ Error: No se recibió URL del media subido");
-              console.error("❌ uploadedMedia completo:", JSON.stringify(uploadedMedia, null, 2));
-              console.error("❌ uploadedMedia keys:", Object.keys(uploadedMedia));
-              alert("Error al subir la imagen. Por favor intenta de nuevo.");
-              setUploading(false);
-              return;
-            }
-            
-            console.log("✅ Agregando nuevo item con URL:", mediaUrl);
-            const newItem = {
-              id: mediaId,
-              name: formData.title,
-              description: formData.description,
-              title: formData.title, // Para compatibilidad
-              url: mediaUrl, // URL de Supabase - CRÍTICO que esté aquí
-              image: mediaUrl, // También en image para compatibilidad
-              created_at: uploadedMedia.created_at || new Date().toISOString(),
-            };
-            console.log("✅ Nuevo item creado:", JSON.stringify(newItem, null, 2));
-            currentItems.push(newItem);
+
+        // Usar SIEMPRE la URL del media subido desde Supabase
+        const mediaUrl = uploadedMedia.url || uploadedMedia.public_url || uploadedMedia.publicURL;
+        if (!mediaUrl) {
+          console.error("❌ Error: No se recibió URL del media subido");
+          console.error("❌ uploadedMedia completo:", JSON.stringify(uploadedMedia, null, 2));
+          console.error("❌ uploadedMedia keys:", Object.keys(uploadedMedia));
+          alert("Error al subir la imagen. Por favor intenta de nuevo.");
+          setUploading(false);
+          return;
+        }
+
+        console.log("✅ Agregando nuevo item con URL:", mediaUrl);
+        const newItem = {
+          id: mediaId,
+          name: formData.title,
+          description: formData.description,
+          title: formData.title, // Para compatibilidad
+          url: mediaUrl, // URL de Supabase - CRÍTICO que esté aquí
+          image: mediaUrl, // También en image para compatibilidad
+          created_at: uploadedMedia.created_at || new Date().toISOString(),
+        };
+        console.log("✅ Nuevo item creado:", JSON.stringify(newItem, null, 2));
+        currentItems.push(newItem);
       }
 
       // Actualizar el perfil con los nuevos items
@@ -278,7 +278,7 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
       console.log("💾 itemIds filtrados:", itemIds);
       console.log("💾 itemIds tipo:", typeof itemIds, Array.isArray(itemIds));
       console.log("💾 itemIds length:", itemIds.length);
-      
+
       // Actualizar el perfil según el rol
       let updatedProfileFromPatch = null;
       try {
@@ -287,28 +287,28 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
           console.log("💾 [PortfolioSection] Actualizando perfil de specialist con work_images_ids:", itemIds);
           console.log("💾 [PortfolioSection] userId:", userId);
           console.log("💾 [PortfolioSection] token disponible:", !!token);
-          
+
           const patchData = {
             work_images_ids: itemIds,
           };
           console.log("💾 [PortfolioSection] Datos del PATCH:", JSON.stringify(patchData, null, 2));
-          
+
           updatedProfileFromPatch = await profilesAPI.patchSpecialistByUser(userId, patchData, token);
           console.log("✅ [PortfolioSection] Perfil de specialist actualizado desde PATCH");
           console.log("✅ [PortfolioSection] updatedProfileFromPatch completo:", JSON.stringify(updatedProfileFromPatch, null, 2));
           console.log("✅ [PortfolioSection] work_images_full desde PATCH:", updatedProfileFromPatch?.work_images_full);
           console.log("✅ [PortfolioSection] work_images_full es array?:", Array.isArray(updatedProfileFromPatch?.work_images_full));
           console.log("✅ [PortfolioSection] work_images_full length:", updatedProfileFromPatch?.work_images_full?.length);
-          
+
           // SIEMPRE usar los items locales con la URL del media subido primero
           // Luego intentar usar work_images_full del PATCH si está disponible
           const itemsToUpdate = currentItems.map(item => ({
             ...item,
             url: item.url || uploadedMedia?.url || null
           })).filter(item => item.url); // Filtrar items sin URL
-          
+
           console.log("✅ [PortfolioSection] Items locales preparados:", itemsToUpdate);
-          
+
           // Si el PATCH devuelve work_images_full válido, usarlo (tiene prioridad)
           if (updatedProfileFromPatch?.work_images_full && Array.isArray(updatedProfileFromPatch.work_images_full) && updatedProfileFromPatch.work_images_full.length > 0) {
             console.log("✅ [PortfolioSection] Usando work_images_full del PATCH response");
@@ -349,10 +349,10 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
               onUpdate(itemsToUpdate);
             }
           }
-          
+
           handleCloseDialog();
           setUploading(false);
-          
+
           // NO recargar inmediatamente - ya actualizamos el estado arriba
           // Solo recargar después de un delay más largo para sincronizar con el backend
           setTimeout(async () => {
@@ -362,7 +362,7 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
               console.log("🔄 [PortfolioSection] Perfil refrescado completo:", JSON.stringify(refreshedProfile, null, 2));
               console.log("🔄 [PortfolioSection] work_images_ids desde backend:", refreshedProfile?.work_images_ids);
               console.log("🔄 [PortfolioSection] work_images_full desde backend:", refreshedProfile?.work_images_full);
-              
+
               if (refreshedProfile?.work_images_full && Array.isArray(refreshedProfile.work_images_full) && refreshedProfile.work_images_full.length > 0) {
                 console.log("✅ [PortfolioSection] Datos refrescados desde backend:", refreshedProfile.work_images_full.length, "items");
                 // Actualizar localStorage con los datos confirmados del backend
@@ -411,7 +411,7 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
               }
             }
           }, 1000); // Aumentar delay a 1 segundo para dar más tiempo al backend
-          
+
           return; // Salir después de actualizar
         } else if (userRole?.toLowerCase() === "businessman") {
           // Para businessman también puede tener portafolio
@@ -419,11 +419,11 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
           updatedProfileFromPatch = await profilesAPI.patchBusinessmanByUser(userId, {
             products_and_services_ids: itemIds,
           }, token);
-          console.log("✅ [PortfolioSection] Perfil de businessman actualizado desde PATCH:", updatedProfileFromPatch);
-          
-          // Si el PATCH devuelve products_and_services_full, usarlo inmediatamente
+          console.log("✅ [PortfolioSection] Perfil de businessman actualizado:", updatedProfileFromPatch);
+
+          // Si el PATCH/POST devuelve products_and_services_full, usarlo inmediatamente
           if (updatedProfileFromPatch?.products_and_services_full && Array.isArray(updatedProfileFromPatch.products_and_services_full) && updatedProfileFromPatch.products_and_services_full.length > 0) {
-            console.log("✅ [PortfolioSection] Usando products_and_services_full del PATCH response inmediatamente");
+            console.log("✅ [PortfolioSection] Usando products_and_services_full del response inmediatamente");
             onUpdate && onUpdate(updatedProfileFromPatch.products_and_services_full);
             handleCloseDialog();
             setUploading(false);
@@ -440,7 +440,7 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
 
       // NO actualizar inmediatamente con items locales, esperar la respuesta del backend
       console.log("🔄 Esperando respuesta del backend antes de actualizar...");
-      
+
       // Recargar los datos completos desde el backend para obtener las URLs actualizadas
       // Esperar un poco para asegurar que el backend haya procesado todo
       setTimeout(async () => {
@@ -452,7 +452,7 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
             console.log("📥 work_images_full recibido:", updatedProfile?.work_images_full);
             console.log("📥 work_images_full es array?:", Array.isArray(updatedProfile?.work_images_full));
             console.log("📥 work_images_full length:", updatedProfile?.work_images_full?.length);
-            
+
             if (updatedProfile?.work_images_full && Array.isArray(updatedProfile.work_images_full) && updatedProfile.work_images_full.length > 0) {
               console.log("✅ Actualizando con work_images_full del backend:", updatedProfile.work_images_full.map(item => ({
                 id: item.id,
@@ -519,7 +519,7 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
           onUpdate && onUpdate(itemsWithUrls);
         }
       }, 1000); // Reducir a 1 segundo para respuesta más rápida
-      
+
       handleCloseDialog();
     } catch (error) {
       console.error("Error al guardar item del portafolio:", error);
@@ -545,7 +545,7 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
         const updatedProfile = await profilesAPI.patchSpecialistByUser(userId, {
           work_images_ids: itemIds,
         }, token);
-        
+
         // Actualizar localStorage con los nuevos datos
         try {
           const backupKey = `portfolio_backup_${userId}`;
@@ -559,7 +559,7 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
         } catch (e) {
           console.warn("⚠️ [PortfolioSection] No se pudo actualizar localStorage:", e);
         }
-        
+
         // Si el backend devuelve work_images_full, usarlo
         if (updatedProfile?.work_images_full && Array.isArray(updatedProfile.work_images_full) && updatedProfile.work_images_full.length > 0) {
           console.log("✅ [PortfolioSection] Usando work_images_full del backend después de eliminar");
@@ -606,7 +606,7 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
             mb: 1.5,
           }}
         >
-          Portafolio
+          Servicios
         </Typography>
       </Box>
 
@@ -624,7 +624,7 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
             }} />
           </Grid>
         )}
-        
+
         {/* Mostrar proyectos */}
         {portfolio && Array.isArray(portfolio) && portfolio.length > 0 && portfolio.map((item, index) => {
           // Validar que el item tenga datos mínimos
@@ -632,7 +632,7 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
             console.warn(`[PortfolioSection] Item ${index} inválido, omitiendo:`, item);
             return null;
           }
-          
+
           // Normalizar el item para asegurar que tenga los campos necesarios
           const normalizedItem = {
             id: item.id,
@@ -643,14 +643,14 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
             created_at: item.created_at || null,
             ...item // Preservar otros campos
           };
-          
+
           console.log(`[PortfolioSection] Renderizando item ${index}:`, {
             id: normalizedItem.id,
             name: normalizedItem.name,
             url: normalizedItem.url,
             hasUrl: !!normalizedItem.url
           });
-          
+
           return (
             <Grid item xs={6} sm={4} md={2.4} lg={2} key={normalizedItem.id || normalizedItem.url || `portfolio-${index}`} sx={{ display: "flex" }}>
               <PortfolioCard
@@ -663,7 +663,7 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
             </Grid>
           );
         }).filter(Boolean)}
-        
+
         {/* Mostrar mensaje vacío solo si no es el propio perfil y no hay proyectos */}
         {(!portfolio || !Array.isArray(portfolio) || portfolio.length === 0) && !isOwnProfile && (
           <Grid item xs={12}>
@@ -683,7 +683,7 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
             </Box>
           </Grid>
         )}
-        
+
         {/* Si está vacío y es mi perfil, mostrar mensaje después del botón */}
         {(!portfolio || !Array.isArray(portfolio) || portfolio.length === 0) && isOwnProfile && (
           <Grid item xs={12}>
@@ -699,17 +699,17 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
               }}
             >
               <Typography variant="body2" sx={{ color: "text.secondary", fontWeight: 500, fontSize: "0.75rem" }}>
-                Haz clic en "Agregar" para empezar a construir tu portafolio.
+                Haz clic en "Agregar" para empezar a construir tus servicios.
               </Typography>
             </Box>
           </Grid>
         )}
       </Grid>
 
-      <Dialog 
-        open={dialogOpen} 
-        onClose={handleCloseDialog} 
-        maxWidth="sm" 
+      <Dialog
+        open={dialogOpen}
+        onClose={handleCloseDialog}
+        maxWidth="xs"
         fullWidth
         PaperProps={{
           sx: {
@@ -738,12 +738,12 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
               <input
                 accept="image/*,video/*"
                 style={{ display: "none" }}
-                id="portfolio-image-upload"
+                id="services-image-upload"
                 type="file"
                 onChange={handleImageChange}
               />
               <Box
-                onClick={() => document.getElementById('portfolio-image-upload')?.click()}
+                onClick={() => document.getElementById('services-image-upload')?.click()}
                 sx={{
                   borderRadius: 2,
                   border: '1px dashed rgba(16,24,40,0.12)',
@@ -758,11 +758,11 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
                 }}
               >
                 {!formData.imagePreview ? (
-                  <Box sx={{ 
-                    width: '100%', 
-                    height: 150, 
-                    display: 'flex', 
-                    alignItems: 'center', 
+                  <Box sx={{
+                    width: '100%',
+                    height: 150,
+                    display: 'flex',
+                    alignItems: 'center',
                     justifyContent: 'center',
                     flexDirection: 'column',
                     gap: 0.5
@@ -859,20 +859,20 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
 
             {/* Date Info */}
             {editingIndex === null && (
-              <Box sx={{ 
-                bgcolor: '#f0f9ff', 
-                border: '1px solid #bae6fd', 
-                borderRadius: 1.5, 
+              <Box sx={{
+                bgcolor: '#f0f9ff',
+                border: '1px solid #bae6fd',
+                borderRadius: 1.5,
                 p: 1,
                 display: 'flex',
                 alignItems: 'center',
                 gap: 0.5
               }}>
                 <Typography variant="caption" sx={{ color: '#0369a1', fontWeight: 500, fontSize: "0.7rem" }}>
-                  📅 Fecha: {new Date().toLocaleDateString('es-ES', { 
-                    year: 'numeric', 
-                    month: 'short', 
-                    day: 'numeric' 
+                  📅 Fecha: {new Date().toLocaleDateString('es-ES', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
                   })}
                 </Typography>
               </Box>
@@ -880,7 +880,7 @@ const PortfolioSection = ({ portfolio = [], editing, userId, userRole, onUpdate,
           </Box>
         </DialogContent>
         <DialogActions sx={{ p: 2, pt: 0, gap: 1.5 }}>
-          <Button 
+          <Button
             onClick={handleCloseDialog}
             size="small"
             sx={{

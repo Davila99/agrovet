@@ -33,4 +33,25 @@ export const styles = {
     height: 180,
     objectFit: 'cover',
   },
+  // Standard button styles for forms
+  primaryButton: {
+    bgcolor: '#103E68',
+    '&:hover': { bgcolor: '#0d3254' },
+    borderRadius: 2,
+    fontWeight: 600,
+    textTransform: 'none',
+    py: 1.5,
+  },
+  secondaryButton: {
+    borderColor: '#103E68',
+    color: '#103E68',
+    borderRadius: 2,
+    fontWeight: 600,
+    textTransform: 'none',
+    py: 1.5,
+    '&:hover': {
+      borderColor: '#0d3254',
+      bgcolor: 'rgba(16, 62, 104, 0.04)',
+    },
+  },
 };

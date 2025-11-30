@@ -7,8 +7,8 @@ const AddProductCard = ({ onClick }) => {
     <Card
       onClick={onClick}
       sx={{
-        borderRadius: 1.5,
-        bgcolor: "#f5f5f5",
+        borderRadius: 2,
+        bgcolor: "transparent",
         border: "2px dashed #00c6a7",
         display: "flex",
         flexDirection: "column",
@@ -17,13 +17,12 @@ const AddProductCard = ({ onClick }) => {
         cursor: "pointer",
         transition: "all 0.3s ease",
         height: "100%",
-        minHeight: "180px", // Altura mínima aumentada
+        minHeight: "140px",
+        boxShadow: "none",
         "&:hover": {
-          bgcolor: "#f0fdfa",
+          bgcolor: "rgba(0, 198, 167, 0.05)",
           borderColor: "#00c6a7",
-          borderWidth: "2px",
-          transform: "scale(1.01)",
-          boxShadow: "0 2px 8px rgba(0, 198, 167, 0.15)",
+          transform: "scale(1.02)",
         },
       }}
     >
