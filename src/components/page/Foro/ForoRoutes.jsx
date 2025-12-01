@@ -2,7 +2,6 @@ import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import FeedPage from './FeedPage';
 import PostPage from './PostPage';
-import CommunityPage from './CommunityPage';
 import CreatePostPage from './CreatePostPage';
 import NotificationsPage from './NotificationsPage';
 
@@ -16,7 +15,7 @@ export default function ForoRoutes() {
     <Routes>
       <Route index element={<FeedPage />} />
       <Route path="post/:id" element={<PostPage />} />
-      <Route path="community/:id" element={<CommunityPage />} />
+      {/* Community routes are handled by Dashboard at /foro/community/:id so we avoid duplicating rendering here */}
       <Route path="create" element={<CreatePostPage />} />
       <Route path="notifications" element={<NotificationsPage />} />
     </Routes>

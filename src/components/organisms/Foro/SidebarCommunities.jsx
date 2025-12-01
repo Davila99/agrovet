@@ -1,108 +1,209 @@
-import React, { useState } from 'react';
-import { useCommunities } from '../../../hooks/Foro/useForoApi';
-import { Paper, Typography, List, ListItem, ListItemText, Divider, Box, Button, Dialog, DialogTitle, DialogContent, TextField, DialogActions, Alert, Avatar } from '@mui/material';
+import React, { useMemo } from 'react';
+import {
+  Paper,
+  Typography,
+  List,
+  ListItemButton,
+  Box,
+  Avatar,
+  Stack,
+  Chip,
+  Skeleton,
+  Alert,
+} from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
-import foroService from '../../../services/endpoints/foro';
+import { People, Agriculture, LocalHospital, Business, Public } from '@mui/icons-material';
+import { useCommunities } from '../../../hooks/Foro/useForoApi';
+import { filterCommunitiesByRole, COMMUNITY_SLUGS } from '../../../utils/Foro/autoJoinCommunities';
 
-export default function SidebarCommunities() {
+// Colors and icons for each community
+const communityConfig = {
+  [COMMUNITY_SLUGS.GENERAL]: {
+    color: '#6366F1',
+    icon: <Public />,
+    gradient: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)',
+  },
+  [COMMUNITY_SLUGS.CONSUMERS]: {
+    color: '#F59E0B',
+    icon: <Agriculture />,
+    gradient: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
+  },
+  [COMMUNITY_SLUGS.SPECIALISTS]: {
+    color: '#10B981',
+    icon: <LocalHospital />,
+    gradient: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+  },
+  [COMMUNITY_SLUGS.BUSINESSMEN]: {
+    color: '#3B82F6',
+    icon: <Business />,
+    gradient: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
+  },
+};
+
+const getCommunityConfig = (slug) => {
+  return communityConfig[slug] || {
+    color: '#8B5CF6',
+    icon: <Public />,
+    gradient: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)',
+  };
+};
+
+/**
+ * SidebarCommunities - Shows communities relevant to user's role
+ * Only displays communities the user has access to
+ */
+export default function SidebarCommunities({ userRole }) {
   const { data, isLoading, error: apiError } = useCommunities();
-  const items = data || [];
-  const [open, setOpen] = useState(false);
-  const [name, setName] = useState('');
-  const [slug, setSlug] = useState('');
-  const [shortDescription, setShortDescription] = useState('');
-  const [coverImage, setCoverImage] = useState('');
-  const [error, setError] = useState(null);
   
+  // Filter communities based on user role
+  const communities = useMemo(() => {
+    if (!data) return [];
+    return filterCommunitiesByRole(data, userRole);
+  }, [data, userRole]);
+
   if (isLoading) {
     return (
-      <Paper sx={{ p: 2, borderRadius: 2 }}>
-        <Typography variant="body2" color="text.secondary">
-          Cargando comunidades...
+      <Paper 
+        elevation={0}
+        sx={{ 
+          p: 2.5, 
+          borderRadius: 3,
+          bgcolor: '#ffffff',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+        }}
+      >
+        <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, fontSize: '1rem' }}>
+          Mis Comunidades
         </Typography>
-      </Paper>
-    );
-  }
-  
-  if (apiError) {
-    return (
-      <Paper sx={{ p: 2, borderRadius: 2 }}>
-        <Typography variant="body2" color="error">
-          Error cargando comunidades. {apiError.message || 'Verifica que el servicio de foro esté disponible y que las migraciones de base de datos estén ejecutadas.'}
-        </Typography>
+        <Stack spacing={1.5}>
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} variant="rounded" height={64} sx={{ borderRadius: 2 }} />
+          ))}
+        </Stack>
       </Paper>
     );
   }
 
-  async function handleCreate() {
-    setError(null);
-    try {
-      const payload = { name, slug: slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''), short_description: shortDescription, cover_image: coverImage };
-      await foroService.createCommunity(payload);
-      // simple refresh to re-fetch; keep it simple
-      window.location.reload();
-    } catch (e) {
-      setError(e.message || 'Error creando comunidad');
-    }
+  if (apiError) {
+    return (
+      <Paper 
+        elevation={0}
+        sx={{ 
+          p: 2.5, 
+          borderRadius: 3,
+          bgcolor: '#ffffff',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+        }}
+      >
+        <Alert severity="warning" sx={{ fontSize: '0.85rem' }}>
+          No se pudieron cargar las comunidades
+        </Alert>
+      </Paper>
+    );
   }
 
   return (
-    <Paper sx={{ p: 2, borderRadius: 2, position: 'sticky', top: 96 }} elevation={1}>
-      <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 1 }}>POPULAR COMMUNITIES</Typography>
-      {items.length === 0 ? (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-          <Typography variant="body2" sx={{ color: 'text.secondary' }}>No hay comunidades aún.</Typography>
-          <Button
-            onClick={() => setOpen(true)}
-            sx={{
-              mt: 1,
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 1,
-              bgcolor: '#e6f8ea',
-              color: '#0a7a2a',
-              '&:hover': { bgcolor: '#d1f0d6' },
-              borderRadius: '999px',
-              px: 2,
-              py: 1,
-            }}
-          >
-            <Box component="span" sx={{ width: 18, height: 18, bgcolor: '#0a7a2a', color: '#fff', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>+</Box>
-            Crear comunidad
-          </Button>
+    <Paper 
+      elevation={0}
+      sx={{ 
+        p: 2.5, 
+        borderRadius: 3,
+        bgcolor: '#ffffff',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+        border: '1px solid rgba(0,0,0,0.05)',
+      }}
+    >
+      <Typography 
+        variant="h6" 
+        sx={{ 
+          fontWeight: 700, 
+          fontSize: '1rem', 
+          color: '#1a1a1a',
+          mb: 2,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+        }}
+      >
+        <People sx={{ fontSize: 20, color: '#00695c' }} />
+        Mis Comunidades
+      </Typography>
+
+      {communities.length === 0 ? (
+        <Box sx={{ textAlign: 'center', py: 3 }}>
+          <Typography variant="body2" color="text.secondary">
+            No tienes comunidades asignadas
+          </Typography>
         </Box>
       ) : (
         <List sx={{ p: 0 }}>
-          {items.slice(0, 6).map((c, idx) => (
-            <React.Fragment key={c.id}>
-              <ListItem sx={{ py: 1 }}>
-                <Avatar src={c.avatar || ''} alt={c.name} sx={{ width: 40, height: 40, mr: 1 }} component={RouterLink} to={`/foro/community/${c.id}`} />
-                <ListItemText
-                  primary={<Typography sx={{ fontWeight: 700 }} component={RouterLink} to={`/foro/community/${c.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>{c.name}</Typography>}
-                  secondary={<Typography variant="caption" sx={{ color: 'text.secondary' }}>{c.short_description}</Typography>}
-                />
-                <Box sx={{ ml: 1, color: 'text.secondary', fontSize: 12 }}>{(c.members_count || 0).toLocaleString()}</Box>
-              </ListItem>
-              {idx < Math.min(items.length - 1, 5) && <Divider component="li" />}
-            </React.Fragment>
-          ))}
+          {communities.map((community) => {
+            const config = getCommunityConfig(community.slug);
+            
+            return (
+              <ListItemButton
+                key={community.id}
+                component={RouterLink}
+                to={`/foro/community/${community.id}`}
+                sx={{
+                  borderRadius: 2,
+                  mb: 1,
+                  p: 1.5,
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    bgcolor: `${config.color}10`,
+                    transform: 'translateX(4px)',
+                  },
+                }}
+              >
+                <Avatar
+                  src={community.avatar}
+                  sx={{
+                    width: 44,
+                    height: 44,
+                    mr: 1.5,
+                    background: config.gradient,
+                    boxShadow: `0 4px 12px ${config.color}40`,
+                  }}
+                >
+                  {config.icon}
+                </Avatar>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{
+                      fontWeight: 600,
+                      fontSize: '0.9rem',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      color: '#1a1a1a',
+                    }}
+                  >
+                    {community.name}
+                  </Typography>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Typography variant="caption" color="text.secondary">
+                      {community.members_count || 0} miembros
+                    </Typography>
+                    <Chip 
+                      size="small" 
+                      label="Miembro" 
+                      sx={{ 
+                        height: 18, 
+                        fontSize: '0.65rem',
+                        bgcolor: `${config.color}20`,
+                        color: config.color,
+                        fontWeight: 600,
+                      }} 
+                    />
+                  </Stack>
+                </Box>
+              </ListItemButton>
+            );
+          })}
         </List>
       )}
-
-        <Dialog open={open} onClose={() => setOpen(false)} fullWidth>
-        <DialogTitle>Crear comunidad</DialogTitle>
-        <DialogContent>
-          {error && <Alert severity="error">{String(error)}</Alert>}
-          <TextField autoFocus margin="dense" label="Nombre" fullWidth value={name} onChange={e => setName(e.target.value)} />
-          <TextField margin="dense" label="Slug (opcional)" fullWidth value={slug} onChange={e => setSlug(e.target.value)} />
-          <TextField margin="dense" label="Descripción corta" fullWidth value={shortDescription} onChange={e => setShortDescription(e.target.value)} />
-          <TextField margin="dense" label="URL imagen de portada (opcional)" fullWidth value={coverImage} onChange={e => setCoverImage(e.target.value)} />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpen(false)} sx={{ borderRadius: '999px' }}>Cancelar</Button>
-          <Button variant="contained" onClick={handleCreate} sx={{ borderRadius: '999px' }}>Crear</Button>
-        </DialogActions>
-      </Dialog>
     </Paper>
   );
 }

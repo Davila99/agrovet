@@ -280,10 +280,19 @@ export default function ChatList({
               const otherId = other && (other.id || other.user_id || other.pk) ? (other.id || other.user_id || other.pk) : null;
               const online = (() => {
                 try {
-                  if (typeof isParticipantOnline === 'function' && otherId) return isParticipantOnline(otherId);
-                  const st = presenceUsers && otherId ? presenceUsers[String(otherId)] : null;
-                  return st && st.isOnline;
-                } catch (e) { return false; }
+                  if (typeof isParticipantOnline === 'function' && otherId) {
+                    return isParticipantOnline(otherId);
+                  }
+                  // Fallback: verificar en el store de presencia
+                  if (presenceUsers && otherId) {
+                    const st = presenceUsers[String(otherId)] || presenceUsers[otherId];
+                    return st && (st.isOnline === true || st.online === true);
+                  }
+                  return false;
+                } catch (e) { 
+                  console.warn('[ChatList] Error checking online status:', e);
+                  return false; 
+                }
               })();
 
               // Obtener datos del usuario para verificación

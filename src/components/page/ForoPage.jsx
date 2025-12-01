@@ -10,206 +10,115 @@ import {
   Chip,
   Stack,
   Button,
-  Card,
-  CardContent,
   Avatar,
   CircularProgress,
+  Divider,
+  Alert,
 } from "@mui/material";
+import { useParams } from 'react-router-dom';
 import {
   Search,
-  FilterList,
+  Add,
+  TrendingUp,
+  AccessTime,
+  Whatshot,
+  ArrowForward,
+  People,
+  Public,
   Agriculture,
   LocalHospital,
-  Pets,
-  TrendingUp,
-  NewReleases,
-  Whatshot,
+  Business,
 } from "@mui/icons-material";
-import ModernPostCard from "../molecules/Foro/ModernPostCard";
-import { usePosts, useReact, useDeletePost } from "../../hooks/Foro/useForoApi";
-import { getProfile } from "../../services/endpoints/auth";
+import { useNavigate, Link as RouterLink } from "react-router-dom";
+import PostCard from "../molecules/Foro/PostCard";
 import PostComposer from "../molecules/Foro/PostComposer";
-import { useNavigate } from "react-router-dom";
-import chatService from "../../services/endpoints/chat";
+import { usePosts, useCommunities } from "../../hooks/Foro/useForoApi";
+import { getProfile } from "../../services/endpoints/auth";
+import { autoJoinCommunitiesByRole, filterCommunitiesByRole, COMMUNITY_SLUGS } from "../../utils/Foro/autoJoinCommunities";
+import CommunityView from '../organisms/Foro/CommunityView';
+
+// Colors and icons for each community type
+const communityConfig = {
+  [COMMUNITY_SLUGS.GENERAL]: {
+    color: '#6366F1',
+    icon: <Public />,
+  },
+  [COMMUNITY_SLUGS.CONSUMERS]: {
+    color: '#F59E0B',
+    icon: <Agriculture />,
+  },
+  [COMMUNITY_SLUGS.SPECIALISTS]: {
+    color: '#10B981',
+    icon: <LocalHospital />,
+  },
+  [COMMUNITY_SLUGS.BUSINESSMEN]: {
+    color: '#3B82F6',
+    icon: <Business />,
+  },
+};
+
+const getCommunityConfig = (slug) => {
+  return communityConfig[slug] || { color: '#00695c', icon: <Public /> };
+};
 
 /**
- * ForoPage: Página principal del foro con diseño moderno
- * Integrada con el backend existente
+ * ForoPage: Main forum page with role-based communities
+ * Layout: Posts on the left, Communities sidebar on the right (no stats or profile card)
  */
-export default function ForoPage() {
+export default function ForoPage({ initialCommunityId = null }) {
+  // Diagnostic logging helper (enable by setting debugForo = true)
+  const debugForo = false;
+  if (debugForo) console.debug('[ForoPage] mount initialCommunityId=', initialCommunityId);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("todos");
-  const [sortBy, setSortBy] = useState("recientes");
+  const [sortBy, setSortBy] = useState("relevance");
   const [currentUser, setCurrentUser] = useState(null);
-  const [createdPosts, setCreatedPosts] = useState([]);
+  const [selectedCommunity, setSelectedCommunity] = useState(null);
   const [openComposer, setOpenComposer] = useState(false);
   const [loadingUser, setLoadingUser] = useState(true);
+  const [createdPosts, setCreatedPosts] = useState([]);
   const navigate = useNavigate();
 
-  // Posts de ejemplo para rellenar la vista
-  const examplePosts = [
-    {
-      id: 1001,
-      title: "Consulta sobre alimentación de ganado bovino en época seca",
-      content: "Hola comunidad, tengo una pregunta importante sobre la alimentación adecuada para ganado bovino durante la época de sequía. He notado que mis animales están perdiendo peso y quiero saber qué estrategias de alimentación están usando otros ganaderos. ¿Alguien tiene experiencia con suplementos o forrajes alternativos?",
-      author: {
-        id: 101,
-        name: "Juan Pérez",
-        profile_picture: null,
-        role: "ganadero",
-      },
-      category: "ganadero",
-      created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-      likes_count: 24,
-      comments_count: 8,
-      views_count: 156,
-      tags: ["ganado", "alimentación", "bovino", "sequía"],
-      media: null,
-    },
-    {
-      id: 1002,
-      title: "Vacunación preventiva en cerdos: Resultados exitosos",
-      content: "Comparto mi experiencia con el programa de vacunación preventiva que implementé en mi granja porcina hace 6 meses. Los resultados han sido excelentes: reducción del 80% en enfermedades respiratorias y mejor tasa de crecimiento. Estoy dispuesto a compartir el protocolo completo con quien lo necesite.",
-      author: {
-        id: 102,
-        name: "Dra. María González",
-        profile_picture: null,
-        role: "veterinario",
-      },
-      category: "veterinario",
-      created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-      likes_count: 45,
-      comments_count: 15,
-      views_count: 289,
-      tags: ["cerdos", "vacunación", "prevención", "salud"],
-      media: null,
-    },
-    {
-      id: 1003,
-      title: "Nuevas técnicas de inseminación artificial en ganado",
-      content: "¿Alguien ha probado las nuevas técnicas de inseminación artificial que están usando en Europa? Me gustaría conocer experiencias de otros ganaderos. Específicamente sobre el uso de semen sexado y las tasas de éxito que han obtenido.",
-      author: {
-        id: 103,
-        name: "Carlos Ramírez",
-        profile_picture: null,
-        role: "ganadero",
-      },
-      category: "ganadero",
-      created_at: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
-      likes_count: 32,
-      comments_count: 12,
-      views_count: 198,
-      tags: ["inseminación", "técnicas", "ganadería", "reproducción"],
-      media: null,
-    },
-    {
-      id: 1004,
-      title: "Manejo de parásitos en ovinos: Guía práctica",
-      content: "Como especialista en salud ovina, quiero compartir una guía práctica sobre el manejo de parásitos. Incluye identificación, tratamiento y prevención. Los parásitos internos son una de las principales causas de pérdidas económicas en la producción ovina.",
-      author: {
-        id: 104,
-        name: "Dr. Roberto Silva",
-        profile_picture: null,
-        role: "especialista",
-      },
-      category: "especialista",
-      created_at: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-      likes_count: 67,
-      comments_count: 22,
-      views_count: 412,
-      tags: ["ovinos", "parásitos", "salud", "prevención"],
-      media: null,
-    },
-    {
-      id: 1005,
-      title: "Sistema de riego para pastos: ¿Qué recomiendan?",
-      content: "Estoy pensando en instalar un sistema de riego para mis pastos. Tengo 50 hectáreas y quiero saber qué sistema es más eficiente. ¿Riego por aspersión o por goteo? ¿Alguien tiene experiencia con sistemas automatizados?",
-      author: {
-        id: 105,
-        name: "Ana Martínez",
-        profile_picture: null,
-        role: "ganadero",
-      },
-      category: "ganadero",
-      created_at: new Date(Date.now() - 18 * 60 * 60 * 1000).toISOString(),
-      likes_count: 19,
-      comments_count: 7,
-      views_count: 134,
-      tags: ["riego", "pastos", "infraestructura"],
-      media: null,
-    },
-    {
-      id: 1006,
-      title: "Emergencia veterinaria: Intoxicación en bovinos",
-      content: "URGENTE: Tengo varios bovinos que presentan síntomas de intoxicación después de consumir pasto en un área nueva. Síntomas: salivación excesiva, temblores, dificultad para respirar. ¿Qué debo hacer inmediatamente mientras espero al veterinario?",
-      author: {
-        id: 106,
-        name: "Luis Fernández",
-        profile_picture: null,
-        role: "ganadero",
-      },
-      category: "ganadero",
-      created_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-      likes_count: 8,
-      comments_count: 15,
-      views_count: 89,
-      tags: ["emergencia", "intoxicación", "bovinos", "urgencia"],
-      media: null,
-    },
-    {
-      id: 1007,
-      title: "Bienestar animal en producción intensiva",
-      content: "Como veterinario especializado en bienestar animal, quiero abrir un debate sobre las mejores prácticas en producción intensiva. ¿Cómo podemos balancear la productividad con el bienestar animal? Comparto algunas estrategias que he implementado con éxito.",
-      author: {
-        id: 107,
-        name: "Dra. Laura Torres",
-        profile_picture: null,
-        role: "veterinario",
-      },
-      category: "veterinario",
-      created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-      likes_count: 56,
-      comments_count: 18,
-      views_count: 321,
-      tags: ["bienestar", "producción", "ética"],
-      media: null,
-    },
-    {
-      id: 1008,
-      title: "Cría de cabras lecheras: Experiencias y consejos",
-      content: "Estoy iniciando en la cría de cabras lecheras y me gustaría conocer las experiencias de otros productores. ¿Qué razas recomiendan para clima templado? ¿Cuáles son los principales desafíos que enfrentaron al inicio?",
-      author: {
-        id: 108,
-        name: "Miguel Ángel",
-        profile_picture: null,
-        role: "ganadero",
-      },
-      category: "ganadero",
-      created_at: new Date(Date.now() - 36 * 60 * 60 * 1000).toISOString(),
-      likes_count: 28,
-      comments_count: 11,
-      views_count: 167,
-      tags: ["cabras", "lecheras", "cría"],
-      media: null,
-    },
-  ];
+  // Load communities
+  const { data: communitiesData, isLoading: loadingCommunities, error: communitiesError } = useCommunities();
+  const allCommunities = communitiesData || [];
 
-  // Obtener usuario actual
+  // Filter communities based on user role
+  const communities = currentUser?.role 
+    ? filterCommunitiesByRole(allCommunities, currentUser.role)
+    : allCommunities;
+
+  // Load posts (filtered by community if one is selected)
+  const postsParams = selectedCommunity ? { community: selectedCommunity } : {};
+  const { data: postsData, isLoading: loadingPosts } = usePosts(postsParams);
+
+  // Get current user
   useEffect(() => {
     const loadUser = async () => {
       try {
         const token = localStorage.getItem("token") || sessionStorage.getItem("token");
         if (token) {
           const user = await getProfile(token.replace(/^Bearer\s*/i, ""));
-          setCurrentUser({
+          const userData = {
             id: user.id || user.user_id,
             name: user.full_name || user.username || "Usuario",
+            full_name: user.full_name,
             profile_picture: user.profile_picture,
             role: user.role,
-          });
+            is_student: user.is_student,
+            is_titled: user.is_titled,
+          };
+          setCurrentUser(userData);
+          
+          // Store in localStorage for useAuth hook
+          localStorage.setItem('user', JSON.stringify(userData));
+          
+          // Auto-join communities based on role
+          if (user.role) {
+            autoJoinCommunitiesByRole(user.role);
+          }
         }
       } catch (error) {
-        console.error("Error cargando usuario:", error);
+        console.error("Error loading user:", error);
       } finally {
         setLoadingUser(false);
       }
@@ -217,148 +126,60 @@ export default function ForoPage() {
     loadUser();
   }, []);
 
-  // Obtener posts del backend (sin mostrar error si falla, usamos posts de ejemplo)
-  const { data: postsData, isLoading: loadingPosts } = usePosts();
-  const reactor = useReact();
-  const deleter = useDeletePost();
+  // Apply initialCommunityId if parent provided it (e.g. Dashboard passes params.id)
+  useEffect(() => {
+    if (initialCommunityId) {
+      const parsed = parseInt(initialCommunityId);
+      if (!isNaN(parsed)) {
+        setSelectedCommunity(parsed);
+        window.scrollTo(0, 0);
+      }
+    }
+  }, [initialCommunityId]);
 
-  // Normalizar posts - combinar posts del backend con posts de ejemplo
+  useEffect(() => {
+    if (debugForo) console.debug('[ForoPage] selectedCommunity changed=', selectedCommunity);
+  }, [selectedCommunity]);
+  
+
+  // Combine backend posts with locally created posts
   const backendPosts = Array.isArray(postsData) ? postsData : postsData?.results || [];
-  
-  // Filtrar posts muy pequeños o incompletos del backend
-  const validBackendPosts = backendPosts.filter(post => {
-    const hasTitle = post.title && post.title.trim().length > 5;
-    const hasContent = post.content && post.content.trim().length > 20;
-    const hasAuthor = post.author && (post.author.name || post.author.full_name || post.author.username);
-    return hasTitle && hasContent && hasAuthor;
-  });
-  
-  // Priorizar posts de ejemplo primero (más completos), luego creados, luego backend válidos
-  const allPosts = [...examplePosts, ...createdPosts, ...validBackendPosts];
+  const allPosts = [...createdPosts, ...backendPosts];
 
-  // Determinar categoría del post basado en el autor o comunidad
-  const getPostCategory = (post) => {
-    if (post.community?.name) {
-      const commName = post.community.name.toLowerCase();
-      if (commName.includes("ganadero") || commName.includes("ganado")) return "ganadero";
-      if (commName.includes("veterinario") || commName.includes("vet")) return "veterinario";
-      if (commName.includes("especialista")) return "especialista";
-    }
-    if (post.author?.role) {
-      const role = post.author.role.toLowerCase();
-      if (role.includes("specialist") || role.includes("especialista")) return "especialista";
-      if (role.includes("business") || role.includes("negocio")) return "ganadero";
-      if (role.includes("veterinario") || role.includes("vet")) return "veterinario";
-    }
-    return post.category || "general";
+  // Calculate relevance score for sorting
+  const getRelevanceScore = (post) => {
+    const likes = post.reactions_count || post.likes_count || 0;
+    const comments = post.comments_count || 0;
+    return (likes * 3) + (comments * 2);
   };
 
-  // Normalizar post para ModernPostCard
-  const normalizePost = (post) => {
-    return {
-      id: post.id,
-      title: post.title || "Sin título",
-      content: post.content || "",
-      author: {
-        id: post.author?.id || post.author?.user_id,
-        name: post.author?.name || post.author?.full_name || post.author?.username || "Usuario Anónimo",
-        profile_picture: post.author?.profile_picture || post.author?.avatar,
-        role: post.author?.role,
-      },
-      category: getPostCategory(post),
-      created_at: post.created_at || post.created || post.timestamp,
-      likes_count: post.reactions_count || post.likes_count || 0,
-      comments_count: post.comments_count || 0,
-      views_count: post.views_count || 0,
-      tags: post.tags || [],
-      media: post.media,
-    };
-  };
-
-  const categories = [
-    { id: "todos", label: "Todos", icon: <FilterList />, color: "#757575" },
-    { id: "ganadero", label: "Ganaderos", icon: <Agriculture />, color: "#2E7D32" },
-    { id: "veterinario", label: "Veterinarios", icon: <LocalHospital />, color: "#1976D2" },
-    { id: "especialista", label: "Especialistas", icon: <Pets />, color: "#7B1FA2" },
-  ];
-
-  const sortOptions = [
-    { id: "recientes", label: "Más recientes", icon: <NewReleases /> },
-    { id: "populares", label: "Más populares", icon: <TrendingUp /> },
-    { id: "tendencias", label: "Tendencias", icon: <Whatshot /> },
-  ];
-
+  // Filter and sort posts
   const filteredPosts = allPosts.filter((post) => {
-    const normalized = normalizePost(post);
-    const matchesCategory =
-      selectedCategory === "todos" || normalized.category === selectedCategory;
     const matchesSearch =
       !searchQuery ||
-      normalized.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      normalized.content.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
+      (post.title || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (post.content || "").toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesSearch;
   });
 
   const sortedPosts = [...filteredPosts].sort((a, b) => {
-    const normA = normalizePost(a);
-    const normB = normalizePost(b);
-    
-    // Calcular score de calidad del post (contenido más completo = mejor)
-    const getQualityScore = (post) => {
-      const contentLength = (post.content || '').length;
-      const hasMedia = post.media ? 10 : 0;
-      const hasTags = (post.tags || []).length * 2;
-      const engagement = (post.likes_count || 0) + (post.comments_count || 0) * 2;
-      return contentLength + hasMedia + hasTags + engagement;
-    };
-    
-    const qualityA = getQualityScore(normA);
-    const qualityB = getQualityScore(normB);
-    
-    if (sortBy === "recientes") {
-      // Primero por calidad, luego por fecha
-      if (Math.abs(qualityB - qualityA) > 50) {
-        return qualityB - qualityA;
+    switch (sortBy) {
+      case "relevance":
+        return getRelevanceScore(b) - getRelevanceScore(a);
+      case "trending": {
+        const aScore = getRelevanceScore(a);
+        const bScore = getRelevanceScore(b);
+        const aAge = (Date.now() - new Date(a.created_at || 0).getTime()) / 3600000;
+        const bAge = (Date.now() - new Date(b.created_at || 0).getTime()) / 3600000;
+        const aDecay = Math.max(0.1, 1 - (aAge / 168));
+        const bDecay = Math.max(0.1, 1 - (bAge / 168));
+        return (bScore * bDecay) - (aScore * aDecay);
       }
-      return (
-        new Date(normB.created_at || 0).getTime() -
-        new Date(normA.created_at || 0).getTime()
-      );
-    } else if (sortBy === "populares") {
-      // Primero por likes, luego por calidad
-      const likesDiff = normB.likes_count - normA.likes_count;
-      if (Math.abs(likesDiff) > 5) {
-        return likesDiff;
-      }
-      return qualityB - qualityA;
-    } else {
-      // Tendencias: engagement total + calidad
-      const engagementA = normA.likes_count + normA.comments_count * 2 + qualityA / 10;
-      const engagementB = normB.likes_count + normB.comments_count * 2 + qualityB / 10;
-      return engagementB - engagementA;
+      case "date":
+      default:
+        return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
     }
   });
-
-  const handleLike = async (postId) => {
-    try {
-      await reactor.mutateAsync({
-        type: "heart",
-        content_type: "post",
-        object_id: postId,
-      });
-    } catch (error) {
-      console.error("Error dando like:", error);
-    }
-  };
-
-  const handleDelete = async (postId) => {
-    try {
-      await deleter.mutateAsync(postId);
-      setCreatedPosts((prev) => prev.filter((p) => p.id !== postId));
-    } catch (error) {
-      console.error("Error eliminando post:", error);
-    }
-  };
 
   const handlePostCreated = (newPost) => {
     if (newPost && newPost.id) {
@@ -367,81 +188,197 @@ export default function ForoPage() {
     }
   };
 
-  const handleShare = (post) => {
-    if (navigator.share) {
-      navigator.share({
-        title: post.title,
-        text: post.content,
-        url: window.location.href + `/post/${post.id}`,
-      });
-    } else {
-      navigator.clipboard.writeText(window.location.href + `/post/${post.id}`);
-      alert("Enlace copiado al portapapeles");
-    }
+  const handlePostDeleted = (postId) => {
+    setCreatedPosts((prev) => prev.filter((p) => p.id !== postId));
   };
 
-  // Función para abrir chat con el autor del post
-  const handleConsult = async (post) => {
-    try {
-      if (!currentUser || !post.author?.id) {
-        alert("Debes iniciar sesión para consultar con este usuario");
-        return;
-      }
-
-      const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-      if (!token) {
-        alert("Debes iniciar sesión para consultar");
-        return;
-      }
-
-      const authorId = parseInt(post.author.id);
-      const currentUserId = parseInt(currentUser.id);
-
-      if (authorId === currentUserId) {
-        alert("No puedes consultarte a ti mismo");
-        return;
-      }
-
-      // Crear o obtener sala de chat
-      const room = await chatService.getOrCreatePrivateRoom(
-        currentUserId,
-        authorId,
-        token.replace(/^Bearer\s*/i, "")
-      );
-
-      if (room && room.id) {
-        // Navegar al dashboard con el chat abierto
-        navigate(`/dashboard?tab=chat&roomId=${room.id}`);
-      }
-    } catch (error) {
-      console.error("Error abriendo chat:", error);
-      alert("Error al abrir el chat. Por favor, intenta de nuevo.");
-    }
-  };
+  const sortOptions = [
+    { id: "relevance", label: "Relevantes", icon: <TrendingUp sx={{ fontSize: 16 }} /> },
+    { id: "date", label: "Recientes", icon: <AccessTime sx={{ fontSize: 16 }} /> },
+    { id: "trending", label: "Tendencia", icon: <Whatshot sx={{ fontSize: 16 }} /> },
+  ];
 
   if (loadingUser) {
     return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          minHeight: "100vh",
-        }}
-      >
-        <CircularProgress />
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh" }}>
+        <CircularProgress sx={{ color: '#00695c' }} />
       </Box>
     );
   }
 
   return (
-    <Box sx={{ bgcolor: "#f5f7fa", minHeight: "100vh", py: 4, px: { xs: 1, sm: 2 } }}>
+    <Box sx={{ bgcolor: "#f5f7fa", minHeight: "100vh", pt: 3, pb: 6 }}>
       <Container maxWidth="lg">
         <Grid container spacing={3}>
-          {/* Contenido principal */}
+          {/* Main content - Posts */}
           <Grid item xs={12} md={8}>
-            <Stack spacing={3}>
-              {/* Barra de búsqueda y filtros */}
+            <Stack spacing={2}>
+              {/* Create post card */}
+              <Paper
+                elevation={0}
+                onClick={() => setOpenComposer(true)}
+                sx={{
+                  p: 2,
+                  borderRadius: 3,
+                  cursor: "pointer",
+                  bgcolor: "#ffffff",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                  border: "1px solid rgba(0,0,0,0.05)",
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                    borderColor: "#00695c",
+                  },
+                }}
+              >
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <Avatar
+                    src={currentUser?.profile_picture}
+                    sx={{
+                      width: 48,
+                      height: 48,
+                      bgcolor: "#00695c",
+                      fontSize: "1.2rem",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {currentUser?.name?.[0] || "?"}
+                  </Avatar>
+                  <Box
+                    sx={{
+                      flex: 1,
+                      py: 1.5,
+                      px: 2,
+                      borderRadius: 6,
+                      bgcolor: "#f0f2f5",
+                      color: "text.secondary",
+                      fontSize: "0.95rem",
+                    }}
+                  >
+                    ¿Qué quieres compartir hoy?
+                  </Box>
+                </Box>
+              </Paper>
+
+              {/* Search and filters */}
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 2,
+                  borderRadius: 3,
+                  bgcolor: "#ffffff",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                  border: "1px solid rgba(0,0,0,0.05)",
+                }}
+              >
+                <TextField
+                  fullWidth
+                  placeholder="Buscar publicaciones..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  size="small"
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Search sx={{ color: "text.secondary" }} />
+                      </InputAdornment>
+                    ),
+                  }}
+                  sx={{
+                    mb: 1.5,
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: 2,
+                      bgcolor: "#f8f9fa",
+                    },
+                  }}
+                />
+
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <Typography variant="body2" sx={{ color: "text.secondary", fontWeight: 500, mr: 1 }}>
+                    Ordenar:
+                  </Typography>
+                  {sortOptions.map((option) => (
+                    <Chip
+                      key={option.id}
+                      icon={option.icon}
+                      label={option.label}
+                      onClick={() => setSortBy(option.id)}
+                      size="small"
+                      sx={{
+                        cursor: "pointer",
+                        fontWeight: sortBy === option.id ? 600 : 400,
+                        bgcolor: sortBy === option.id ? "#00695c" : "transparent",
+                        color: sortBy === option.id ? "white" : "text.secondary",
+                        borderColor: sortBy === option.id ? "#00695c" : "rgba(0,0,0,0.2)",
+                        "&:hover": {
+                          bgcolor: sortBy === option.id ? "#00796b" : "rgba(0,0,0,0.04)",
+                        },
+                        "& .MuiChip-icon": {
+                          color: sortBy === option.id ? "white" : "text.secondary",
+                        },
+                      }}
+                    />
+                  ))}
+                </Stack>
+              </Paper>
+
+              {/* Posts list */}
+              {loadingPosts ? (
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 4,
+                    textAlign: "center",
+                    borderRadius: 3,
+                    bgcolor: "#ffffff",
+                  }}
+                >
+                  <CircularProgress sx={{ color: '#00695c' }} />
+                </Paper>
+              ) : sortedPosts.length === 0 ? (
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 4,
+                    textAlign: "center",
+                    borderRadius: 3,
+                    bgcolor: "#ffffff",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                  }}
+                >
+                  <Typography variant="h6" sx={{ color: "text.secondary", mb: 1 }}>
+                    No hay publicaciones
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: "text.secondary", mb: 2 }}>
+                    Sé el primero en publicar algo interesante
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    startIcon={<Add />}
+                    onClick={() => setOpenComposer(true)}
+                    sx={{ 
+                      borderRadius: 2, 
+                      textTransform: "none",
+                      bgcolor: '#00695c',
+                      '&:hover': { bgcolor: '#00796b' },
+                    }}
+                  >
+                    Crear publicación
+                  </Button>
+                </Paper>
+              ) : (
+                <Stack spacing={2}>
+                  {sortedPosts.map((post) => (
+                    <PostCard key={post.id} post={post} onDeleted={handlePostDeleted} />
+                  ))}
+                </Stack>
+              )}
+            </Stack>
+          </Grid>
+
+          {/* Right Sidebar - Communities only (no stats or profile) */}
+          <Grid item xs={12} md={4}>
+            <Box sx={{ position: "sticky", top: 80 }}>
               <Paper
                 elevation={0}
                 sx={{
@@ -452,319 +389,142 @@ export default function ForoPage() {
                   border: "1px solid rgba(0,0,0,0.05)",
                 }}
               >
-                <TextField
-                  fullWidth
-                  placeholder="Buscar en el foro..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <Search sx={{ color: "text.secondary" }} />
-                      </InputAdornment>
-                    ),
-                  }}
+                <Typography
+                  variant="h6"
                   sx={{
+                    fontWeight: 700,
+                    fontSize: "1rem",
+                    color: "#1a1a1a",
                     mb: 2,
-                    "& .MuiOutlinedInput-root": {
-                      borderRadius: 2,
-                      bgcolor: "#f8f9fa",
-                      "&:hover": {
-                        bgcolor: "#f0f1f2",
-                      },
-                      "&.Mui-focused": {
-                        bgcolor: "#ffffff",
-                      },
-                    },
-                  }}
-                />
-
-                {/* Filtros de ordenamiento */}
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  sx={{ flexWrap: "wrap", gap: 1 }}
-                >
-                  {sortOptions.map((option) => (
-                    <Chip
-                      key={option.id}
-                      icon={option.icon}
-                      label={option.label}
-                      onClick={() => setSortBy(option.id)}
-                      sx={{
-                        cursor: "pointer",
-                        bgcolor:
-                          sortBy === option.id ? "primary.main" : "transparent",
-                        color:
-                          sortBy === option.id ? "white" : "text.secondary",
-                        border: `1px solid ${
-                          sortBy === option.id
-                            ? "primary.main"
-                            : "rgba(0,0,0,0.12)"
-                        }`,
-                        fontWeight: sortBy === option.id ? 600 : 500,
-                        "&:hover": {
-                          bgcolor:
-                            sortBy === option.id
-                              ? "primary.dark"
-                              : "rgba(0,0,0,0.04)",
-                          transform: "translateY(-2px)",
-                        },
-                        transition: "all 0.2s ease",
-                      }}
-                    />
-                  ))}
-                </Stack>
-
-                {/* Botón para crear publicación */}
-                <Box sx={{ mt: 2 }}>
-                  <Button
-                    fullWidth
-                    variant="contained"
-                    onClick={() => setOpenComposer(true)}
-                    sx={{
-                      textTransform: "none",
-                      borderRadius: 2,
-                      py: 1.2,
-                      fontWeight: 600,
-                      boxShadow: "0 4px 12px rgba(25, 118, 210, 0.3)",
-                      "&:hover": {
-                        boxShadow: "0 6px 16px rgba(25, 118, 210, 0.4)",
-                        transform: "translateY(-2px)",
-                      },
-                      transition: "all 0.2s ease",
-                    }}
-                  >
-                    Crear nueva publicación
-                  </Button>
-                </Box>
-              </Paper>
-
-              {/* Lista de posts */}
-              {sortedPosts.length === 0 ? (
-                <Paper
-                  elevation={0}
-                  sx={{
-                    p: 4,
-                    textAlign: "center",
-                    borderRadius: 3,
-                    bgcolor: "#ffffff",
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-                    border: "1px solid rgba(0,0,0,0.05)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
                   }}
                 >
-                  <Typography
-                    variant="h6"
-                    sx={{ color: "text.secondary", mb: 1 }}
-                  >
-                    No se encontraron publicaciones
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                    Intenta cambiar los filtros o crear una nueva publicación
-                  </Typography>
-                </Paper>
-              ) : (
-                sortedPosts.map((post) => {
-                  const normalizedPost = normalizePost(post);
-                  return (
-                    <ModernPostCard
-                      key={post.id}
-                      post={normalizedPost}
-                      currentUser={currentUser}
-                      onLike={handleLike}
-                      onComment={(id) => {
-                        window.location.href = `/foro/post/${id}`;
-                      }}
-                      onShare={handleShare}
-                      onBookmark={(id) => {
-                        console.log("Bookmark post:", id);
-                      }}
-                      onDelete={handleDelete}
-                      onConsult={handleConsult}
-                    />
-                  );
-                })
-              )}
-            </Stack>
-          </Grid>
-
-          {/* Sidebar derecho - Categorías, Estadísticas y comunidades */}
-          <Grid item xs={12} md={4}>
-            <Stack spacing={3}>
-              {/* Categorías */}
-              <Paper
-                elevation={0}
-                sx={{
-                  p: 2,
-                  borderRadius: 3,
-                  bgcolor: "#ffffff",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-                  position: "sticky",
-                  top: 20,
-                  border: "1px solid rgba(0,0,0,0.05)",
-                }}
-              >
-                <Typography
-                  variant="h6"
-                  sx={{ mb: 2, fontWeight: 700, fontSize: "1.1rem", color: "#1a1a1a" }}
-                >
-                  Categorías
+                  <People sx={{ fontSize: 20, color: "#00695c" }} />
+                  Mis Comunidades
                 </Typography>
-                <Stack spacing={1}>
-                  {categories.map((cat) => (
-                    <Button
-                      key={cat.id}
-                      fullWidth
-                      startIcon={cat.icon}
-                      onClick={() => setSelectedCategory(cat.id)}
-                      sx={{
-                        justifyContent: "flex-start",
-                        textTransform: "none",
-                        color:
-                          selectedCategory === cat.id ? cat.color : "text.secondary",
-                        bgcolor:
-                          selectedCategory === cat.id
-                            ? `${cat.color}15`
-                            : "transparent",
-                        fontWeight: selectedCategory === cat.id ? 700 : 500,
-                        borderRadius: 2,
-                        py: 1.2,
-                        "&:hover": {
-                          bgcolor: `${cat.color}10`,
-                          transform: "translateX(4px)",
-                        },
-                        transition: "all 0.2s ease",
-                      }}
-                    >
-                      {cat.label}
-                    </Button>
-                  ))}
-                </Stack>
-              </Paper>
 
-              {/* Estadísticas */}
-              <Paper
-                elevation={0}
-                sx={{
-                  p: 2,
-                  borderRadius: 3,
-                  bgcolor: "#ffffff",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-                  border: "1px solid rgba(0,0,0,0.05)",
-                }}
-              >
-                <Typography
-                  variant="h6"
-                  sx={{ mb: 2, fontWeight: 700, fontSize: "1.1rem", color: "#1a1a1a" }}
-                >
-                  Estadísticas
-                </Typography>
-                <Stack spacing={2}>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                      Publicaciones
-                    </Typography>
-                    <Typography variant="h6" sx={{ fontWeight: 700, color: "primary.main" }}>
-                      {allPosts.length}
-                    </Typography>
+                {loadingCommunities ? (
+                  <Box sx={{ display: "flex", justifyContent: "center", py: 3 }}>
+                    <CircularProgress size={24} sx={{ color: '#00695c' }} />
                   </Box>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                      Comentarios
-                    </Typography>
-                    <Typography variant="h6" sx={{ fontWeight: 700, color: "primary.main" }}>
-                      {allPosts.reduce((sum, p) => sum + (p.comments_count || 0), 0)}
-                    </Typography>
-                  </Box>
-                </Stack>
-              </Paper>
+                ) : communitiesError ? (
+                  <Alert severity="warning" sx={{ fontSize: "0.85rem" }}>
+                    No se pudieron cargar las comunidades
+                  </Alert>
+                ) : communities.length === 0 ? (
+                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 3 }}>
+                    No tienes comunidades asignadas
+                  </Typography>
+                ) : (
+                  <Stack spacing={1}>
+                    {communities.map((community) => {
+                      const config = getCommunityConfig(community.slug);
+                      const isSelected = selectedCommunity === community.id;
 
-              {/* Comunidades destacadas */}
-              <Paper
-                elevation={0}
-                sx={{
-                  p: 2,
-                  borderRadius: 3,
-                  bgcolor: "#ffffff",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-                  border: "1px solid rgba(0,0,0,0.05)",
-                }}
-              >
-                <Typography
-                  variant="h6"
-                  sx={{ mb: 2, fontWeight: 700, fontSize: "1.1rem", color: "#1a1a1a" }}
-                >
-                  Comunidades
-                </Typography>
-                <Stack spacing={1.5}>
-                  {categories.slice(1).map((cat) => (
-                    <Card
-                      key={cat.id}
-                      sx={{
-                        p: 1.5,
-                        cursor: "pointer",
-                        transition: "all 0.2s ease",
-                        bgcolor: "transparent",
-                        boxShadow: "none",
-                        border: "1px solid transparent",
-                        "&:hover": {
-                          transform: "translateX(4px)",
-                          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                          borderColor: `${cat.color}30`,
-                          bgcolor: `${cat.color}08`,
-                        },
-                      }}
-                      onClick={() => setSelectedCategory(cat.id)}
-                    >
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 1.5 }}
-                      >
-                        <Avatar
+                      return (
+                          <Box
+                            key={community.id}
+                            onClick={() => navigate(`/foro/community/${community.id}`)}
                           sx={{
-                            bgcolor: cat.color,
-                            width: 40,
-                            height: 40,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1.5,
+                            p: 1.5,
+                            borderRadius: 2,
+                            cursor: "pointer",
+                            bgcolor: isSelected ? `${config.color}15` : "transparent",
+                            transition: "all 0.2s ease",
+                            "&:hover": {
+                              bgcolor: `${config.color}10`,
+                              transform: "translateX(4px)",
+                            },
                           }}
                         >
-                          {cat.icon}
-                        </Avatar>
-                        <Box>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                            {cat.label}
-                          </Typography>
-                          <Typography
-                            variant="caption"
-                            sx={{ color: "text.secondary" }}
+                          <Avatar
+                            src={community.avatar}
+                            sx={{
+                              width: 44,
+                              height: 44,
+                              bgcolor: config.color,
+                              boxShadow: `0 4px 12px ${config.color}40`,
+                            }}
                           >
-                            {allPosts.filter(
-                              (p) => normalizePost(p).category === cat.id
-                            ).length}{" "}
-                            publicaciones
-                          </Typography>
+                            {config.icon}
+                          </Avatar>
+                          <Box sx={{ flex: 1, minWidth: 0 }}>
+                            <Typography
+                              variant="subtitle2"
+                              sx={{
+                                fontWeight: 600,
+                                fontSize: "0.9rem",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                color: "#1a1a1a",
+                              }}
+                            >
+                              {community.name}
+                            </Typography>
+                            <Stack direction="row" spacing={1} alignItems="center">
+                              <Typography variant="caption" color="text.secondary">
+                                {community.members_count || 0} miembros
+                              </Typography>
+                              <Chip
+                                size="small"
+                                label="Miembro"
+                                sx={{
+                                  height: 18,
+                                  fontSize: "0.65rem",
+                                  bgcolor: `${config.color}20`,
+                                  color: config.color,
+                                  fontWeight: 600,
+                                }}
+                              />
+                            </Stack>
+                          </Box>
+                          <Button
+                            size="small"
+                            component={RouterLink}
+                            to={`/foro/community/${community.id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            sx={{
+                              minWidth: "auto",
+                              p: 0.5,
+                              color: config.color,
+                            }}
+                          >
+                            <ArrowForward sx={{ fontSize: 18 }} />
+                          </Button>
                         </Box>
-                      </Box>
-                    </Card>
-                  ))}
-                </Stack>
+                      );
+                    })}
+                  </Stack>
+                )}
+
+                {selectedCommunity && (
+                  <Button
+                    fullWidth
+                    variant="text"
+                    onClick={() => setSelectedCommunity(null)}
+                    sx={{
+                      mt: 2,
+                      textTransform: "none",
+                      borderRadius: 2,
+                      color: "text.secondary",
+                    }}
+                  >
+                    Ver todas las publicaciones
+                  </Button>
+                )}
               </Paper>
-            </Stack>
+            </Box>
           </Grid>
         </Grid>
       </Container>
 
-      {/* Dialog para crear publicación */}
+      {/* Create post dialog */}
       {openComposer && (
         <Box
           sx={{
@@ -793,7 +553,10 @@ export default function ForoPage() {
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <PostComposer onCreated={handlePostCreated} />
+            <PostComposer
+              communityId={selectedCommunity}
+              onCreated={handlePostCreated}
+            />
           </Paper>
         </Box>
       )}

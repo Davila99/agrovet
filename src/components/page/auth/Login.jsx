@@ -77,8 +77,10 @@ const LoginPage = () => {
         if (res.user.role) {
           try {
             const { autoJoinCommunitiesByRole } = await import('../../../utils/Foro/autoJoinCommunities');
+            // Obtener profesión si es especialista
+            const profession = res.user.specialist_profile?.profession || null;
             // Run in background, don't wait for it
-            autoJoinCommunitiesByRole(res.user.role).catch(err => {
+            autoJoinCommunitiesByRole(res.user.role, profession).catch(err => {
               console.warn('Failed to auto-join communities:', err);
             });
           } catch (err) {

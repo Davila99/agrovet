@@ -1,102 +1,127 @@
 import foroService from '../../services/endpoints/foro';
 
 /**
- * Auto-join communities based on user role
- * - Specialist: Veterinarios, Agrónomos, General
- * - Consumer: Dueños de animales, Agricultores, General
- * - Agroveterinaria/Businessman: Agroveterinarias, General
- * - All: General (always)
+ * Community slugs mapped to user roles
  */
-export async function autoJoinCommunitiesByRole(userRole) {
-  if (!userRole) {
-    console.warn('[autoJoinCommunities] No role provided');
-    return;
+export const COMMUNITY_SLUGS = {
+  GENERAL: 'general',
+  CONSUMERS: 'ganaderos-agricultores-animales',
+  SPECIALISTS: 'especialistas-salud',
+  BUSINESSMEN: 'agronegocios',
+};
+
+/**
+ * Community names for display
+ */
+export const COMMUNITY_NAMES = {
+  [COMMUNITY_SLUGS.GENERAL]: 'General',
+  [COMMUNITY_SLUGS.CONSUMERS]: 'Ganaderos, Agricultores y Dueños de Animales',
+  [COMMUNITY_SLUGS.SPECIALISTS]: 'Especialistas en Salud Animal y Vegetal',
+  [COMMUNITY_SLUGS.BUSINESSMEN]: 'Agronegocios',
+};
+
+/**
+ * Get the community slugs a user should be part of based on their role
+ * @param {string} userRole - The user's role (consumer, Specialist, businessman)
+ * @returns {string[]} Array of community slugs
+ */
+export function getCommunitiesForRole(userRole) {
+  const role = String(userRole || '').toLowerCase();
+  const communities = [COMMUNITY_SLUGS.GENERAL]; // Everyone gets General
+
+  if (role.includes('consumer') || role.includes('consumidor')) {
+    communities.push(COMMUNITY_SLUGS.CONSUMERS);
+  } else if (role.includes('specialist') || role.includes('especialista')) {
+    communities.push(COMMUNITY_SLUGS.SPECIALISTS);
+  } else if (role.includes('business') || role.includes('businessman') || role.includes('empresario')) {
+    communities.push(COMMUNITY_SLUGS.BUSINESSMEN);
   }
 
-  const role = String(userRole).toLowerCase();
+  return communities;
+}
+
+/**
+ * Auto-join communities based on user role
+ * 
+ * Communities:
+ * - General: Todos los usuarios
+ * - Ganaderos, Agricultores y Dueños de Animales: Consumidores (consumer)
+ * - Especialistas en Salud Animal y Vegetal: Especialistas (Specialist)
+ * - Agronegocios: Empresarios (businessman)
+ */
+export async function autoJoinCommunitiesByRole(userRole, userProfession = null) {
+  if (!userRole) {
+    console.warn('[autoJoinCommunities] No role provided');
+    return [];
+  }
+
+  const roleSlugs = getCommunitiesForRole(userRole);
   
   try {
     // Get all communities
     const communities = await foroService.getCommunities();
     if (!Array.isArray(communities)) {
       console.warn('[autoJoinCommunities] Invalid communities response');
-      return;
+      return [];
     }
 
-    // Map community names to IDs (case-insensitive)
-    const communityMap = {};
+    // Map community slugs to IDs
+    const communityBySlug = {};
     communities.forEach(comm => {
-      if (comm && comm.name) {
-        const name = String(comm.name).toLowerCase();
-        communityMap[name] = comm.id;
+      if (comm && comm.slug) {
+        communityBySlug[String(comm.slug).toLowerCase()] = comm.id;
       }
     });
 
-    const communitiesToJoin = [];
+    const communitiesToJoin = new Set();
 
-    // Always join General community
-    const generalNames = ['general', 'comunidad general'];
-    for (const name of generalNames) {
-      if (communityMap[name]) {
-        communitiesToJoin.push(communityMap[name]);
-        break; // Only one general community
+    // Add communities based on role
+    roleSlugs.forEach(slug => {
+      const communityId = communityBySlug[slug];
+      if (communityId) {
+        communitiesToJoin.add(communityId);
       }
-    }
-
-    // Role-specific communities
-    if (role.includes('specialist') || role.includes('especialista')) {
-      // Specialist: Veterinarios, Agrónomos
-      const specialistNames = [
-        'veterinarios', 'comunidad veterinarios',
-        'agrónomos', 'agronomos', 'comunidad agrónomos', 'comunidad agronomos'
-      ];
-      for (const name of specialistNames) {
-        if (communityMap[name]) {
-          communitiesToJoin.push(communityMap[name]);
-        }
-      }
-    } else if (role.includes('consumer') || role.includes('cliente')) {
-      // Consumer: Dueños de animales, Agricultores
-      const consumerNames = [
-        'dueños de animales', 'duenos de animales', 'comunidad dueños de animales',
-        'agricultores', 'comunidad agricultores'
-      ];
-      for (const name of consumerNames) {
-        if (communityMap[name]) {
-          communitiesToJoin.push(communityMap[name]);
-        }
-      }
-    } else if (role.includes('business') || role.includes('businessman') || role.includes('agroveterinaria')) {
-      // Business/Agroveterinaria: Agroveterinarias
-      const businessNames = [
-        'agroveterinarias', 'comunidad agroveterinarias',
-        'empresarios', 'comunidad empresarios'
-      ];
-      for (const name of businessNames) {
-        if (communityMap[name]) {
-          communitiesToJoin.push(communityMap[name]);
-        }
-      }
-    }
+    });
 
     // Join communities (best effort, don't fail if already joined)
-    const joinPromises = communitiesToJoin.map(async (communityId) => {
+    const joinPromises = Array.from(communitiesToJoin).map(async (communityId) => {
       try {
         await foroService.joinCommunity(communityId);
-        console.log(`[autoJoinCommunities] Joined community ${communityId}`);
+        console.log(`[autoJoinCommunities] ✅ Joined community ${communityId}`);
       } catch (err) {
         // Ignore errors if already joined or other non-critical errors
         if (err.status !== 400 && err.status !== 409) {
-          console.warn(`[autoJoinCommunities] Failed to join community ${communityId}:`, err.message);
+          console.warn(`[autoJoinCommunities] ⚠️ Failed to join community ${communityId}:`, err.message);
+        } else {
+          console.log(`[autoJoinCommunities] ℹ️ Already member of community ${communityId}`);
         }
       }
     });
 
     await Promise.allSettled(joinPromises);
-    console.log(`[autoJoinCommunities] Auto-join completed for role: ${role}`);
+    console.log(`[autoJoinCommunities] ✅ Auto-join completed for role: ${userRole}, joined ${communitiesToJoin.size} communities`);
+    
+    return Array.from(communitiesToJoin);
   } catch (err) {
-    console.error('[autoJoinCommunities] Error auto-joining communities:', err);
+    console.error('[autoJoinCommunities] ❌ Error auto-joining communities:', err);
     // Don't throw - this is a best-effort feature
+    return [];
   }
 }
 
+/**
+ * Filter communities to show only those the user has access to based on role
+ * @param {Array} communities - All communities
+ * @param {string} userRole - User's role
+ * @returns {Array} Filtered communities
+ */
+export function filterCommunitiesByRole(communities, userRole) {
+  if (!Array.isArray(communities)) return [];
+  
+  const allowedSlugs = getCommunitiesForRole(userRole);
+  
+  return communities.filter(comm => {
+    if (!comm || !comm.slug) return false;
+    return allowedSlugs.includes(comm.slug.toLowerCase());
+  });
+}

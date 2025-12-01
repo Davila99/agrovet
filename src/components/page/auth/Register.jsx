@@ -191,7 +191,11 @@ const RegisterPage = () => {
       if (res.user && res.user.role) {
         try {
           const { autoJoinCommunitiesByRole } = await import('../../../utils/Foro/autoJoinCommunities');
-          await autoJoinCommunitiesByRole(res.user.role);
+          // Obtener profesión del formulario o de la respuesta
+          const profession = source.specialist_profile?.profession || 
+                            res.user.specialist_profile?.profession || 
+                            null;
+          await autoJoinCommunitiesByRole(res.user.role, profession);
         } catch (err) {
           console.warn('Failed to auto-join communities:', err);
           // Don't block registration if this fails

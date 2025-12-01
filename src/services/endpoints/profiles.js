@@ -45,7 +45,7 @@ export const profilesAPI = {
     const url = env.buildUrl('PROFILES', `/profiles/specialists/${userId}/`);
     try {
       console.log('[profilesAPI] PUT specialist by user:', { userId, url, data, hasToken: !!localToken });
-    } catch (e) { }
+    } catch (e) {}
     const res = await httpClient(url, {
       method: "PUT",
       headers: authHeaders(localToken),
@@ -59,7 +59,7 @@ export const profilesAPI = {
     const url = env.buildUrl('PROFILES', `/profiles/specialists/${userId}/`);
     try {
       console.log('[profilesAPI] PATCH specialist by user:', { userId, url, data, hasToken: !!localToken });
-    } catch (e) { }
+    } catch (e) {}
     const res = await httpClient(url, {
       method: "PATCH",
       headers: authHeaders(localToken),
@@ -68,71 +68,13 @@ export const profilesAPI = {
     return profileAdapter.normalizeProfile(res);
   },
 
+  // Get specialist profile by user id (convenience wrapper)
   getSpecialistByUser: async (userId, token) => {
     const localToken = token || (typeof window !== "undefined" ? authClient.getAccessToken() : null);
     const url = env.buildUrl('PROFILES', `/profiles/specialists/${userId}/`);
-    console.log('[profilesAPI] 🔵 GET specialist by user:', { userId, url, hasToken: !!localToken });
     const res = await httpClient(url, {
-      method: "GET",
+      method: 'GET',
       headers: authHeaders(localToken),
-    });
-    console.log('[profilesAPI] 🟢 Response raw para specialist', userId, ':', JSON.stringify(res, null, 2).substring(0, 1000));
-    const normalized = profileAdapter.normalizeProfile(res);
-    console.log('[profilesAPI] 🟡 Normalized para specialist', userId, ':', {
-      verification_status: normalized?.verification_status,
-      verification_type: normalized?.verification_type,
-      hasVerificationTitle: !!normalized?.verification_title_id,
-      hasVerificationStudentCard: !!normalized?.verification_student_card_id,
-      hasVerificationGraduationLetter: !!normalized?.verification_graduation_letter_id,
-      keys: Object.keys(normalized || {}).slice(0, 15)
-    });
-    return normalized;
-  },
-
-  getBusinessmanByUser: async (userId, token) => {
-    const localToken = token || (typeof window !== "undefined" ? authClient.getAccessToken() : null);
-    const url = env.buildUrl('PROFILES', `/profiles/businessmen/${userId}/`);
-    console.log('[profilesAPI] 🔵 GET businessman by user:', { userId, url, hasToken: !!localToken });
-    const res = await httpClient(url, {
-      method: "GET",
-      headers: authHeaders(localToken),
-    });
-    console.log('[profilesAPI] 🟢 Response raw para businessman', userId, ':', {
-      hasResponse: !!res,
-      products_and_services_ids: res?.products_and_services_ids,
-      products_and_services_full: res?.products_and_services_full,
-      fullResponse: JSON.stringify(res, null, 2).substring(0, 1500),
-    });
-    const normalized = profileAdapter.normalizeProfile(res);
-    console.log('[profilesAPI] 🟡 Normalized businessman:', {
-      products_and_services_ids: normalized?.products_and_services_ids,
-      products_and_services_full: normalized?.products_and_services_full?.length,
-    });
-    return normalized;
-  },
-
-  createBusinessman: async (userId, data, token) => {
-    const localToken = token || (typeof window !== "undefined" ? authClient.getAccessToken() : null);
-    const url = env.buildUrl('PROFILES', `/profiles/businessmen/${userId}/`);
-    const res = await httpClient(url, {
-      method: "POST",
-      headers: authHeaders(localToken),
-      body: data,
-    });
-    return profileAdapter.normalizeProfile(res);
-  },
-
-  patchBusinessmanByUser: async (userId, data, token) => {
-    const localToken = token || (typeof window !== "undefined" ? authClient.getAccessToken() : null);
-    const url = env.buildUrl('PROFILES', `/profiles/businessmen/${userId}/`);
-    console.log('[profilesAPI] 🔵 PATCH businessman by user:', { userId, url, data, hasToken: !!localToken });
-    const res = await httpClient(url, {
-      method: "PATCH",
-      headers: authHeaders(localToken),
-      body: data,
-    });
-    console.log('[profilesAPI] 🟢 PATCH response:', {
-      products_and_services_ids: res?.products_and_services_ids,
     });
     return profileAdapter.normalizeProfile(res);
   },

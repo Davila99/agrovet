@@ -102,12 +102,24 @@ export default function ChatHeader({
                         } catch (e) {}
                       }
                     }
-                    const online = typeof isParticipantOnline === 'function' && otherId ? isParticipantOnline(otherId) : false;
+                    // Usar función o store de presencia
+                    let online = false;
+                    if (typeof isParticipantOnline === 'function' && otherId) {
+                      online = isParticipantOnline(otherId);
+                    } else if (presence) {
+                      online = presence.isOnline === true || presence.online === true;
+                    }
                     if (online) {
                       return (<><Box component="span" sx={{ width:8, height:8, bgcolor: 'success.main', borderRadius: '50%', display: 'inline-block' }} /> <span>En línea</span></>);
                     }
-                  } catch (e) {}
-                  return (<><span>WS: {wsStatus}</span>{sendError ? ` • err: ${sendError}` : ""}</>);
+                    // Si no está online, mostrar última conexión si disponible
+                    if (presence?.lastSeen) {
+                      return (<span style={{ color: 'gray' }}>{`Última vez ${formatLastSeen(presence.lastSeen)}`}</span>);
+                    }
+                  } catch (e) {
+                    console.warn('[ChatHeader] Error checking online:', e);
+                  }
+                  return (<span style={{ color: 'gray' }}>Desconectado</span>);
                 })()}
               </Typography>
             </Box>
@@ -174,17 +186,26 @@ export default function ChatHeader({
               )}
             </Box>
             <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1, fontSize: "0.65rem" }}>
-              {/* Online indicator: prefer presence from Zustand store */}
+              {/* Online indicator: verificar presencia */}
               {(() => {
                 try {
-                  const online = presence && presence.isOnline;
+                  // Verificar online usando la función o el store
+                  let online = false;
+                  if (typeof isParticipantOnline === 'function' && otherId) {
+                    online = isParticipantOnline(otherId);
+                  } else if (presence) {
+                    online = presence.isOnline === true || presence.online === true;
+                  }
                   if (online) {
                     return (<><Box component="span" sx={{ width:8, height:8, bgcolor: 'success.main', borderRadius: '50%', display: 'inline-block' }} /> <span>En línea</span></>);
                   }
-                  const lastSeen = presence && presence.lastSeen ? formatLastSeen(presence.lastSeen) : null;
+                  // Mostrar última conexión si disponible
+                  const lastSeen = presence?.lastSeen ? formatLastSeen(presence.lastSeen) : null;
                   if (lastSeen) return (<span style={{ color: 'gray' }}>{`Última vez ${lastSeen}`}</span>);
-                } catch (e) {}
-                return (<>WS: {wsStatus}</>);
+                } catch (e) {
+                  console.warn('[ChatHeader Desktop] Error checking online:', e);
+                }
+                return (<span style={{ color: 'gray' }}>Desconectado</span>);
               })()}
             </Typography>
           </Box>

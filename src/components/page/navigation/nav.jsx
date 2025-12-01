@@ -13,7 +13,7 @@ import { getProfile } from "../../../services/endpoints";
 import { Link as RouterLink } from "react-router-dom";
 import SearchIcon from "@mui/icons-material/Search";
 
-const Navbar = () => {
+const Navbar = ({ isForum = false }) => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [comunidadMenuAnchor, setComunidadMenuAnchor] = useState(null);
   const [comunidadOpen, setComunidadOpen] = useState(false);
@@ -37,8 +37,10 @@ const Navbar = () => {
     };
   }, []);
   const location = useLocation();
-  const hideHeaderFor = ['/adds', '/add', '/foro', '/dashboard', '/chat'];
-  const shouldHideHeader = hideHeaderFor.some(p => location.pathname.startsWith(p));
+  // Do not hide header for forum pages - the forum should show the global navbar
+  // Always show the global Navbar across the app to ensure consistent navigation
+  // (previous logic hid the header on some routes; requirement changed to always show it)
+  try { console.debug('[Navbar] pathname:', location.pathname, 'showing global navbar', 'isForum prop:', isForum); } catch (e) {}
   useEffect(() => {
     setToken(localStorage.getItem("token"));
   }, [location]);
@@ -73,21 +75,22 @@ const Navbar = () => {
 
   return (
     <>
-      {!shouldHideHeader && (
         <AppBar
           position="fixed"
           elevation={0}
           sx={{
-            bgcolor: "transparent",
+            top: 0,
+            bgcolor: isForum ? '#103E68' : 'transparent',
             zIndex: (theme) => theme.zIndex.appBar,
           }}>
           <Box
             sx={{
-              margin: 1,
-              bgcolor: "#ffffff",
-              borderRadius: 4,
-              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+              margin: isForum ? 0 : 1,
+              bgcolor: isForum ? '#103E68' : '#ffffff',
+              borderRadius: isForum ? 0 : 4,
+              boxShadow: isForum ? 'none' : '0 2px 4px rgba(0,0,0,0.1)',
               px: { xs: 1, sm: 3 },
+              color: isForum ? '#ffffff' : 'inherit'
             }}>
             <Toolbar
               sx={{
@@ -108,7 +111,7 @@ const Navbar = () => {
                     src={logo}
                     alt="Logo AgroVets"
                     width="90"
-                    style={{ height: 48 }}
+                    style={{ height: 48, filter: isForum ? 'brightness(0) invert(1)' : 'none' }}
                   />
                 </RouterLink>
               </Box>
@@ -233,7 +236,7 @@ const Navbar = () => {
             </Toolbar>
           </Box>
         </AppBar>
-      )}
+      
       <MobileDrawer
         open={drawerOpen}
         onClose={toggleDrawer(false)}

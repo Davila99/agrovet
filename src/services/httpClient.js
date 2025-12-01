@@ -17,11 +17,29 @@ const BASE_URL = (import.meta && import.meta.env && import.meta.env.VITE_GATEWAY
       let fetchHeaders = { ...headers };
       // Añadir Authorization si hay token en localStorage y no fue pasada en headers
       try {
-        // Prefer authClient-managed token storage
-        const token = authClient.getAccessToken && authClient.getAccessToken();
-        if (token && !fetchHeaders.Authorization && !fetchHeaders.authorization) {
-          fetchHeaders.Authorization = `Bearer ${token}`;
+        // Use authClient helper to attach auth header when available.
+        // This centralizes token lookup (supports `agrovet_token` and legacy `token`).
+        try {
+          fetchHeaders = authClient.attachAuthHeader
+            ? authClient.attachAuthHeader(fetchHeaders)
+            : { ...fetchHeaders };
+        } catch (e) {
+          // fallback to manual attach (defensive)
+          try {
+            const maybeToken = authClient.getAccessToken ? authClient.getAccessToken() : null;
+            if (maybeToken && !fetchHeaders.Authorization && !fetchHeaders.authorization) {
+              fetchHeaders.Authorization = `Bearer ${maybeToken}`;
+            }
+          } catch (err) {}
         }
+
+        // Diagnostic: ensure we log whether an Authorization header will be sent (masked)
+        try {
+          const authHeader = fetchHeaders.Authorization || fetchHeaders.authorization || null;
+          const hasAuth = Boolean(authHeader);
+          const masked = authHeader ? (typeof authHeader === 'string' && authHeader.length > 12 ? `${authHeader.slice(0,8)}...${authHeader.slice(-4)}` : authHeader) : null;
+          console.info('[httpClient] Auth header present:', { hasAuth, masked });
+        } catch (e) {}
       } catch (e) {
         // ignore in non-browser
       }
@@ -160,6 +178,15 @@ const BASE_URL = (import.meta && import.meta.env && import.meta.env.VITE_GATEWAY
             endpoint: url,
             rawResponse: text,
           });
+        } catch (e) {}
+
+        // Add extra diagnostic when Authorization is missing or 401 occurs.
+        try {
+          const currentAuth = (fetchHeaders && (fetchHeaders.Authorization || fetchHeaders.authorization)) || null;
+          const maskedCurrent = currentAuth && (currentAuth.length > 12 ? `${currentAuth.slice(0,8)}...${currentAuth.slice(-4)}` : currentAuth) || null;
+          const stored = authClient.getAccessToken ? authClient.getAccessToken() : null;
+          const maskedStored = stored && (stored.length > 12 ? `${stored.slice(0,8)}...${stored.slice(-4)}` : stored) || null;
+          console.warn('[httpClient] 401 diagnostic', { url, currentAuth: Boolean(currentAuth), maskedCurrent, storedTokenPresent: Boolean(stored), maskedStored });
         } catch (e) {}
 
         const message = data.detail || data.error || data.message || `HTTP ${__res.status} ${__res.statusText}`;

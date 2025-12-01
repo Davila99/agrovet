@@ -91,9 +91,17 @@ export default function Chat() {
                                 verification_type: specialistProfile.verification_type
                             });
                         }
-                    } catch (err) {
-                        console.warn(`[Chat.jsx] ⚠️ Error cargando perfil para ${user.id}:`, err);
-                    }
+                        } catch (err) {
+                            // If the API returned 403 (forbidden), it's likely a permission/private-profile issue
+                            // — treat it as expected (private specialist) and reduce log noise.
+                            if (err && err.status === 403) {
+                                try {
+                                    console.debug(`[Chat.jsx] ⛔ Perfil privado (403) para ${user.id}:`, { message: err.message });
+                                } catch (e) {}
+                            } else {
+                                console.warn(`[Chat.jsx] ⚠️ Error cargando perfil para ${user.id}:`, err);
+                            }
+                        }
                 }));
                 
                 // Finalmente procesar todos los usuarios para determinar verification_status
@@ -182,45 +190,81 @@ export default function Chat() {
             const websocket = new WebSocket(wsUrl);
 
             websocket.onopen = () => {
-                console.log('Presence WebSocket conectado');
+                console.log('[Presence] ✅ WebSocket conectado');
+                // Solicitar lista de usuarios online al conectar
+                try {
+                    websocket.send(JSON.stringify({ type: 'get_online_users' }));
+                } catch (e) {
+                    console.warn('[Presence] Error solicitando usuarios online:', e);
+                }
             };
 
             websocket.onmessage = (event) => {
                 try {
                     const data = JSON.parse(event.data);
-                    if (data.type === 'presence.online' || data.type === 'user_online') {
-                        const userId = data.user_id;
-                        setOnlineUsers(prev => new Set([...prev, userId]));
+                    console.log('[Presence] 📩 Mensaje recibido:', data.type, data);
+                    
+                    if (data.type === 'online_users_list') {
+                        // Lista inicial de usuarios online
+                        const users = data.users || [];
+                        console.log('[Presence] 📋 Lista de usuarios online:', users);
+                        setOnlineUsers(new Set(users.map(id => parseInt(id))));
+                        
+                        // Actualizar store
                         if (usePresenceStore.getState) {
-                            usePresenceStore.getState().updateUser(userId, { online: true });
+                            users.forEach(userId => {
+                                usePresenceStore.getState().updateUser(userId, { 
+                                    isOnline: true, 
+                                    online: true,
+                                    lastSeen: new Date().toISOString() 
+                                });
+                            });
+                        }
+                    } else if (data.type === 'presence.online' || data.type === 'user_online') {
+                        const userId = data.user_id;
+                        console.log('[Presence] 🟢 Usuario en línea:', userId);
+                        setOnlineUsers(prev => new Set([...prev, parseInt(userId)]));
+                        if (usePresenceStore.getState) {
+                            usePresenceStore.getState().updateUser(userId, { 
+                                isOnline: true, 
+                                online: true,
+                                lastSeen: new Date().toISOString() 
+                            });
                         }
                     } else if (data.type === 'presence.offline' || data.type === 'user_offline') {
                         const userId = data.user_id;
+                        console.log('[Presence] 🔴 Usuario desconectado:', userId);
                         setOnlineUsers(prev => {
                             const newSet = new Set(prev);
-                            newSet.delete(userId);
+                            newSet.delete(parseInt(userId));
                             return newSet;
                         });
                         if (usePresenceStore.getState) {
-                            usePresenceStore.getState().updateUser(userId, { online: false });
+                            usePresenceStore.getState().updateUser(userId, { 
+                                isOnline: false, 
+                                online: false,
+                                lastSeen: new Date().toISOString() 
+                            });
                         }
+                    } else if (data.type === 'pong') {
+                        // Respuesta a ping, ignorar
                     }
                 } catch (error) {
-                    console.error('Error procesando presencia:', error);
+                    console.error('[Presence] ❌ Error procesando mensaje:', error);
                 }
             };
 
-            websocket.onerror = () => {
-                console.warn('Presence WebSocket no disponible (opcional)');
+            websocket.onerror = (error) => {
+                console.warn('[Presence] ⚠️ WebSocket error:', error);
             };
 
-            websocket.onclose = () => {
-                console.log('Presence WebSocket desconectado');
+            websocket.onclose = (event) => {
+                console.log('[Presence] 🔌 WebSocket desconectado, code:', event.code);
             };
 
             setPresenceWs(websocket);
         } catch (error) {
-            console.warn('No se pudo conectar a Presence WebSocket (opcional):', error);
+            console.warn('[Presence] ❌ No se pudo conectar:', error);
         }
     };
 
@@ -760,8 +804,16 @@ export default function Chat() {
 
     const isUserOnline = (userId) => {
         if (!userId) return false;
-        return onlineUsers.has(parseInt(userId)) ||
-            (presenceStore[userId] && presenceStore[userId].online);
+        const userIdStr = String(userId);
+        const userIdInt = parseInt(userId);
+        // Verificar en el set local de usuarios online
+        if (onlineUsers.has(userIdInt)) return true;
+        // Verificar en el store de presencia (soporta ambos: isOnline y online)
+        const presence = presenceStore[userIdStr] || presenceStore[userId];
+        if (presence) {
+            return presence.isOnline === true || presence.online === true;
+        }
+        return false;
     };
 
     const computeLastTsForRoom = (room) => {
