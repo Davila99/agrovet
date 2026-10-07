@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { Box, TextField, MenuItem, Typography, Button, Snackbar, Alert, Card, CardContent, Stack, IconButton, InputAdornment, Chip } from '@mui/material';
 import ImageCarousel from '../../atoms/add/ImageCarousel';
 import LocationPicker from '../../atoms/add/LocationPicker';
+import AddFormImagePicker from './AddFormImagePicker';
+import { useAddFormCategories } from './useAddFormCategories';
+import { useAddFormGeoLocation } from './useAddFormGeoLocation';
 import AddAPhotoIcon from '@mui/icons-material/AddAPhoto';
 import { styles } from '../../../styles/add/addStyles';
 import { addService } from '/src/services/endpoints/index.js';
@@ -30,129 +33,14 @@ export default function AddForm({ onCreated }) {
 
   const [form, setForm] = useState(initialForm);
   const [loading, setLoading] = useState(false);
-  const [snack, setSnack] = useState({ open: false, message: '', severity: 'success' });
-  const [currency, setCurrency] = React.useState({ code: 'BOB', symbol: 'Bs' });
-
+  const [snack, setSnack] = useState({ open: false, message: '', severity: 'info' });
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm(prev => ({ ...prev, [name]: value }));
   };
 
-  const [categories, setCategories] = React.useState([]);
-  const [categoriesLoaded, setCategoriesLoaded] = React.useState(false);
-
-  // Fallback static categories (used if API is unreachable or returns error)
-  const FALLBACK_CATEGORIES = [
-    'Veterinaria', 'Medicamentos veterinarios', 'Antiparasitarios', 'Vacunas', 'Suplementos', 'Alimentos balanceados',
-    'Productos para ganado', 'Reproductores', 'Hormonas', 'Insumos agrícolas', 'Semillas', 'Fertilizantes', 'Pesticidas',
-    'Maquinaria agrícola', 'Tractores', 'Implementos', 'Herramientas', 'Servicios veterinarios', 'Consultoría', 'Capacitación',
-    'Transporte de animales', 'Alojamiento de ganado', 'Productos de higiene', 'Instrumental quirúrgico', 'Laboratorio', 'Otros'
-  ].map((n, i) => ({ id: String(i + 1), name: n }));
-
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const res = await addService.getCategories();
-        // expecting an array of categories with id and name
-        if (mounted) {
-          const list = Array.isArray(res) ? res : (res.results || []);
-          const CORE_NAMES = ['Medicamentos y salud animal', 'Alimentos y suplementos', 'Productos para ganado', 'Semillas y plantas', 'Fertilizantes y agroquímicos', 'Maquinaria e implementos', 'Herramientas e insumos', 'Servicios agropecuarios'];
-          const coreFound = list.filter(c => CORE_NAMES.includes((c.name || '').toString()));
-          if (coreFound.length) {
-            setCategories(coreFound);
-            setCategoriesLoaded(true);
-          } else if (Array.isArray(list) && list.length) {
-            setCategories(list);
-            setCategoriesLoaded(true);
-          } else {
-            setCategories(FALLBACK_CATEGORIES);
-            setCategoriesLoaded(false);
-          }
-        }
-      } catch (e) {
-        console.error('failed to load categories, falling back to static list', e);
-        if (mounted) setCategories(FALLBACK_CATEGORIES);
-        setCategoriesLoaded(false);
-        setSnack({ open: true, message: 'No se pudieron cargar categorías; usando lista local', severity: 'warning' });
-      }
-    })();
-    return () => { mounted = false; };
-  }, []);
-
-  // Try to detect user's location on mount. Populate latitude/longitude and attempt a reverse geocode
-  useEffect(() => {
-    let cancelled = false;
-    if (!('geolocation' in navigator)) return;
-    navigator.geolocation.getCurrentPosition(async (pos) => {
-      if (cancelled) return;
-      const lat = pos.coords.latitude;
-      const lon = pos.coords.longitude;
-      // Best-effort reverse geocode using Nominatim (OpenStreetMap). If it fails, fallback to coords string.
-      let locationLabel = `Lat ${lat.toFixed(3)}, Lon ${lon.toFixed(3)}`;
-      try {
-        const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`;
-        // Don't set custom User-Agent header (browsers block it). Let the browser send default headers.
-        const r = await fetch(url);
-        if (r.ok) {
-          const j = await r.json();
-          // Try to pick a sensible display name: city, town, village, or name, then fallback to display_name
-          const addr = j.address || {};
-          // Prefer common locality fields, then broader administrative areas
-          locationLabel = addr.city || addr.town || addr.village || addr.hamlet || addr.municipality || addr.county || addr.state || addr.region || j.name || j.display_name || locationLabel;
-          // If reverse geocode provides country or country_code, try to choose a currency accordingly
-          try {
-            const cc = (addr.country_code || '').toString().toUpperCase();
-            const countryCurrencyMap = {
-              'US': { code: 'USD', symbol: '$' },
-              'NI': { code: 'NIO', symbol: 'C$' },
-              'BO': { code: 'BOB', symbol: 'Bs' },
-              'AR': { code: 'ARS', symbol: '$' },
-              'CL': { code: 'CLP', symbol: '$' },
-              'PE': { code: 'PEN', symbol: 'S/' },
-              'UY': { code: 'UYU', symbol: '$U' },
-              'ES': { code: 'EUR', symbol: '€' },
-              'MX': { code: 'MXN', symbol: '$' },
-            };
-            if (cc && countryCurrencyMap[cc]) {
-              setCurrency(countryCurrencyMap[cc]);
-            }
-          } catch (e) { }
-        }
-      } catch (e) {
-        console.warn('Reverse geocode failed', e);
-      }
-      setForm(prev => ({ ...prev, location_name: locationLabel, latitude: lat, longitude: lon }));
-    }, (err) => {
-      console.warn('geolocation error', err);
-    }, { timeout: 8000, maximumAge: 1000 * 60 * 5 });
-    return () => { cancelled = true; };
-  }, []);
-
-  // Detect currency from browser locale (best-effort fallback)
-  useEffect(() => {
-    try {
-      const lang = (navigator.language || 'es-BO').toLowerCase();
-      // basic mapping from locale to currency
-      const map = {
-        'es-bo': { code: 'BOB', symbol: 'Bs' },
-        'es-ar': { code: 'ARS', symbol: '$' },
-        'es-cl': { code: 'CLP', symbol: '$' },
-        'es-pe': { code: 'PEN', symbol: 'S/' },
-        'en-us': { code: 'USD', symbol: '$' },
-        'es-uy': { code: 'UYU', symbol: '$U' },
-        'es': { code: 'BOB', symbol: 'Bs' },
-      };
-      // try exact match then prefix match
-      const exact = map[lang];
-      if (exact) setCurrency(exact);
-      else {
-        const prefix = lang.split('-')[0];
-        const found = Object.keys(map).find(k => k.startsWith(prefix));
-        if (found) setCurrency(map[found]);
-      }
-    } catch (e) { }
-  }, []);
+  const { categories, categoriesLoaded } = useAddFormCategories(setSnack);
+  const { currency } = useAddFormGeoLocation(setForm);
 
   // secondary images are managed via MainImageArea; no inline thumbnail deletion
 
@@ -296,37 +184,7 @@ export default function AddForm({ onCreated }) {
           <Typography variant="h6" sx={{ fontWeight: 700, color: '#0f1724' }}>Publicar nuevo anuncio</Typography>
         </Box>
         <CardContent>
-          {/* Image uploader top: separate main and secondary uploaders for clarity */}
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>Fotos</Typography>
-
-            {/* Main image placeholder + add button (implemented below) */}
-            <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={onFileChange} />
-            <Box
-              sx={{
-                mt: 1,
-                borderRadius: 2,
-                border: '1px dashed rgba(16,24,40,0.06)',
-                overflow: 'hidden',
-                bgcolor: (theme) => theme.palette.mode === 'light' ? '#fbfdff' : undefined,
-              }}
-              onClick={() => fileInputRef.current && fileInputRef.current.click()}
-            >
-              {(!(form.main_image || (form.secondary_images && form.secondary_images.length))) ? (
-                <Box sx={{ width: '100%', height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                  <Box sx={{ textAlign: 'center', color: '#6b7280' }}>
-                    <AddAPhotoIcon sx={{ fontSize: 42 }} />
-                    <Typography sx={{ mt: 1, color: '#6b7280', fontWeight: 600 }}>Agregar fotos</Typography>
-                  </Box>
-                </Box>
-              ) : (
-                <Box sx={{ position: 'relative' }}>
-                  <ImageCarousel images={[...(form.main_image ? [form.main_image] : []), ...(form.secondary_images || [])]} height={200} />
-                  <Chip label={`${(form.secondary_images || []).length + (form.main_image ? 1 : 0)} fotos`} size="small" sx={{ position: 'absolute', top: 8, right: 8, bgcolor: 'rgba(0,0,0,0.55)', color: '#fff' }} />
-                </Box>
-              )}
-            </Box>
-          </Box>
+          <AddFormImagePicker form={form} setForm={setForm} setSnack={setSnack} />
 
           <TextField fullWidth label="Título" name="title" value={form.title} onChange={handleChange} sx={{ mb: 2 }} />
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 2 }}>

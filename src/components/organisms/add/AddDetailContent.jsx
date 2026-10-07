@@ -3,6 +3,7 @@ import { Box, Typography, Chip, Avatar, Button, Stack, Card, CardContent } from 
 import { Link } from 'react-router-dom';
 import { authAPI } from '/src/services/endpoints/index.js';
 import ImageCarousel from '../../atoms/add/ImageCarousel';
+import SimpleMapCard from '../../molecules/Map/SimpleMapCard';
 import useCurrency from '../../../hooks/useCurrency';
 
 export default function AddDetailContent({ add }) {
@@ -35,18 +36,6 @@ export default function AddDetailContent({ add }) {
   if (Array.isArray(add?.secondary_images)) {
     add.secondary_images.forEach(si => images.push(si.file_url || si.url || si));
   }
-
-  // helper: build OSM embed url with small bbox around the marker
-  const osmEmbedUrl = (lat, lon) => {
-    const latN = Number(lat);
-    const lonN = Number(lon);
-    const delta = 0.02;
-    const left = lonN - delta;
-    const right = lonN + delta;
-    const top = latN + delta;
-    const bottom = latN - delta;
-    return `https://www.openstreetmap.org/export/embed.html?bbox=${left},${bottom},${right},${top}&layer=mapnik&marker=${latN},${lonN}`;
-  };
 
   const formatCondition = (c) => {
     if (!c) return '';
@@ -115,15 +104,13 @@ export default function AddDetailContent({ add }) {
               {/* Map preview when coordinates present */}
               {add.latitude && add.longitude && (
                 <Box sx={{ mt: 3 }}>
-                  <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 700, fontFamily: 'Inter, system-ui, sans-serif' }}>Ubicación en el mapa</Typography>
-                  <Box sx={{ width: '100%', height: 260, borderRadius: 1, overflow: 'hidden', border: '1px solid rgba(16,24,40,0.06)' }}>
-                    <iframe
-                      title="map"
-                      src={osmEmbedUrl(add.latitude, add.longitude)}
-                      style={{ border: 0, width: '100%', height: '100%' }}
-                      loading="lazy"
-                    />
-                  </Box>
+                  <SimpleMapCard 
+                    lat={add.latitude} 
+                    lon={add.longitude} 
+                    locationName={add.location_name || add.location_description || ""}
+                    businessName={add.title}
+                    title="Ubicación en el mapa"
+                  />
                 </Box>
               )}
 

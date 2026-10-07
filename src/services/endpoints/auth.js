@@ -11,8 +11,57 @@ export const authAPI = {
   // Login by phone/username + password
   login: async (data = {}) => {
     const phone_number = (data.phone_number || data.phone || data.username || "").toString().trim();
-    const payload = { phone_number, password: data.password };
-    const res = await httpClient(env.buildUrl('AUTH', '/auth/login/'), { method: 'POST', body: payload });
+    const password = data.password;
+
+    const url = env.buildUrl('AUTH', '/auth/login/');
+
+    // Try primary payload first, then fallbacks if 401 (invalid credentials)
+    const tryPayload = async (payload) => {
+      return httpClient(url, { method: 'POST', body: payload });
+    };
+
+    let res;
+    const tried = [];
+    try {
+      const primary = { phone_number, password };
+      tried.push(primary);
+      res = await tryPayload(primary);
+    } catch (err) {
+      // If invalid credentials (401), attempt fallbacks with different keys/formats
+      if (err && err.status === 401) {
+        const fallbacks = [
+          { username: phone_number, password },
+          { phone: phone_number, password },
+          { phone_number: `+${phone_number}`, password },
+          { phone: `+${phone_number}`, password },
+        ];
+        for (const fb of fallbacks) {
+          try {
+            tried.push(fb);
+            res = await tryPayload(fb);
+            // if success, break
+            if (res) break;
+          } catch (e2) {
+            if (!(e2 && e2.status === 401)) {
+              // non-auth error: rethrow
+              throw e2;
+            }
+            // else continue to next fallback
+          }
+        }
+      } else {
+        // non-401 error: rethrow
+        throw err;
+      }
+    }
+
+    if (!res) {
+      // All attempts failed with 401
+      const e = new Error('Credenciales inválidas');
+      e.status = 401;
+      throw e;
+    }
+
     const normalized = authAdapter.normalizeLoginResponse(res);
     try {
       // Persist tokens if backend returned them

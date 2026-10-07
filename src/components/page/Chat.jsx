@@ -14,6 +14,7 @@ import RoomList from '../organisms/chat/RoomList';
 import ChatHeader from '../organisms/chat/ChatHeader';
 import MessageList from '../organisms/chat/MessageList';
 import ChatInput from '../molecules/chat/ChatInput';
+import ConsultationEndModal from '../molecules/chat/ConsultationEndModal';
 
 export default function Chat() {
     const [searchParams] = useSearchParams();
@@ -38,6 +39,8 @@ export default function Chat() {
     const [specialistSearch, setSpecialistSearch] = useState('');
     const [professionFilter, setProfessionFilter] = useState(null);
     const [businessTypeFilter, setBusinessTypeFilter] = useState(null);
+    const [consultation, setConsultation] = useState(null);
+    const [endModalOpen, setEndModalOpen] = useState(false);
 
     const writingAudioRef = useRef(null);
     const notificationAudioRef = useRef(null);
@@ -174,6 +177,21 @@ export default function Chat() {
             loadMessages(selectedRoom.id, token);
             connectWebSocket(selectedRoom.id, token);
             chatService.markRead(selectedRoom.id, token).catch(console.error);
+
+            // Cargar / Iniciar consulta
+            const other = getOtherParticipant(selectedRoom);
+            if (other) {
+                const userRole = localStorage.getItem('role') || sessionStorage.getItem('role') || 'consumer';
+                const isProf = ['specialist', 'businessman'].includes(userRole.toLowerCase());
+                const consumerId = isProf ? (other.id || other.user_id || other.pk) : currentUserId;
+                const profId = isProf ? currentUserId : (other.id || other.user_id || other.pk);
+
+                chatService.initConsultation(selectedRoom.id, consumerId, profId, token)
+                    .then(res => setConsultation(res))
+                    .catch(err => console.warn('Could not load consultation:', err));
+            }
+        } else {
+            setConsultation(null);
         }
 
         return () => {
@@ -182,6 +200,32 @@ export default function Chat() {
             }
         };
     }, [selectedRoom?.id, token]);
+
+    const handleExtendConsultation = async () => {
+        if (!consultation || !token) return;
+        try {
+            await chatService.extendConsultation(consultation.id, token);
+            setConsultation(prev => prev ? { ...prev, is_extended: true } : null);
+        } catch (err) {
+            console.error('Error extendiendo consulta:', err);
+        }
+    };
+
+    const handleEndConsultation = () => {
+        setEndModalOpen(true);
+    };
+
+    const handleModalComplete = async () => {
+        if (consultation && token) {
+            try {
+                await chatService.closeConsultation(consultation.id, token);
+                setConsultation(prev => prev ? { ...prev, status: 'closed' } : null);
+            } catch (err) {
+                console.error('Error cerrando consulta:', err);
+            }
+        }
+        setEndModalOpen(false);
+    };
 
     const connectPresence = (authToken) => {
         try {
@@ -1012,6 +1056,9 @@ export default function Chat() {
               onBack={() => setSelectedRoom(null)}
               showBack={true}
               usersMap={usersMap}
+              consultation={consultation}
+              onEndConsultation={handleEndConsultation}
+              onExtendConsultation={handleExtendConsultation}
             />
             <MessageList messages={messages} currentUserId={currentUserId} usersMap={usersMap} />
             <ChatInput
@@ -1042,6 +1089,18 @@ export default function Chat() {
             </Typography>
           </Box>
         )}
+
+        <ConsultationEndModal
+          open={endModalOpen}
+          onClose={() => setEndModalOpen(false)}
+          consultation={consultation}
+          userRole={localStorage.getItem('role') || sessionStorage.getItem('role') || 'consumer'}
+          targetUserId={participant?.id || participant?.user_id || participant?.pk}
+          onComplete={handleModalComplete}
+          rateConsultationApi={profilesAPI.rateConsultation}
+          createReportApi={profilesAPI.createReport}
+          token={token}
+        />
       </Box>
     );
 }

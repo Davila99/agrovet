@@ -33,13 +33,7 @@ const BASE_URL = (import.meta && import.meta.env && import.meta.env.VITE_GATEWAY
           } catch (err) {}
         }
 
-        // Diagnostic: ensure we log whether an Authorization header will be sent (masked)
-        try {
-          const authHeader = fetchHeaders.Authorization || fetchHeaders.authorization || null;
-          const hasAuth = Boolean(authHeader);
-          const masked = authHeader ? (typeof authHeader === 'string' && authHeader.length > 12 ? `${authHeader.slice(0,8)}...${authHeader.slice(-4)}` : authHeader) : null;
-          console.info('[httpClient] Auth header present:', { hasAuth, masked });
-        } catch (e) {}
+        // No-op here: avoid noisy logs. Auth diagnostics are logged only on auth failures.
       } catch (e) {
         // ignore in non-browser
       }
@@ -81,7 +75,6 @@ const BASE_URL = (import.meta && import.meta.env && import.meta.env.VITE_GATEWAY
       
 
       try {
-        try { console.debug('[httpClient] request ->', { url, headers: fetchHeaders, body: rest && rest.body ? (typeof rest.body === 'string' ? rest.body : '[object]') : null }); } catch (e) {}
         const res = await fetch(url, {
           headers: fetchHeaders,
           signal,
@@ -89,8 +82,6 @@ const BASE_URL = (import.meta && import.meta.env && import.meta.env.VITE_GATEWAY
         }).finally(() => {
           if (timeout) clearTimeout(timeout);
         });
-        try { console.debug('[httpClient] response', { url, status: res.status, statusText: res.statusText }); } catch (e) {}
-        // continue with parsing below
         var __res = res; // alias for following code
       } catch (fetchErr) {
         // network/fetch error
@@ -124,7 +115,7 @@ const BASE_URL = (import.meta && import.meta.env && import.meta.env.VITE_GATEWAY
           throw abortError;
         }
         
-        try { console.error('[httpClient] fetch exception', { url, error: fetchErr, name: fetchErr.name, message: fetchErr.message }); } catch (e) {}
+        // suppress fetch exception logs to keep console clean
         throw fetchErr;
       }
 
@@ -170,24 +161,7 @@ const BASE_URL = (import.meta && import.meta.env && import.meta.env.VITE_GATEWAY
             // refresh failed — proceed to throw original 401 error below
           }
         }
-        try {
-          console.error('[httpClient] ❌ API error', {
-            status: __res.status,
-            statusText: __res.statusText,
-            body: data,
-            endpoint: url,
-            rawResponse: text,
-          });
-        } catch (e) {}
-
-        // Add extra diagnostic when Authorization is missing or 401 occurs.
-        try {
-          const currentAuth = (fetchHeaders && (fetchHeaders.Authorization || fetchHeaders.authorization)) || null;
-          const maskedCurrent = currentAuth && (currentAuth.length > 12 ? `${currentAuth.slice(0,8)}...${currentAuth.slice(-4)}` : currentAuth) || null;
-          const stored = authClient.getAccessToken ? authClient.getAccessToken() : null;
-          const maskedStored = stored && (stored.length > 12 ? `${stored.slice(0,8)}...${stored.slice(-4)}` : stored) || null;
-          console.warn('[httpClient] 401 diagnostic', { url, currentAuth: Boolean(currentAuth), maskedCurrent, storedTokenPresent: Boolean(stored), maskedStored });
-        } catch (e) {}
+        // Suppress generic API error log. Provide focused auth diagnostic only when relevant below.
 
         const message = data.detail || data.error || data.message || `HTTP ${__res.status} ${__res.statusText}`;
         // Si es error de servidor (5xx) notificamos que el servicio está caído
@@ -197,11 +171,53 @@ const BASE_URL = (import.meta && import.meta.env && import.meta.env.VITE_GATEWAY
             window.dispatchEvent(new CustomEvent('agrovet:service-down'));
           } catch (e) {}
         }
-        // Extra diagnostic for auth login 401 to help debug specialist login issues
-        if (__res.status === 401 && String(url).includes('/auth/login')) {
+        // Focused auth diagnostics: if 401 (unauthorized), log minimal masked info
+        if (__res.status === 401) {
           try {
-            console.error('[httpClient][AUTH] 401 on login endpoint', { endpoint: url, requestBody: rest && rest.body, responseBody: data });
-          } catch (e) {}
+            // Helper to mask sensitive fields
+            const mask = (obj) => {
+              try {
+                if (!obj) return obj;
+                const clone = JSON.parse(JSON.stringify(obj));
+                const scrub = (o) => {
+                  if (o && typeof o === 'object') {
+                    for (const k of Object.keys(o)) {
+                      try {
+                        if (/pass|pwd|token|auth/i.test(k)) o[k] = '<<masked>>';
+                        else if (typeof o[k] === 'object') scrub(o[k]);
+                        else if (typeof o[k] === 'string' && o[k].length > 200) o[k] = o[k].slice(0,200) + '...';
+                      } catch (e) {}
+                    }
+                  }
+                };
+                scrub(clone);
+                return clone;
+              } catch (e) { return '<<unserializable>>'; }
+            };
+
+            const maskedHeaders = { ...(fetchHeaders || {}) };
+            if (maskedHeaders.Authorization) maskedHeaders.Authorization = '<<masked>>';
+            if (maskedHeaders.authorization) maskedHeaders.authorization = '<<masked>>';
+
+            let bodyForLog = rest && rest.body ? rest.body : null;
+            try {
+              if (typeof bodyForLog === 'string') bodyForLog = JSON.parse(bodyForLog);
+            } catch (e) {}
+            const maskedBody = mask(bodyForLog);
+
+            // Log a single focused message to help debug auth issues (includes BASE_URL and computed URL)
+            console.error('[httpClient][AUTH_FAILURE]', {
+              baseUrl: BASE_URL,
+              endpoint: url,
+              method: (rest && rest.method) || 'GET',
+              requestHeaders: maskedHeaders,
+              requestBody: maskedBody,
+              responseBody: data,
+              status: __res.status,
+            });
+          } catch (e) {
+            // ignore logging errors
+          }
         }
 
         const err = new Error(message);
@@ -214,9 +230,7 @@ const BASE_URL = (import.meta && import.meta.env && import.meta.env.VITE_GATEWAY
       }
       return data;
     } catch (err) {
-    try {
-      console.error('[httpClient] ❌ API error (exception)', { message: err && err.message, error: err, body: err && err.body });
-    } catch (e) {}
+    // Suppress additional logging here to keep console clean.
       
       const msg = err && (err.message || "") ;
       const isNetworkError = Boolean(

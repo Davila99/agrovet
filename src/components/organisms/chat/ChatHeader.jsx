@@ -4,6 +4,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PropTypes from 'prop-types';
 import VerificationBadge from '../../page/profile/molecules/VerificationBadge';
 import { useNavigate } from 'react-router-dom';
+import ConsultationTimerBanner from '../../molecules/chat/ConsultationTimerBanner';
 
 export default function ChatHeader({
     participant,
@@ -11,7 +12,10 @@ export default function ChatHeader({
     wsConnected = false,
     onBack,
     showBack = false,
-    usersMap = {}
+    usersMap = {},
+    consultation = null,
+    onEndConsultation,
+    onExtendConsultation
 }) {
     // Try to get enhanced participant data from usersMap  
     let participantData = participant;
@@ -79,73 +83,81 @@ export default function ChatHeader({
     };
 
     return (
-        <Box
-            sx={{
-                p: 2,
-                borderBottom: 1,
-                borderColor: 'divider',
-                bgcolor: '#ededed',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 2,
-            }}
-        >
-            {showBack && onBack && (
-                <IconButton onClick={onBack} sx={{ mr: -1 }}>
-                    <ArrowBackIcon />
-                </IconButton>
-            )}
-            <Badge
-                overlap="circular"
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                variant="dot"
+        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+            <Box
                 sx={{
-                    '& .MuiBadge-badge': {
-                        bgcolor: isOnline ? '#4caf50' : '#9e9e9e',
-                        border: '2px solid white',
-                        width: 12,
-                        height: 12,
-                    }
+                    p: 2,
+                    bgcolor: '#ededed',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
                 }}
             >
-                <Avatar
-                    src={avatarUrl}
-                    onClick={handleAvatarClick}
+                {showBack && onBack && (
+                    <IconButton onClick={onBack} sx={{ mr: -1 }}>
+                        <ArrowBackIcon />
+                    </IconButton>
+                )}
+                <Badge
+                    overlap="circular"
+                    anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                    variant="dot"
                     sx={{
-                        bgcolor: '#4caf50',
-                        width: 48,
-                        height: 48,
-                        cursor: 'pointer',
-                        '&:hover': { opacity: 0.8 }
+                        '& .MuiBadge-badge': {
+                            bgcolor: isOnline ? '#4caf50' : '#9e9e9e',
+                            border: '2px solid white',
+                            width: 12,
+                            height: 12,
+                        }
                     }}
                 >
-                    {participantName[0]?.toUpperCase() || 'U'}
-                </Avatar>
-            </Badge>
-            <Box sx={{ flex: 1 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
-                    <Typography 
-                        variant="subtitle1" 
-                        sx={{ fontWeight: 600, cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
-                        onClick={handleNameClick}
+                    <Avatar
+                        src={avatarUrl}
+                        onClick={handleAvatarClick}
+                        sx={{
+                            bgcolor: '#4caf50',
+                            width: 48,
+                            height: 48,
+                            cursor: 'pointer',
+                            '&:hover': { opacity: 0.8 }
+                        }}
                     >
-                        {participantName}
+                        {participantName[0]?.toUpperCase() || 'U'}
+                    </Avatar>
+                </Badge>
+                <Box sx={{ flex: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
+                        <Typography 
+                            variant="subtitle1" 
+                            sx={{ fontWeight: 600, cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+                            onClick={handleNameClick}
+                        >
+                            {participantName}
+                        </Typography>
+                        {/* Badge de verificación si el participante es especialista */}
+                        {((participantData?.role || '').toString().toLowerCase() === 'specialist' || 
+                          participantData?.specialist_profile) && 
+                          participantData?.specialist_profile?.verification_status && (
+                            <VerificationBadge
+                                verificationStatus={participantData.specialist_profile.verification_status}
+                                verificationType={participantData.specialist_profile.verification_type}
+                                size="small"
+                            />
+                        )}
+                    </Box>
+                    <Typography variant="caption" color="text.secondary">
+                        {isOnline ? 'En línea' : 'Desconectado'}
                     </Typography>
-                    {/* Badge de verificación si el participante es especialista */}
-                    {((participantData?.role || '').toString().toLowerCase() === 'specialist' || 
-                      participantData?.specialist_profile) && 
-                      participantData?.specialist_profile?.verification_status && (
-                        <VerificationBadge
-                            verificationStatus={participantData.specialist_profile.verification_status}
-                            verificationType={participantData.specialist_profile.verification_type}
-                            size="small"
-                        />
-                    )}
                 </Box>
-                <Typography variant="caption" color="text.secondary">
-                    {isOnline ? 'En línea' : 'Desconectado'}
-                </Typography>
             </Box>
+
+            {consultation && (
+                <ConsultationTimerBanner
+                    consultation={consultation}
+                    onEndConsultation={onEndConsultation}
+                    onExtendConsultation={onExtendConsultation}
+                />
+            )}
         </Box>
     );
 }

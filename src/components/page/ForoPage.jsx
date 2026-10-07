@@ -209,319 +209,324 @@ export default function ForoPage({ initialCommunityId = null }) {
   return (
     <Box sx={{ bgcolor: "#f5f7fa", minHeight: "100vh", pt: 3, pb: 6 }}>
       <Container maxWidth="lg">
-        <Grid container spacing={3}>
-          {/* Main content - Posts */}
-          <Grid item xs={12} md={8}>
-            <Stack spacing={2}>
-              {/* Create post card */}
-              <Paper
-                elevation={0}
-                onClick={() => setOpenComposer(true)}
-                sx={{
-                  p: 2,
-                  borderRadius: 3,
-                  cursor: "pointer",
-                  bgcolor: "#ffffff",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-                  border: "1px solid rgba(0,0,0,0.05)",
-                  transition: "all 0.2s ease",
-                  "&:hover": {
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                    borderColor: "#00695c",
-                  },
-                }}
-              >
-                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                  <Avatar
-                    src={currentUser?.profile_picture}
-                    sx={{
-                      width: 48,
-                      height: 48,
-                      bgcolor: "#00695c",
-                      fontSize: "1.2rem",
-                      fontWeight: 600,
-                    }}
-                  >
-                    {currentUser?.name?.[0] || "?"}
-                  </Avatar>
-                  <Box
-                    sx={{
-                      flex: 1,
-                      py: 1.5,
-                      px: 2,
-                      borderRadius: 6,
-                      bgcolor: "#f0f2f5",
-                      color: "text.secondary",
-                      fontSize: "0.95rem",
-                    }}
-                  >
-                    ¿Qué quieres compartir hoy?
-                  </Box>
-                </Box>
-              </Paper>
-
-              {/* Search and filters */}
-              <Paper
-                elevation={0}
-                sx={{
-                  p: 2,
-                  borderRadius: 3,
-                  bgcolor: "#ffffff",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-                  border: "1px solid rgba(0,0,0,0.05)",
-                }}
-              >
-                <TextField
-                  fullWidth
-                  placeholder="Buscar publicaciones..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  size="small"
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <Search sx={{ color: "text.secondary" }} />
-                      </InputAdornment>
-                    ),
-                  }}
+        {/* If a community is selected, show the full CommunityView (header, posts, right communities list). */}
+        {selectedCommunity ? (
+          <CommunityView communityId={selectedCommunity} />
+        ) : (
+          <Grid container spacing={3}>
+            {/* Main content - Posts */}
+            <Grid item xs={12} md={8}>
+              <Stack spacing={2}>
+                {/* Create post card */}
+                <Paper
+                  elevation={0}
+                  onClick={() => setOpenComposer(true)}
                   sx={{
-                    mb: 1.5,
-                    "& .MuiOutlinedInput-root": {
-                      borderRadius: 2,
-                      bgcolor: "#f8f9fa",
+                    p: 2,
+                    borderRadius: 3,
+                    cursor: "pointer",
+                    bgcolor: "#ffffff",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                    border: "1px solid rgba(0,0,0,0.05)",
+                    transition: "all 0.2s ease",
+                    "&:hover": {
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                      borderColor: "#00695c",
                     },
                   }}
-                />
-
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <Typography variant="body2" sx={{ color: "text.secondary", fontWeight: 500, mr: 1 }}>
-                    Ordenar:
-                  </Typography>
-                  {sortOptions.map((option) => (
-                    <Chip
-                      key={option.id}
-                      icon={option.icon}
-                      label={option.label}
-                      onClick={() => setSortBy(option.id)}
-                      size="small"
-                      sx={{
-                        cursor: "pointer",
-                        fontWeight: sortBy === option.id ? 600 : 400,
-                        bgcolor: sortBy === option.id ? "#00695c" : "transparent",
-                        color: sortBy === option.id ? "white" : "text.secondary",
-                        borderColor: sortBy === option.id ? "#00695c" : "rgba(0,0,0,0.2)",
-                        "&:hover": {
-                          bgcolor: sortBy === option.id ? "#00796b" : "rgba(0,0,0,0.04)",
-                        },
-                        "& .MuiChip-icon": {
-                          color: sortBy === option.id ? "white" : "text.secondary",
-                        },
-                      }}
-                    />
-                  ))}
-                </Stack>
-              </Paper>
-
-              {/* Posts list */}
-              {loadingPosts ? (
-                <Paper
-                  elevation={0}
-                  sx={{
-                    p: 4,
-                    textAlign: "center",
-                    borderRadius: 3,
-                    bgcolor: "#ffffff",
-                  }}
                 >
-                  <CircularProgress sx={{ color: '#00695c' }} />
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                    <Avatar
+                      src={currentUser?.profile_picture}
+                      sx={{
+                        width: 48,
+                        height: 48,
+                        bgcolor: "#00695c",
+                        fontSize: "1.2rem",
+                        fontWeight: 600,
+                      }}
+                    >
+                      {currentUser?.name?.[0] || "?"}
+                    </Avatar>
+                    <Box
+                      sx={{
+                        flex: 1,
+                        py: 1.5,
+                        px: 2,
+                        borderRadius: 6,
+                        bgcolor: "#f0f2f5",
+                        color: "text.secondary",
+                        fontSize: "0.95rem",
+                      }}
+                    >
+                      ¿Qué quieres compartir hoy?
+                    </Box>
+                  </Box>
                 </Paper>
-              ) : sortedPosts.length === 0 ? (
+
+                {/* Search and filters */}
                 <Paper
                   elevation={0}
                   sx={{
-                    p: 4,
-                    textAlign: "center",
+                    p: 2,
                     borderRadius: 3,
                     bgcolor: "#ffffff",
                     boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                    border: "1px solid rgba(0,0,0,0.05)",
                   }}
                 >
-                  <Typography variant="h6" sx={{ color: "text.secondary", mb: 1 }}>
-                    No hay publicaciones
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: "text.secondary", mb: 2 }}>
-                    Sé el primero en publicar algo interesante
-                  </Typography>
-                  <Button
-                    variant="contained"
-                    startIcon={<Add />}
-                    onClick={() => setOpenComposer(true)}
-                    sx={{ 
-                      borderRadius: 2, 
-                      textTransform: "none",
-                      bgcolor: '#00695c',
-                      '&:hover': { bgcolor: '#00796b' },
+                  <TextField
+                    fullWidth
+                    placeholder="Buscar publicaciones..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    size="small"
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Search sx={{ color: "text.secondary" }} />
+                        </InputAdornment>
+                      ),
+                    }}
+                    sx={{
+                      mb: 1.5,
+                      "& .MuiOutlinedInput-root": {
+                        borderRadius: 2,
+                        bgcolor: "#f8f9fa",
+                      },
+                    }}
+                  />
+
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Typography variant="body2" sx={{ color: "text.secondary", fontWeight: 500, mr: 1 }}>
+                      Ordenar:
+                    </Typography>
+                    {sortOptions.map((option) => (
+                      <Chip
+                        key={option.id}
+                        icon={option.icon}
+                        label={option.label}
+                        onClick={() => setSortBy(option.id)}
+                        size="small"
+                        sx={{
+                          cursor: "pointer",
+                          fontWeight: sortBy === option.id ? 600 : 400,
+                          bgcolor: sortBy === option.id ? "#00695c" : "transparent",
+                          color: sortBy === option.id ? "white" : "text.secondary",
+                          borderColor: sortBy === option.id ? "#00695c" : "rgba(0,0,0,0.2)",
+                          "&:hover": {
+                            bgcolor: sortBy === option.id ? "#00796b" : "rgba(0,0,0,0.04)",
+                          },
+                          "& .MuiChip-icon": {
+                            color: sortBy === option.id ? "white" : "text.secondary",
+                          },
+                        }}
+                      />
+                    ))}
+                  </Stack>
+                </Paper>
+
+                {/* Posts list */}
+                {loadingPosts ? (
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 4,
+                      textAlign: "center",
+                      borderRadius: 3,
+                      bgcolor: "#ffffff",
                     }}
                   >
-                    Crear publicación
-                  </Button>
-                </Paper>
-              ) : (
-                <Stack spacing={2}>
-                  {sortedPosts.map((post) => (
-                    <PostCard key={post.id} post={post} onDeleted={handlePostDeleted} />
-                  ))}
-                </Stack>
-              )}
-            </Stack>
-          </Grid>
-
-          {/* Right Sidebar - Communities only (no stats or profile) */}
-          <Grid item xs={12} md={4}>
-            <Box sx={{ position: "sticky", top: 80 }}>
-              <Paper
-                elevation={0}
-                sx={{
-                  p: 2.5,
-                  borderRadius: 3,
-                  bgcolor: "#ffffff",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-                  border: "1px solid rgba(0,0,0,0.05)",
-                }}
-              >
-                <Typography
-                  variant="h6"
-                  sx={{
-                    fontWeight: 700,
-                    fontSize: "1rem",
-                    color: "#1a1a1a",
-                    mb: 2,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1,
-                  }}
-                >
-                  <People sx={{ fontSize: 20, color: "#00695c" }} />
-                  Mis Comunidades
-                </Typography>
-
-                {loadingCommunities ? (
-                  <Box sx={{ display: "flex", justifyContent: "center", py: 3 }}>
-                    <CircularProgress size={24} sx={{ color: '#00695c' }} />
-                  </Box>
-                ) : communitiesError ? (
-                  <Alert severity="warning" sx={{ fontSize: "0.85rem" }}>
-                    No se pudieron cargar las comunidades
-                  </Alert>
-                ) : communities.length === 0 ? (
-                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 3 }}>
-                    No tienes comunidades asignadas
-                  </Typography>
+                    <CircularProgress sx={{ color: '#00695c' }} />
+                  </Paper>
+                ) : sortedPosts.length === 0 ? (
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 4,
+                      textAlign: "center",
+                      borderRadius: 3,
+                      bgcolor: "#ffffff",
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                    }}
+                  >
+                    <Typography variant="h6" sx={{ color: "text.secondary", mb: 1 }}>
+                      No hay publicaciones
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: "text.secondary", mb: 2 }}>
+                      Sé el primero en publicar algo interesante
+                    </Typography>
+                    <Button
+                      variant="contained"
+                      startIcon={<Add />}
+                      onClick={() => setOpenComposer(true)}
+                      sx={{ 
+                        borderRadius: 2, 
+                        textTransform: "none",
+                        bgcolor: '#00695c',
+                        '&:hover': { bgcolor: '#00796b' },
+                      }}
+                    >
+                      Crear publicación
+                    </Button>
+                  </Paper>
                 ) : (
-                  <Stack spacing={1}>
-                    {communities.map((community) => {
-                      const config = getCommunityConfig(community.slug);
-                      const isSelected = selectedCommunity === community.id;
-
-                      return (
-                          <Box
-                            key={community.id}
-                            onClick={() => navigate(`/foro/community/${community.id}`)}
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 1.5,
-                            p: 1.5,
-                            borderRadius: 2,
-                            cursor: "pointer",
-                            bgcolor: isSelected ? `${config.color}15` : "transparent",
-                            transition: "all 0.2s ease",
-                            "&:hover": {
-                              bgcolor: `${config.color}10`,
-                              transform: "translateX(4px)",
-                            },
-                          }}
-                        >
-                          <Avatar
-                            src={community.avatar}
-                            sx={{
-                              width: 44,
-                              height: 44,
-                              bgcolor: config.color,
-                              boxShadow: `0 4px 12px ${config.color}40`,
-                            }}
-                          >
-                            {config.icon}
-                          </Avatar>
-                          <Box sx={{ flex: 1, minWidth: 0 }}>
-                            <Typography
-                              variant="subtitle2"
-                              sx={{
-                                fontWeight: 600,
-                                fontSize: "0.9rem",
-                                whiteSpace: "nowrap",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                color: "#1a1a1a",
-                              }}
-                            >
-                              {community.name}
-                            </Typography>
-                            <Stack direction="row" spacing={1} alignItems="center">
-                              <Typography variant="caption" color="text.secondary">
-                                {community.members_count || 0} miembros
-                              </Typography>
-                              <Chip
-                                size="small"
-                                label="Miembro"
-                                sx={{
-                                  height: 18,
-                                  fontSize: "0.65rem",
-                                  bgcolor: `${config.color}20`,
-                                  color: config.color,
-                                  fontWeight: 600,
-                                }}
-                              />
-                            </Stack>
-                          </Box>
-                          <Button
-                            size="small"
-                            component={RouterLink}
-                            to={`/foro/community/${community.id}`}
-                            onClick={(e) => e.stopPropagation()}
-                            sx={{
-                              minWidth: "auto",
-                              p: 0.5,
-                              color: config.color,
-                            }}
-                          >
-                            <ArrowForward sx={{ fontSize: 18 }} />
-                          </Button>
-                        </Box>
-                      );
-                    })}
+                  <Stack spacing={2}>
+                    {sortedPosts.map((post) => (
+                      <PostCard key={post.id} post={post} onDeleted={handlePostDeleted} />
+                    ))}
                   </Stack>
                 )}
+              </Stack>
+            </Grid>
 
-                {selectedCommunity && (
-                  <Button
-                    fullWidth
-                    variant="text"
-                    onClick={() => setSelectedCommunity(null)}
+            {/* Right Sidebar - Communities only (no stats or profile) */}
+            <Grid item xs={12} md={4}>
+              <Box sx={{ position: "sticky", top: 80 }}>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 2.5,
+                    borderRadius: 3,
+                    bgcolor: "#ffffff",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+                    border: "1px solid rgba(0,0,0,0.05)",
+                  }}
+                >
+                  <Typography
+                    variant="h6"
                     sx={{
-                      mt: 2,
-                      textTransform: "none",
-                      borderRadius: 2,
-                      color: "text.secondary",
+                      fontWeight: 700,
+                      fontSize: "1rem",
+                      color: "#1a1a1a",
+                      mb: 2,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
                     }}
                   >
-                    Ver todas las publicaciones
-                  </Button>
-                )}
-              </Paper>
-            </Box>
+                    <People sx={{ fontSize: 20, color: "#00695c" }} />
+                    Mis Comunidades
+                  </Typography>
+
+                  {loadingCommunities ? (
+                    <Box sx={{ display: "flex", justifyContent: "center", py: 3 }}>
+                      <CircularProgress size={24} sx={{ color: '#00695c' }} />
+                    </Box>
+                  ) : communitiesError ? (
+                    <Alert severity="warning" sx={{ fontSize: "0.85rem" }}>
+                      No se pudieron cargar las comunidades
+                    </Alert>
+                  ) : communities.length === 0 ? (
+                    <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 3 }}>
+                      No tienes comunidades asignadas
+                    </Typography>
+                  ) : (
+                    <Stack spacing={1}>
+                      {communities.map((community) => {
+                        const config = getCommunityConfig(community.slug);
+                        const isSelected = selectedCommunity === community.id;
+
+                        return (
+                            <Box
+                              key={community.id}
+                              onClick={() => navigate(`/foro/community/${community.id}`)}
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1.5,
+                              p: 1.5,
+                              borderRadius: 2,
+                              cursor: "pointer",
+                              bgcolor: isSelected ? `${config.color}15` : "transparent",
+                              transition: "all 0.2s ease",
+                              "&:hover": {
+                                bgcolor: `${config.color}10`,
+                                transform: "translateX(4px)",
+                              },
+                            }}
+                          >
+                            <Avatar
+                              src={community.avatar}
+                              sx={{
+                                width: 44,
+                                height: 44,
+                                bgcolor: config.color,
+                                boxShadow: `0 4px 12px ${config.color}40`,
+                              }}
+                            >
+                              {config.icon}
+                            </Avatar>
+                            <Box sx={{ flex: 1, minWidth: 0 }}>
+                              <Typography
+                                variant="subtitle2"
+                                sx={{
+                                  fontWeight: 600,
+                                  fontSize: "0.9rem",
+                                  whiteSpace: "nowrap",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  color: "#1a1a1a",
+                                }}
+                              >
+                                {community.name}
+                              </Typography>
+                              <Stack direction="row" spacing={1} alignItems="center">
+                                <Typography variant="caption" color="text.secondary">
+                                  {community.members_count || 0} miembros
+                                </Typography>
+                                <Chip
+                                  size="small"
+                                  label="Miembro"
+                                  sx={{
+                                    height: 18,
+                                    fontSize: "0.65rem",
+                                    bgcolor: `${config.color}20`,
+                                    color: config.color,
+                                    fontWeight: 600,
+                                  }}
+                                />
+                              </Stack>
+                            </Box>
+                            <Button
+                              size="small"
+                              component={RouterLink}
+                              to={`/foro/community/${community.id}`}
+                              onClick={(e) => e.stopPropagation()}
+                              sx={{
+                                minWidth: "auto",
+                                p: 0.5,
+                                color: config.color,
+                              }}
+                            >
+                              <ArrowForward sx={{ fontSize: 18 }} />
+                            </Button>
+                          </Box>
+                        );
+                      })}
+                    </Stack>
+                  )}
+
+                  {selectedCommunity && (
+                    <Button
+                      fullWidth
+                      variant="text"
+                      onClick={() => setSelectedCommunity(null)}
+                      sx={{
+                        mt: 2,
+                        textTransform: "none",
+                        borderRadius: 2,
+                        color: "text.secondary",
+                      }}
+                    >
+                      Ver todas las publicaciones
+                    </Button>
+                  )}
+                </Paper>
+              </Box>
+            </Grid>
           </Grid>
-        </Grid>
+        )}
       </Container>
 
       {/* Create post dialog */}

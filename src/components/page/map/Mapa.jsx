@@ -11,12 +11,12 @@ import Navbar from "../navigation/nav.jsx";
 const BASE_PROVIDERS = [
   {
     id: "osm-raster",
-    name: "Clásico (OSM)",
-    tiles: ["https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"],
-    subdomains: ["a", "b", "c"],
+    name: "Clásico (CARTO / OSM)",
+    tiles: ["https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png"],
+    subdomains: ["a", "b", "c", "d"],
     attribution:
-      '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors',
-    thumb: "https://tile.openstreetmap.org/12/657/1582.png",
+      '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
+    thumb: "https://a.basemaps.cartocdn.com/rastertiles/voyager/12/657/1582.png",
   },
   // (Opciones claro/oscuro eliminadas — usar OSM o proveedores vectoriales en su lugar)
   // Provider vectorial (MapTiler) — permite estilos vectoriales y capas 3D

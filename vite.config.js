@@ -24,6 +24,16 @@ export default defineConfig({
       strict: false, // Permitir servir archivos fuera de la raíz
     },
   },
+  // Configuración de tests con vitest
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/__tests__/setup.js'],
+    include: ['src/**/*.{test,spec}.{js,jsx}'],
+    coverage: {
+      reporter: ['text', 'json', 'html'],
+    },
+  },
   // Optimizar para desarrollo
   optimizeDeps: {
     exclude: [],
@@ -33,3 +43,4 @@ export default defineConfig({
     watch: {},
   },
 })
+

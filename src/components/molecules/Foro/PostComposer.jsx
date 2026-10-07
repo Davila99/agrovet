@@ -27,6 +27,7 @@ import { useCreatePost, useUploadMedia, useCommunities } from '../../../hooks/Fo
 import { filterCommunitiesByRole } from '../../../utils/Foro/autoJoinCommunities';
 import foroService from '../../../services/endpoints/foro';
 import useAuth from '../../../hooks/Foro/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 /**
  * PostComposer: Modern form for creating posts with image/video support
@@ -129,11 +130,21 @@ export default function PostComposer({ onCreated, communityId = null, communitie
       return setErrors({ community: 'Selecciona una comunidad' });
     }
 
+    // Ensure authenticated before submit
+    const token = (authClient && authClient.getAccessToken) ? authClient.getAccessToken() : null;
+    if (!token) {
+      setErrors({ submit: 'No autenticado. Inicia sesión para publicar.' });
+      // Navigate to login after short delay to let user see message
+      setTimeout(() => navigate('/login'), 700);
+      return;
+    }
+
     try {
       const payload = { 
         title, 
         content,
         community_id: Number(selectedCommunity),
+        community: Number(selectedCommunity), // include both keys to match different backends
       };
 
       if (mediaId) {

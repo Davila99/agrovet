@@ -311,7 +311,20 @@ const ModernPostCard = ({ post, onLike, onComment, onShare, onBookmark, onDelete
               variant="contained"
               size="small"
               startIcon={<Message />}
-              onClick={() => onConsult && onConsult(post)}
+              onClick={() => {
+                import("sweetalert2").then(({ default: Swal }) => {
+                  Swal.fire({
+                    title: "Atención",
+                    text: "Solo tienes derecho a 2 mensajes antes de que el especialista responda.",
+                    icon: "info",
+                    timer: 4000,
+                    showConfirmButton: false,
+                    toast: true,
+                    position: "top-end"
+                  });
+                });
+                if (onConsult) onConsult(post);
+              }}
               sx={{
                 textTransform: 'none',
                 borderRadius: 2,

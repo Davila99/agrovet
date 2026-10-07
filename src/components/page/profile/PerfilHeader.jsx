@@ -1,10 +1,13 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Box, Avatar, Typography, Button, Rating } from "@mui/material";
 import MapOutlinedIcon from "@mui/icons-material/MapOutlined";
+import ReportProblemOutlinedIcon from "@mui/icons-material/ReportProblemOutlined";
 import { Link as RouterLink } from "react-router-dom";
 import VerificationBadge from "./molecules/VerificationBadge";
+import ReportUserModal from "./ReportUserModal";
 
 const PerfilHeader = ({ user, isOwnProfile = true }) => {
+  const [reportOpen, setReportOpen] = useState(false);
 
   const buildMapLinkForBusiness = () => {
     const profile = (user && user.businessman_profile) || {};
@@ -92,10 +95,10 @@ const PerfilHeader = ({ user, isOwnProfile = true }) => {
           src={user?.profile_picture}
           alt={user?.full_name}
           sx={{
-            width: { xs: 70, sm: 85 },
-            height: { xs: 70, sm: 85 },
+            width: { xs: 90, sm: 110 },
+            height: { xs: 90, sm: 110 },
             border: "3px solid white",
-            fontSize: { xs: 24, sm: 32 },
+            fontSize: { xs: 32, sm: 40 },
             boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
           }}
         >
@@ -202,8 +205,39 @@ const PerfilHeader = ({ user, isOwnProfile = true }) => {
             </Button>
           )}
 
+          {!isOwnProfile && (
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<ReportProblemOutlinedIcon />}
+              onClick={() => setReportOpen(true)}
+              sx={{
+                textTransform: "none",
+                borderRadius: 1.5,
+                borderColor: "rgba(239, 68, 68, 0.5)",
+                color: "#ef4444",
+                fontWeight: 500,
+                fontSize: "0.8rem",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": {
+                  borderColor: "#ef4444",
+                  bgcolor: "rgba(239, 68, 68, 0.08)",
+                },
+              }}
+            >
+              Reportar
+            </Button>
+          )}
         </Box>
       </Box>
+
+      {/* Modal para reportar usuario */}
+      <ReportUserModal
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        reportedUser={user}
+      />
     </Box>
   );
 };

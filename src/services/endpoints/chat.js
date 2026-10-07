@@ -117,6 +117,53 @@ export const chatService = {
         });
         return chatAdapter.normalizeConversation(res);
     },
+
+    // Reaccionar a un mensaje con emoji
+    reactMessage: async (messageId, emoji, token) => {
+        const url = env.buildUrl('CHAT', `/api/chat/messages/${messageId}/react/`);
+        return httpClient(url, {
+            method: "POST",
+            body: { emoji },
+            headers: authHeaders(token)
+        });
+    },
+
+    // Quitar reacción de un mensaje
+    unreactMessage: async (messageId, emoji, token) => {
+        const url = env.buildUrl('CHAT', `/api/chat/messages/${messageId}/react/?emoji=${encodeURIComponent(emoji)}`);
+        return httpClient(url, {
+            method: "DELETE",
+            headers: authHeaders(token)
+        });
+    },
+
+    // Iniciar u obtener estado de consulta
+    initConsultation: async (roomId, consumerId, professionalId, token) => {
+        const url = env.buildUrl('CHAT', '/api/chat/consultations/init/');
+        return httpClient(url, {
+            method: "POST",
+            body: { room_id: roomId, consumer_id: consumerId, professional_id: professionalId },
+            headers: authHeaders(token)
+        });
+    },
+
+    // Extender consulta 15 minutos
+    extendConsultation: async (consultationId, token) => {
+        const url = env.buildUrl('CHAT', `/api/chat/consultations/${consultationId}/extend/`);
+        return httpClient(url, {
+            method: "POST",
+            headers: authHeaders(token)
+        });
+    },
+
+    // Cerrar consulta
+    closeConsultation: async (consultationId, token) => {
+        const url = env.buildUrl('CHAT', `/api/chat/consultations/${consultationId}/close/`);
+        return httpClient(url, {
+            method: "POST",
+            headers: authHeaders(token)
+        });
+    },
 };
 
 export default chatService;

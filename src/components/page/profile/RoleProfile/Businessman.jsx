@@ -9,10 +9,10 @@ import {
   Tooltip,
   TextField,
   Button,
+  Rating,
 } from "@mui/material";
 import { Edit, Close, Save } from "@mui/icons-material";
-import maplibregl from "maplibre-gl";
-import "maplibre-gl/dist/maplibre-gl.css";
+import SimpleMapCard from "../../../molecules/Map/SimpleMapCard";
 
 const FieldRow = ({ label, value }) => (
   <Box
@@ -55,8 +55,6 @@ const FieldRow = ({ label, value }) => (
 );
 
 const BusinessmanProfile = ({ user, isOwnProfile = false, onChange, onSave }) => {
-  const mapContainerRef = useRef(null);
-  const mapRef = useRef(null);
   const [editing, setEditing] = useState(false);
 
   if (!user) return null;
@@ -81,70 +79,7 @@ const BusinessmanProfile = ({ user, isOwnProfile = false, onChange, onSave }) =>
         locationName
       )}`;
 
-  // Inicializar mapa cuando hay coordenadas
-  useEffect(() => {
-    if (!lat || !lon || !mapContainerRef.current) {
-      return;
-    }
-
-    // Limpiar mapa anterior si existe
-    if (mapRef.current) {
-      mapRef.current.remove();
-      mapRef.current = null;
-    }
-
-    const map = new maplibregl.Map({
-      container: mapContainerRef.current,
-      style: {
-        version: 8,
-        sources: {
-          "osm-tiles": {
-            type: "raster",
-            tiles: [
-              "https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
-              "https://b.tile.openstreetmap.org/{z}/{x}/{y}.png",
-              "https://c.tile.openstreetmap.org/{z}/{x}/{y}.png",
-            ],
-            tileSize: 256,
-            attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors',
-          },
-        },
-        layers: [
-          {
-            id: "osm-layer",
-            type: "raster",
-            source: "osm-tiles",
-          },
-        ],
-      },
-      center: [lon, lat],
-      zoom: 14,
-    });
-
-    // Agregar controles de navegación
-    map.addControl(new maplibregl.NavigationControl(), "top-right");
-
-    map.on("load", () => {
-      // Agregar marcador en la ubicación de la empresa
-      new maplibregl.Marker({ color: "#ff6600" })
-        .setLngLat([lon, lat])
-        .setPopup(
-          new maplibregl.Popup({ offset: 12 }).setHTML(
-            `<strong>${locationName}</strong><br/>${business_name || ""}`
-          )
-        )
-        .addTo(map);
-    });
-
-    mapRef.current = map;
-
-    return () => {
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
-    };
-  }, [lat, lon, locationName, business_name]);
+  // El mapa ahora se renderiza usando SimpleMapCard
 
   // Handler para cambios en campos del negocio
   const handleBusinessChange = (e) => {
@@ -298,6 +233,46 @@ const BusinessmanProfile = ({ user, isOwnProfile = false, onChange, onSave }) =>
                       value={offers_local_products ? "Sí" : "No"}
                     />
                   )}
+
+                  {/* Tarjeta compacta de Reputación y Rating Público para Businessman */}
+                  <Box sx={{ mt: 1.5, p: 2, borderRadius: 2.5, bgcolor: "rgba(42, 171, 238, 0.04)", border: "1px solid rgba(42, 171, 238, 0.15)" }}>
+                    <Typography variant="subtitle2" sx={{ color: "#2AABEE", fontWeight: 700, fontSize: "0.75rem", mb: 1, textTransform: "uppercase" }}>
+                      Reputación y Calificación Comercial
+                    </Typography>
+                    <Grid container spacing={2} alignItems="center">
+                      <Grid item xs={12} sm={6}>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                          <Typography variant="h6" sx={{ fontWeight: 800, color: "#D97706", fontSize: "1.1rem" }}>
+                            ⭐ {Number(profile.puntuations || 0).toFixed(1)} / 5
+                          </Typography>
+                          <Rating
+                            name="read-only-businessman-rating"
+                            value={Number(profile.puntuations) || 0}
+                            precision={0.5}
+                            readOnly
+                            size="small"
+                            sx={{ "& .MuiRating-iconFilled": { color: "#F59E0B" } }}
+                          />
+                        </Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
+                          Calificación promedio del negocio
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                          <Typography variant="h6" sx={{ fontWeight: 800, color: "#10B981", fontSize: "1.1rem" }}>
+                            🏆 {profile.point ?? 0}
+                          </Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 700, color: "#065F46" }}>
+                            puntos de reputación
+                          </Typography>
+                        </Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
+                          Reputación del comercio
+                        </Typography>
+                      </Grid>
+                    </Grid>
+                  </Box>
                 </>
               )}
             </Box>
@@ -343,45 +318,13 @@ const BusinessmanProfile = ({ user, isOwnProfile = false, onChange, onSave }) =>
             mt: 3,
           }}
         >
-          <Box
-            display="flex"
-            justifyContent="space-between"
-            alignItems="center"
-            mb={3}
-          >
-            <Typography
-              variant="h6"
-              sx={{
-                fontWeight: 700,
-                color: "#103E68",
-                fontSize: "1.25rem",
-              }}
-            >
-              Ubicación del Negocio
-            </Typography>
-          </Box>
-          <Box
-            ref={mapContainerRef}
-            sx={{
-              width: "100%",
-              height: 400,
-              borderRadius: 2,
-              overflow: "hidden",
-              border: "1px solid rgba(0,0,0,0.1)",
-            }}
+          <SimpleMapCard 
+            lat={lat} 
+            lon={lon} 
+            locationName={locationName} 
+            businessName={business_name} 
+            title="Ubicación del Negocio" 
           />
-          {locationName && (
-            <Typography
-              variant="body2"
-              sx={{
-                color: "text.secondary",
-                mt: 1.5,
-                fontSize: "0.875rem",
-              }}
-            >
-              {locationName}
-            </Typography>
-          )}
         </Paper>
       )}
     </>

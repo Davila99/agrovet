@@ -12,10 +12,10 @@ export function normalizeAdd(raw) {
     const user = raw.user || raw.author || raw.seller || null;
     const created_at = raw.created_at || raw.created || raw.timestamp;
 
-    // Normalize images if present
+    // Normalize images if present (max 5)
     let images = [];
     if (Array.isArray(raw.images)) {
-        images = raw.images.map(img => {
+        images = raw.images.slice(0, 5).map(img => {
             if (typeof img === 'string') return { url: img };
             return normalizeMedia(img);
         });

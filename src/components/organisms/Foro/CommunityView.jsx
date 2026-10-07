@@ -34,6 +34,7 @@ import foroService from '../../../services/endpoints/foro';
 import authClient from '../../../services/authClient';
 import useAuth from '../../../hooks/Foro/useAuth';
 import { COMMUNITY_SLUGS } from '../../../utils/Foro/autoJoinCommunities';
+import SidebarCommunities from './SidebarCommunities';
 
 // Colors for each community
 const communityColors = {
@@ -102,8 +103,9 @@ export default function CommunityView({ communityId }) {
       // Quick client-side check for token to provide immediate feedback
       const token = authClient.getAccessToken && authClient.getAccessToken();
       if (!token) {
-        alert('No está autenticado. Inicia sesión e inténtalo de nuevo.');
         setUploading(false);
+        // redirect to login preserving current path
+        navigate('/login');
         return;
       }
       const formData = new FormData();
@@ -130,8 +132,8 @@ export default function CommunityView({ communityId }) {
     try {
       const token = authClient.getAccessToken && authClient.getAccessToken();
       if (!token) {
-        alert('No está autenticado. Inicia sesión e inténtalo de nuevo.');
         setUploading(false);
+        navigate('/login');
         return;
       }
       const formData = new FormData();
@@ -354,12 +356,14 @@ export default function CommunityView({ communityId }) {
                   startIcon={<Add />}
                   onClick={() => setOpenComposer(true)}
                   sx={{
-                    bgcolor: '#00695c',
-                    borderRadius: 2,
+                    background: 'linear-gradient(90deg, #ff6b81 0%, #ff9aa2 100%)',
+                    borderRadius: 3,
                     textTransform: 'none',
-                    fontWeight: 600,
+                    fontWeight: 700,
                     px: 3,
-                    '&:hover': { bgcolor: '#00796b' },
+                    color: '#ffffff',
+                    boxShadow: '0 8px 20px rgba(255,122,139,0.18)',
+                    '&:hover': { filter: 'brightness(0.95)' },
                   }}
                 >
                   + Crear publicación
@@ -372,13 +376,16 @@ export default function CommunityView({ communityId }) {
 
       {/* Main content */}
       <Box sx={{ maxWidth: 1100, mx: 'auto', px: { xs: 2, md: 3 }, mt: 3 }}>
-        <Grid container spacing={3}>
+          <Grid container spacing={3}>
           {/* Posts */}
           <Grid item xs={12} md={8}>
             <PostList params={{ community: communityId }} extraPosts={createdPosts} orderBy="relevance" />
           </Grid>
 
-          {/* Right Sidebar intentionally removed: the forum's blue left sidebar is mounted globally in App.jsx */}
+          {/* Right Sidebar: always show remaining communities */}
+          <Grid item xs={12} md={4}>
+            <SidebarCommunities userRole={user?.role} />
+          </Grid>
         </Grid>
       </Box>
 

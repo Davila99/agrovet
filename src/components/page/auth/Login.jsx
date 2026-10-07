@@ -110,6 +110,15 @@ const LoginPage = () => {
         return;
       }
 
+      if (status === 403 || (err?.message && (err.message.includes('suspendida') || err.message.includes('banead')))) {
+        await showSweetAlert(
+          "Cuenta Suspendida",
+          err.message || "Tu cuenta ha sido suspendida por incumplimiento de las normas de la comunidad y no puedes acceder.",
+          "error"
+        );
+        return;
+      }
+
       if (status && status >= 500) {
         await showSweetAlert(
           "Sistema fuera de servicio",

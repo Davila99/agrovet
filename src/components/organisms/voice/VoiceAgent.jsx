@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Box } from "@mui/material";
-import { motion } from "framer-motion";
+import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import VoiceControls from "../../molecules/voice/VoiceControls";
 import { audioAnalysisService } from "../../../services/voice/audioAnalysisService";
 import { voiceChatService } from "../../../services/voice/voiceChatService";
@@ -12,10 +12,26 @@ const VoiceAgent = () => {
   const [transcript, setTranscript] = useState("");
   const [aiResponse, setAiResponse] = useState("");
   const [error, setError] = useState(null);
-  const [audioLevel, setAudioLevel] = useState(0);
+  
   const analyserRef = useRef(null);
   const animationFrameRef = useRef(null);
   const hasSpokenInitialRef = useRef(false);
+  const smoothedAudioRef = useRef(0);
+
+  // Framer motion spring physics values for smooth, zero-stutter animation
+  const rawScale = useMotionValue(1.0);
+  const rawBrightness = useMotionValue(1.0);
+  const rawGlow = useMotionValue(0.35);
+
+  const scale = useSpring(rawScale, { stiffness: 180, damping: 22, mass: 0.5 });
+  const brightness = useSpring(rawBrightness, { stiffness: 180, damping: 22, mass: 0.5 });
+  const glowOpacity = useSpring(rawGlow, { stiffness: 180, damping: 22, mass: 0.5 });
+
+  const filterStyle = useTransform(
+    brightness,
+    (b) => `brightness(${b}) drop-shadow(0 0 35px rgba(11, 209, 194, 0.45))`
+  );
+  const ringOpacityStyle = useTransform(glowOpacity, (g) => g * 0.65);
 
   // Configurar listeners del servicio al montar
   useEffect(() => {
@@ -45,7 +61,6 @@ const VoiceAgent = () => {
 
     voiceChatService.on("onStartSpeaking", () => {
       setIsSpeaking(true);
-      // Usar el analizador del servicio para visualización
       analyserRef.current = voiceChatService.getAnalyser();
     });
 
@@ -68,7 +83,6 @@ const VoiceAgent = () => {
       }
     };
 
-    // Esperar un momento antes del mensaje inicial
     const timer = setTimeout(welcomeMessage, 500);
 
     return () => {
@@ -77,35 +91,49 @@ const VoiceAgent = () => {
     };
   }, []);
 
-  // Loop de análisis de audio en tiempo real
+  // Audio analysis loop with exponential LERP smoothing & zero React state re-render overhead
   useEffect(() => {
+    let animationFrameId;
+
     const analyzeAudio = () => {
+      let targetAudio = 0;
       if (analyserRef.current) {
-        const level = audioAnalysisService.getAudioLevel(analyserRef.current);
-        setAudioLevel(level);
-      } else {
-        setAudioLevel(0);
+        targetAudio = audioAnalysisService.getAudioLevel(analyserRef.current);
       }
-      animationFrameRef.current = requestAnimationFrame(analyzeAudio);
+
+      // Exponential LERP smoothing factor (0.16 for soft fluid transitions)
+      const lerpSpeed = 0.16;
+      smoothedAudioRef.current += (targetAudio - smoothedAudioRef.current) * lerpSpeed;
+      const smoothed = smoothedAudioRef.current;
+
+      // Non-linear power scaling for a natural audio response
+      const audioBoost = Math.min(Math.pow(smoothed * 3.2, 0.82), 1.0);
+
+      if (isListening || isSpeaking) {
+        rawScale.set(1.0 + audioBoost * 0.28);
+        rawBrightness.set(1.0 + audioBoost * 0.45);
+        rawGlow.set(0.45 + audioBoost * 0.55);
+      } else {
+        rawScale.set(1.0);
+        rawBrightness.set(1.0);
+        rawGlow.set(0.35);
+      }
+
+      animationFrameId = requestAnimationFrame(analyzeAudio);
     };
 
-    if (isListening || isSpeaking) {
-      animationFrameRef.current = requestAnimationFrame(analyzeAudio);
-    } else {
-      setAudioLevel(0);
-    }
+    animationFrameId = requestAnimationFrame(analyzeAudio);
 
     return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
       }
     };
-  }, [isListening, isSpeaking]);
+  }, [isListening, isSpeaking, rawScale, rawBrightness, rawGlow]);
 
   // Configurar análisis de audio del micrófono cuando se inicia la grabación
   useEffect(() => {
     if (isListening) {
-      // Configurar análisis de audio del micrófono para el pulso visual
       audioAnalysisService.setupMicrophoneAnalysis()
         .then((analyser) => {
           analyserRef.current = analyser;
@@ -113,37 +141,36 @@ const VoiceAgent = () => {
         .catch((err) => {
           console.warn("No se pudo configurar análisis de audio:", err);
         });
-    } else {
+    } else if (!isSpeaking) {
       analyserRef.current = null;
       audioAnalysisService.cleanup();
     }
-  }, [isListening]);
+  }, [isListening, isSpeaking]);
 
   const toggleMic = async () => {
     try {
-      // No permitir iniciar si estamos hablando
       if (isSpeaking) {
         setError("Espera a que termine de hablar");
         return;
       }
 
       if (isListening) {
-        // Detener grabación
         voiceChatService.stopListening();
         setIsListening(false);
         analyserRef.current = null;
-        setAudioLevel(0);
+        smoothedAudioRef.current = 0;
+        rawScale.set(1.0);
+        rawBrightness.set(1.0);
+        rawGlow.set(0.35);
         audioAnalysisService.cleanup();
         setTranscript("");
         setAiResponse("");
         setError(null);
       } else {
-        // Limpiar cualquier error previo
         setError(null);
         setTranscript("");
         setAiResponse("");
         
-        // Iniciar grabación de audio
         try {
           voiceChatService.startListening();
         } catch (err) {
@@ -157,7 +184,10 @@ const VoiceAgent = () => {
       setError(`Error: ${err.message}`);
       setIsListening(false);
       analyserRef.current = null;
-      setAudioLevel(0);
+      smoothedAudioRef.current = 0;
+      rawScale.set(1.0);
+      rawBrightness.set(1.0);
+      rawGlow.set(0.35);
       audioAnalysisService.cleanup();
     }
   };
@@ -169,41 +199,58 @@ const VoiceAgent = () => {
     return "Presiona el micrófono para comenzar";
   };
 
-  // Calcular escala basada en el nivel de audio
-  const minScale = 1.0;
-  const maxScale = 1.3;
-  const currentScale = isListening || isSpeaking 
-    ? minScale + (audioLevel * (maxScale - minScale))
-    : minScale;
-
-  // Calcular brillo basado en el nivel de audio
-  const minBrightness = 0.9;
-  const maxBrightness = 1.4;
-  const currentBrightness = isListening || isSpeaking
-    ? minBrightness + (audioLevel * (maxBrightness - minBrightness))
-    : minBrightness;
-
   return (
     <Box className="voice-agent-container">
-      {/* Orbe de voz - GIF flotando sobre el micrófono */}
+      {/* Orbe de voz con levitación orgánica y aura fluida */}
       <Box className="orb-container">
-        <motion.img
-          src="https://i.imgur.com/pESjsss.gif"
-          alt="AI Orb"
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "contain",
-          }}
+        <motion.div
+          className="orb-wrapper"
           animate={{
-            scale: currentScale,
-            filter: `brightness(${currentBrightness})`,
+            y: isSpeaking ? [0, -12, 0] : isListening ? [0, -8, 0] : [0, -16, 0],
+            scale: [1, 1.02, 1],
           }}
           transition={{
-            duration: 0.1,
-            ease: "linear"
+            y: {
+              duration: isSpeaking ? 2.2 : isListening ? 1.8 : 4.0,
+              repeat: Infinity,
+              ease: "easeInOut",
+            },
+            scale: {
+              duration: 3.5,
+              repeat: Infinity,
+              ease: "easeInOut",
+            },
           }}
-        />
+        >
+          {/* Aura brillante de fondo */}
+          <motion.div
+            className={`orb-glow-aura ${isSpeaking ? 'speaking' : isListening ? 'listening' : error ? 'error' : ''}`}
+            style={{
+              scale: scale,
+              opacity: glowOpacity,
+            }}
+          />
+
+          {/* Anillo de pulso secundario */}
+          <motion.div
+            className="orb-glow-ring"
+            style={{
+              scale: scale,
+              opacity: ringOpacityStyle,
+            }}
+          />
+
+          {/* GIF del Orbe con escalado ultra fluido via Spring Physics */}
+          <motion.img
+            src="https://i.imgur.com/pESjsss.gif"
+            alt="AI Orb"
+            className="orb-image"
+            style={{
+              scale: scale,
+              filter: filterStyle,
+            }}
+          />
+        </motion.div>
       </Box>
 
       {/* Controles */}
@@ -222,3 +269,4 @@ const VoiceAgent = () => {
 };
 
 export default VoiceAgent;
+

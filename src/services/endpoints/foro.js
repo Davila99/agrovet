@@ -61,7 +61,8 @@ export const foroService = {
 
   createPost: async (data) => {
     const url = env.buildUrl('FORUM', `/foro/posts/`);
-    const res = await httpClient(url, { method: "POST", body: data });
+    const headers = authClient.attachAuthHeader({});
+    const res = await httpClient(url, { method: "POST", body: data, headers });
     return postAdapter.normalizePost(res);
   },
 

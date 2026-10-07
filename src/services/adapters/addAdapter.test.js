@@ -30,4 +30,20 @@ describe('addAdapter', () => {
         expect(output.images[0].id).toBe(1);
         expect(output.images[0].url).toBe('http://img1.com');
     });
+
+    it('limits images array to a maximum of 5', () => {
+        const input = {
+            id: 14,
+            images: [
+                'http://img1.com',
+                'http://img2.com',
+                'http://img3.com',
+                'http://img4.com',
+                'http://img5.com',
+                'http://img6.com',
+            ],
+        };
+        const output = normalizeAdd(input);
+        expect(output.images).toHaveLength(5);
+    });
 });
