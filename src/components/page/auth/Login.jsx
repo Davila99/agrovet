@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import {
   Box,
   TextField,
@@ -76,7 +76,7 @@ const LoginPage = () => {
         // Auto-join communities based on role (best effort, don't block login)
         if (res.user.role) {
           try {
-            const { autoJoinCommunitiesByRole } = await import('../../../utils/Foro/autoJoinCommunities');
+            const { autoJoinCommunitiesByRole } = await import('../../../features/foro/utils/autoJoinCommunities');
             // Obtener profesión si es especialista
             const profession = res.user.specialist_profile?.profession || null;
             // Run in background, don't wait for it
@@ -234,3 +234,4 @@ const LoginPage = () => {
 };
 
 export default LoginPage;
+

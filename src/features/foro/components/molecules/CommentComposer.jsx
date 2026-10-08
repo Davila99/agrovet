@@ -8,8 +8,8 @@ import {
   Tooltip,
 } from '@mui/material';
 import { Send, Image, Close } from '@mui/icons-material';
-import { useCreateComment, useUploadMedia } from '../../../hooks/Foro/useForoApi';
-import useAuth from '../../../hooks/Foro/useAuth';
+import { useCreateComment, useUploadMedia } from '../../hooks/useForoApi';
+import useAuth from '../../hooks/useAuth';
 
 /**
  * CommentComposer: Modern comment input with validation

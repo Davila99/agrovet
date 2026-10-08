@@ -11,7 +11,7 @@ import MenuIcon from "@mui/icons-material/Menu";
 import DashboardSidebar from './DashboardSidebar';
 import Chat from "./Chat";
 import AddPage from './AddPage';
-import ForoPage from './ForoPage';
+import ForoPage from '../../features/foro/ForoPage';
 import AIAgentPage from "./AIAgent/AIAgentPage";
 import ValidacionesPage from "./Validaciones/ValidacionesPage";
 import ReportesPage from "./Reportes/ReportesPage";

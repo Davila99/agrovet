@@ -27,13 +27,13 @@ import {
   ArrowBack,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { useCommunities, usePosts } from '../../../hooks/Foro/useForoApi';
+import { useCommunities, usePosts } from '../../hooks/useForoApi';
 import PostList from './PostList';
-import PostComposer from '../../molecules/Foro/PostComposer';
-import foroService from '../../../services/endpoints/foro';
-import authClient from '../../../services/authClient';
-import useAuth from '../../../hooks/Foro/useAuth';
-import { COMMUNITY_SLUGS } from '../../../utils/Foro/autoJoinCommunities';
+import PostComposer from '../molecules/PostComposer';
+import foroService from '../../services/foroApi';
+import authClient from '../../../../services/authClient';
+import useAuth from '../../hooks/useAuth';
+import { COMMUNITY_SLUGS } from '../../utils/autoJoinCommunities';
 import SidebarCommunities from './SidebarCommunities';
 
 // Colors for each community

@@ -1,4 +1,4 @@
-import foroService from '../../services/endpoints/foro';
+import foroService from '../services/foroApi';
 
 /**
  * Community slugs mapped to user roles

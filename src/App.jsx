@@ -1,14 +1,14 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import './index.css';
 import MobileDrawer from "./components/page/navigation/MobileDrawer";
-import SidebarCommunities from './components/organisms/Foro/SidebarCommunities';
+import SidebarCommunities from './features/foro/components/organisms/SidebarCommunities';
 import DashboardSidebar from './components/page/DashboardSidebar';
 import React, { useState } from "react";
 import { ThemeProvider } from "@mui/material/styles";
 import Box from '@mui/material/Box';
 import { theme } from "./theme/theme.js";
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import ForoRoutes from './components/page/Foro/ForoRoutes';
+import ForoRoutes from './features/foro/components/page/ForoRoutes';
 import ErrorBoundary from './components/common/ErrorBoundary';
 
 // Páginas

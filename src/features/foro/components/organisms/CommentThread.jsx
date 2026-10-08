@@ -1,5 +1,5 @@
 import React from 'react';
-import CommentItem from '../../molecules/Foro/CommentItem';
+import CommentItem from '../molecules/CommentItem';
 
 export default function CommentThread({ comments = [] }) {
   return (

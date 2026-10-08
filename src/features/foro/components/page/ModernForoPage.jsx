@@ -26,8 +26,8 @@ import {
   NewReleases,
   Whatshot,
 } from '@mui/icons-material';
-import ModernPostCard from '../../molecules/Foro/ModernPostCard';
-import ModernCommentCard from '../../molecules/Foro/ModernCommentCard';
+import ModernPostCard from '../molecules/ModernPostCard';
+import ModernCommentCard from '../molecules/ModernCommentCard';
 
 /**
  * ModernForoPage - Página principal del foro con diseño moderno

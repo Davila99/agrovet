@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { usePosts } from '../../../hooks/Foro/useForoApi';
-import PostCard from '../../molecules/Foro/PostCard';
+import { usePosts } from '../../hooks/useForoApi';
+import PostCard from '../molecules/PostCard';
 import { Box, ToggleButton, ToggleButtonGroup, Typography, Paper, Chip, Stack } from '@mui/material';
 import { TrendingUp, AccessTime, Whatshot } from '@mui/icons-material';
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import PostComposer from '../../molecules/Foro/PostComposer';
+import PostComposer from '../molecules/PostComposer';
 
 export default function CreatePostPage() {
   return (

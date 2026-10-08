@@ -13,8 +13,8 @@ import {
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import { People, Agriculture, LocalHospital, Business, Public } from '@mui/icons-material';
-import { useCommunities } from '../../../hooks/Foro/useForoApi';
-import { filterCommunitiesByRole, COMMUNITY_SLUGS } from '../../../utils/Foro/autoJoinCommunities';
+import { useCommunities } from '../../hooks/useForoApi';
+import { filterCommunitiesByRole, COMMUNITY_SLUGS } from '../../utils/autoJoinCommunities';
 
 // Colors and icons for each community
 const communityConfig = {

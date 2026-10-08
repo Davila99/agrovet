@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import PostList from '../../organisms/Foro/PostList';
-import PostComposer from '../../molecules/Foro/PostComposer';
-import SidebarCommunities from '../../organisms/Foro/SidebarCommunities';
+import PostList from '../organisms/PostList';
+import PostComposer from '../molecules/PostComposer';
+import SidebarCommunities from '../organisms/SidebarCommunities';
 import Container from '@mui/material/Container';
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
@@ -10,8 +10,8 @@ import Avatar from '@mui/material/Avatar';
 import Typography from '@mui/material/Typography';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
-import useAuth from '../../../hooks/Foro/useAuth';
-import { autoJoinCommunitiesByRole } from '../../../utils/Foro/autoJoinCommunities';
+import useAuth from '../../hooks/useAuth';
+import { autoJoinCommunitiesByRole } from '../../utils/autoJoinCommunities';
 
 /**
  * FeedPage - Página principal del foro

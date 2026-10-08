@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { usePost } from '../../../hooks/Foro/useForoApi';
-import CommentItem from '../../molecules/Foro/CommentItem';
-import CommentComposer from '../../molecules/Foro/CommentComposer';
+import { usePost } from '../../hooks/useForoApi';
+import CommentItem from '../molecules/CommentItem';
+import CommentComposer from '../molecules/CommentComposer';
 import { 
   Box, 
   Paper, 
@@ -23,10 +23,10 @@ import {
   School,
   Comment as CommentIcon,
 } from '@mui/icons-material';
-import Timestamp from '../../atoms/Foro/Timestamp';
-import ReactionBubble from '../../atoms/Foro/ReactionBubble';
-import useAuth from '../../../hooks/Foro/useAuth';
-import { useReact } from '../../../hooks/Foro/useForoApi';
+import Timestamp from '../atoms/Timestamp';
+import ReactionBubble from '../atoms/ReactionBubble';
+import useAuth from '../../hooks/useAuth';
+import { useReact } from '../../hooks/useForoApi';
 
 /**
  * Get role badge config based on user role

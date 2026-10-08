@@ -30,12 +30,12 @@ import {
   Business,
 } from "@mui/icons-material";
 import { useNavigate, Link as RouterLink } from "react-router-dom";
-import PostCard from "../molecules/Foro/PostCard";
-import PostComposer from "../molecules/Foro/PostComposer";
-import { usePosts, useCommunities } from "../../hooks/Foro/useForoApi";
+import PostCard from "./components/molecules/PostCard";
+import PostComposer from "./components/molecules/PostComposer";
+import { usePosts, useCommunities } from "./hooks/useForoApi";
 import { getProfile } from "../../services/endpoints/auth";
-import { autoJoinCommunitiesByRole, filterCommunitiesByRole, COMMUNITY_SLUGS } from "../../utils/Foro/autoJoinCommunities";
-import CommunityView from '../organisms/Foro/CommunityView';
+import { autoJoinCommunitiesByRole, filterCommunitiesByRole, COMMUNITY_SLUGS } from "./utils/autoJoinCommunities";
+import CommunityView from './components/organisms/CommunityView';
 
 // Colors and icons for each community type
 const communityConfig = {

@@ -22,11 +22,11 @@ import {
   Close,
   Send,
 } from '@mui/icons-material';
-import { validatePost } from '../../../utils/Foro/validators';
-import { useCreatePost, useUploadMedia, useCommunities } from '../../../hooks/Foro/useForoApi';
-import { filterCommunitiesByRole } from '../../../utils/Foro/autoJoinCommunities';
-import foroService from '../../../services/endpoints/foro';
-import useAuth from '../../../hooks/Foro/useAuth';
+import { validatePost } from '../../utils/validators';
+import { useCreatePost, useUploadMedia, useCommunities } from '../../hooks/useForoApi';
+import { filterCommunitiesByRole } from '../../utils/autoJoinCommunities';
+import foroService from '../../services/foroApi';
+import useAuth from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 
 /**

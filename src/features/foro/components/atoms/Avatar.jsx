@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { avatarSmall, avatarMedium } from '../../../styles/Foro/foroStyles';
+import { avatarSmall, avatarMedium } from '../../styles/foroStyles';
 
 /**
  * Avatar atom: muestra imagen o fallback con iniciales.

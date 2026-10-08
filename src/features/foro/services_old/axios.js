@@ -1,5 +1,5 @@
 import axios from 'axios';
-import authClient from '../authClient';
+import authClient from '../../../services/authClient';
 
 // Base Axios client for Foro feature
 // TODO: ajustar baseURL si la API está montada en otra ruta

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import {
   Box,
   Typography,
@@ -190,7 +190,7 @@ const RegisterPage = () => {
       // Auto-join communities based on role (best effort, don't block registration)
       if (res.user && res.user.role) {
         try {
-          const { autoJoinCommunitiesByRole } = await import('../../../utils/Foro/autoJoinCommunities');
+          const { autoJoinCommunitiesByRole } = await import('../../../features/foro/utils/autoJoinCommunities');
           // Obtener profesión del formulario o de la respuesta
           const profession = source.specialist_profile?.profession || 
                             res.user.specialist_profile?.profession || 
@@ -437,3 +437,4 @@ const RegisterPage = () => {
 };
 
 export default RegisterPage;
+

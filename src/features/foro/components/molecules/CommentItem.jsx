@@ -16,8 +16,8 @@ import {
   School,
 } from '@mui/icons-material';
 import CommentComposer from './CommentComposer';
-import Timestamp from '../../atoms/Foro/Timestamp';
-import { useReact } from '../../../hooks/Foro/useForoApi';
+import Timestamp from '../atoms/Timestamp';
+import { useReact } from '../../hooks/useForoApi';
 
 /**
  * Get role badge config based on user role

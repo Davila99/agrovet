@@ -4,7 +4,7 @@
 import * as auth from './auth';
 import * as adds from './adds';
 import * as chat from './chat';
-import * as foro from './foro';
+import * as foro from '../../features/foro/services/foroApi';
 import * as media from './media';
 import * as profiles from './profiles';
 import * as utils from './utils';
@@ -12,7 +12,7 @@ import * as utils from './utils';
 export * from './auth';
 export * from './adds';
 export * from './chat';
-export * from './foro';
+export * from '../../features/foro/services/foroApi';
 export * from './media';
 export * from './profiles';
 export * from './utils';

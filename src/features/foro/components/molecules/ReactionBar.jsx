@@ -1,5 +1,5 @@
 import React from 'react';
-import ReactionBubble from '../../atoms/Foro/ReactionBubble';
+import ReactionBubble from '../atoms/ReactionBubble';
 
 export default function ReactionBar({ reactions = {}, onReact = () => {} }) {
   return (

@@ -19,11 +19,11 @@ import {
   School,
   Person,
 } from '@mui/icons-material';
-import Timestamp from '../../atoms/Foro/Timestamp';
-import ReactionBubble from '../../atoms/Foro/ReactionBubble';
-import useAuth from '../../../hooks/Foro/useAuth';
-import { useDeletePost, useReact } from '../../../hooks/Foro/useForoApi';
-import { confirm } from '../../../utils/Foro/confirm';
+import Timestamp from '../atoms/Timestamp';
+import ReactionBubble from '../atoms/ReactionBubble';
+import useAuth from '../../hooks/useAuth';
+import { useDeletePost, useReact } from '../../hooks/useForoApi';
+import { confirm } from '../../utils/confirm';
 
 /**
  * Get role badge config based on user role

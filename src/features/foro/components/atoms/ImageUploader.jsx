@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useUploadMedia } from '../../../hooks/Foro/useForoApi';
+import { useUploadMedia } from '../../hooks/useForoApi';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
