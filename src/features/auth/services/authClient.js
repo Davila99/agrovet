@@ -1,4 +1,4 @@
-import env from './env';
+import env from '../../../services/env';
 
 // Simple token manager for the frontend.
 // Stores tokens in localStorage under `agrovet_token` as JSON: { access, refresh }

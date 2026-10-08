@@ -1,7 +1,7 @@
 import httpClient from "../../../services/httpClient";
 import env from "../../../services/env";
 import postAdapter from "../../../services/adapters/postAdapter";
-import authClient from "../../../services/authClient";
+import authClient from "../../auth/services/authClient";
 
 /**
  * Endpoints/service wrapper for Foro feature.

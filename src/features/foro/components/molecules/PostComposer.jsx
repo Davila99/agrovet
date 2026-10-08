@@ -26,7 +26,7 @@ import { validatePost } from '../../utils/validators';
 import { useCreatePost, useUploadMedia, useCommunities } from '../../hooks/useForoApi';
 import { filterCommunitiesByRole } from '../../utils/autoJoinCommunities';
 import foroService from '../../services/foroApi';
-import useAuth from '../../hooks/useAuth';
+import useAuth from '../../../auth/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 
 /**

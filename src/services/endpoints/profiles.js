@@ -2,7 +2,7 @@ import httpClient from "../httpClient";
 import { authHeaders } from "./utils";
 import env from "../env";
 import profileAdapter from "../adapters/profileAdapter";
-import authClient from "../authClient";
+import authClient from "../../features/auth/services/authClient";
 
 export const profilesAPI = {
   getSpecialistsByObjectId: async (objectId, token) => {

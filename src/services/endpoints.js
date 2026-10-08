@@ -1,5 +1,5 @@
 // Re-export modular endpoint implementations
-export * from "./endpoints/auth";
+export * from "../features/auth/services/authApi";
 export * from "./endpoints/profiles";
 export * from "../features/chat/services/chatApi";
 export * from "./endpoints/utils";

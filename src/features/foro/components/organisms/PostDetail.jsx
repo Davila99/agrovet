@@ -25,7 +25,7 @@ import {
 } from '@mui/icons-material';
 import Timestamp from '../atoms/Timestamp';
 import ReactionBubble from '../atoms/ReactionBubble';
-import useAuth from '../../hooks/useAuth';
+import useAuth from '../../../auth/hooks/useAuth';
 import { useReact } from '../../hooks/useForoApi';
 
 /**

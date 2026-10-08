@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { getProfile, authAPI, profilesAPI } from "../../../../services/endpoints";
-import { authAPI as authAPIEndpoint } from "../../../../services/endpoints/auth";
+import { authAPI as authAPIEndpoint } from "../../../../features/auth/services/authApi";
 import { normalizeStoredToken } from "../../../../features/chat/components/page/chatUtils";
 import { useLocation } from "react-router-dom";
 

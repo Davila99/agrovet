@@ -10,7 +10,7 @@ import Avatar from '@mui/material/Avatar';
 import Typography from '@mui/material/Typography';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
-import useAuth from '../../hooks/useAuth';
+import useAuth from '../../../auth/hooks/useAuth';
 import { autoJoinCommunitiesByRole } from '../../utils/autoJoinCommunities';
 
 /**

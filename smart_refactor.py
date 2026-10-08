@@ -6,16 +6,14 @@ from pathlib import Path
 frontend_dir = Path("src").resolve()
 
 move_rules = [
-    ("components/page/Chat.jsx", "features/chat/ChatPage.jsx"),
-    ("components/page/chat", "features/chat/components/page"),
-    ("components/organisms/chat", "features/chat/components/organisms"),
-    ("components/molecules/chat", "features/chat/components/molecules"),
-    ("components/atoms/chat", "features/chat/components/atoms"),
-    ("hooks/chat", "features/chat/hooks"),
-    ("services/chat", "features/chat/services_old"),
-    ("services/endpoints/chat.js", "features/chat/services/chatApi.js"),
-    ("services/adapters/chatAdapter.js", "features/chat/services/chatAdapter.js"),
-    ("services/adapters/chatAdapter.test.js", "features/chat/services/chatAdapter.test.js"),
+    ("components/page/auth", "features/auth/components/page"),
+    ("components/atoms/auth", "features/auth/components/atoms"),
+    ("features/foro/hooks/useAuth.js", "features/auth/hooks/useAuth.js"),
+    ("services/authClient.js", "features/auth/services/authClient.js"),
+    ("services/endpoints/auth.js", "features/auth/services/authApi.js"),
+    ("services/adapters/authAdapter.js", "features/auth/services/authAdapter.js"),
+    ("services/adapters/authAdapter.test.js", "features/auth/services/authAdapter.test.js"),
+    ("services/passwordReset.js", "features/auth/services/passwordReset.js"),
 ]
 
 moved_files = {}
@@ -112,4 +110,4 @@ for current_path, old_path in current_to_old.items():
         with open(current_path, 'w', encoding='utf-8') as f:
             f.write(new_content)
             
-print("Chat refactor complete.")
+print("Auth refactor complete.")

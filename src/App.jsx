@@ -14,9 +14,9 @@ import ErrorBoundary from './components/common/ErrorBoundary';
 // Páginas
 import HomePage from "./components/page/Inicio";
 import QuienesSomos from "./components/page/AcercaDe.jsx";
-import LoginPage from "./components/page/auth/Login.jsx";
-import RegisterPage from "./components/page/auth/Register.jsx";
-import ResetByPhone from "./components/page/auth/ResetByPhone";
+import LoginPage from "./features/auth/components/page/Login.jsx";
+import RegisterPage from "./features/auth/components/page/Register.jsx";
+import ResetByPhone from "./features/auth/components/page/ResetByPhone";
 import NicaraguaMap from "./components/page/map/Mapa.jsx";
 import Footer from "./components/page/Footer.jsx";
 import Perfil from "./components/page/profile/Perfil.jsx";

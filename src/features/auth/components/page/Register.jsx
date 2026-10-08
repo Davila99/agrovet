@@ -15,8 +15,8 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import RegisterFormFields from "./RegisterFormFields";
 import RegisterButton from "./RegisterButton";
-import { authAPI } from "../../../services/endpoints";
-import { FormContainer } from "../../atoms/form";
+import { authAPI } from "../../../../services/endpoints";
+import { FormContainer } from "../../../../components/atoms/form/index";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -190,7 +190,7 @@ const RegisterPage = () => {
       // Auto-join communities based on role (best effort, don't block registration)
       if (res.user && res.user.role) {
         try {
-          const { autoJoinCommunitiesByRole } = await import('../../../features/foro/utils/autoJoinCommunities');
+          const { autoJoinCommunitiesByRole } = await import('../../../../features/foro/utils/autoJoinCommunities');
           // Obtener profesión del formulario o de la respuesta
           const profession = source.specialist_profile?.profession || 
                             res.user.specialist_profile?.profession || 
@@ -437,4 +437,5 @@ const RegisterPage = () => {
 };
 
 export default RegisterPage;
+
 

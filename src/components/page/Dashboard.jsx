@@ -15,7 +15,7 @@ import ForoPage from '../../features/foro/ForoPage';
 import AIAgentPage from "./AIAgent/AIAgentPage";
 import ValidacionesPage from "./Validaciones/ValidacionesPage";
 import ReportesPage from "./Reportes/ReportesPage";
-import { getProfile } from "../../services/endpoints/auth";
+import { getProfile } from "../../features/auth/services/authApi";
 import { useNavigate, useParams } from "react-router-dom";
 
 const Dashboard = ({ initialTab = null, initialCommunityId = null }) => {

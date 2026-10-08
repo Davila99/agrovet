@@ -1,7 +1,7 @@
 import httpClient from "../httpClient";
 import env from "../env";
 import mediaAdapter from "../adapters/mediaAdapter";
-import authClient from "../authClient";
+import authClient from "../../features/auth/services/authClient";
 import { authHeaders } from "./utils";
 
 // Upload a file (FormData) to the media-service. Returns normalized media.

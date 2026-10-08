@@ -9,10 +9,10 @@ import {
   InputAdornment,
 } from "@mui/material";
 import { Link, useNavigate } from "react-router-dom";
-import { authAPI } from "../../../services/endpoints";
-import showSweetAlert from "../../../utils/alert";
-import CountryPicker, { COUNTRY_CODES } from "../../atoms/auth/CountryPicker";
-import { FormContainer } from "../../atoms/form";
+import { authAPI } from "../../../../services/endpoints";
+import showSweetAlert from "../../../../utils/alert";
+import CountryPicker, { COUNTRY_CODES } from "../atoms/CountryPicker";
+import { FormContainer } from "../../../../components/atoms/form/index";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -76,7 +76,7 @@ const LoginPage = () => {
         // Auto-join communities based on role (best effort, don't block login)
         if (res.user.role) {
           try {
-            const { autoJoinCommunitiesByRole } = await import('../../../features/foro/utils/autoJoinCommunities');
+            const { autoJoinCommunitiesByRole } = await import('../../../../features/foro/utils/autoJoinCommunities');
             // Obtener profesión si es especialista
             const profession = res.user.specialist_profile?.profession || null;
             // Run in background, don't wait for it
@@ -234,4 +234,5 @@ const LoginPage = () => {
 };
 
 export default LoginPage;
+
 

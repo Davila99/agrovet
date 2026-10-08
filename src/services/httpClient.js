@@ -1,6 +1,6 @@
   // Base URL is now configurable via Vite env vars. Fallback to previous default.
 import env from './env';
-import authClient from './authClient';
+import authClient from '../features/auth/services/authClient';
 
 const DEFAULT_BASE = "http://127.0.0.1:8000/api";
 const BASE_URL = (import.meta && import.meta.env && import.meta.env.VITE_GATEWAY_URL) || DEFAULT_BASE;

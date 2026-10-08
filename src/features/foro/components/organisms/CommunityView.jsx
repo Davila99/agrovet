@@ -31,8 +31,8 @@ import { useCommunities, usePosts } from '../../hooks/useForoApi';
 import PostList from './PostList';
 import PostComposer from '../molecules/PostComposer';
 import foroService from '../../services/foroApi';
-import authClient from '../../../../services/authClient';
-import useAuth from '../../hooks/useAuth';
+import authClient from '../../../auth/services/authClient';
+import useAuth from '../../../auth/hooks/useAuth';
 import { COMMUNITY_SLUGS } from '../../utils/autoJoinCommunities';
 import SidebarCommunities from './SidebarCommunities';
 

@@ -16,7 +16,7 @@ import {
 import { useParams, useNavigate } from "react-router-dom";
 import { authAPI, profilesAPI } from "../../../services/endpoints";
 import mediaAPI from "../../../services/endpoints/media";
-import authClient from "../../../services/authClient";
+import authClient from "../../../features/auth/services/authClient";
 
 const EditUser = () => {
   const { id } = useParams();

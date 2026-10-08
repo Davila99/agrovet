@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
-import { getProfile } from "../services/endpoints/auth";
+import { getProfile } from "../features/auth/services/authApi";
 
 const RoleProtectedRoute = ({ children, allowedRoles = [] }) => {
   const token =

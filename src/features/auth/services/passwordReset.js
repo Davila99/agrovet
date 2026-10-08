@@ -1,4 +1,4 @@
-import httpClient from "./httpClient";
+import httpClient from "../../../services/httpClient";
 
 /**
  * Solicita que el backend genere y envíe un código al teléfono.

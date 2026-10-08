@@ -33,7 +33,7 @@ import { useNavigate, Link as RouterLink } from "react-router-dom";
 import PostCard from "./components/molecules/PostCard";
 import PostComposer from "./components/molecules/PostComposer";
 import { usePosts, useCommunities } from "./hooks/useForoApi";
-import { getProfile } from "../../services/endpoints/auth";
+import { getProfile } from "../auth/services/authApi";
 import { autoJoinCommunitiesByRole, filterCommunitiesByRole, COMMUNITY_SLUGS } from "./utils/autoJoinCommunities";
 import CommunityView from './components/organisms/CommunityView';
 

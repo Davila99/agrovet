@@ -1,8 +1,8 @@
-import httpClient from "../httpClient";
-import env from "../env";
-import { authHeaders } from "./utils";
-import authAdapter from "../adapters/authAdapter";
-import authClient from "../authClient";
+import httpClient from "../../../services/httpClient";
+import env from "../../../services/env";
+import { authHeaders } from "../../../services/endpoints/utils";
+import authAdapter from "./authAdapter";
+import authClient from "./authClient";
 
 // Auth API adapted to point to AUTH microservice via env.buildUrl('AUTH', path)
 export const authAPI = {

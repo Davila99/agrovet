@@ -2,11 +2,11 @@ import React, { useState } from "react";
 import {
   requestPasswordResetByPhone,
   verifyCodeAndResetPassword,
-} from "../../../services/passwordReset";
+} from "../../services/passwordReset";
 import { Box, TextField, Button, Alert, Stack } from "@mui/material";
 import { useNavigate, Link } from "react-router-dom";
-import showSweetAlert from "../../../utils/alert";
-import { FormContainer } from "../../atoms/form";
+import showSweetAlert from "../../../../utils/alert";
+import { FormContainer } from "../../../../components/atoms/form/index";
 
 export default function ResetByPhone() {
   const [step, setStep] = useState(1); // 1: solicitar, 2: verificar

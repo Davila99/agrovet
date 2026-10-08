@@ -9,7 +9,7 @@ import {
 } from '@mui/material';
 import { Send, Image, Close } from '@mui/icons-material';
 import { useCreateComment, useUploadMedia } from '../../hooks/useForoApi';
-import useAuth from '../../hooks/useAuth';
+import useAuth from '../../../auth/hooks/useAuth';
 
 /**
  * CommentComposer: Modern comment input with validation
