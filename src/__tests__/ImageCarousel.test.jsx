@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import React from 'react';
-import ImageCarousel from '../components/atoms/add/ImageCarousel';
+import ImageCarousel from '../features/marketplace/components/atoms/ImageCarousel';
 
 describe('ImageCarousel', () => {
     it('renders empty box when images list is empty', () => {

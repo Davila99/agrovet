@@ -10,9 +10,9 @@ import {
 import MenuIcon from "@mui/icons-material/Menu";
 import DashboardSidebar from './DashboardSidebar';
 import Chat from "../../features/chat/ChatPage";
-import AddPage from './AddPage';
+import AddPage from '../../features/marketplace/AddPage';
 import ForoPage from '../../features/foro/ForoPage';
-import AIAgentPage from "./AIAgent/AIAgentPage";
+import AIAgentPage from "../../features/ai/components/page/AIAgent/AIAgentPage";
 import ValidacionesPage from "./Validaciones/ValidacionesPage";
 import ReportesPage from "./Reportes/ReportesPage";
 import { getProfile } from "../../features/auth/services/authApi";

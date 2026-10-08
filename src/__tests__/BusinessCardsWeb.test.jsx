@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import BusinessCardsWeb from '../components/page/AIAgent/BusinessCardsWeb.jsx';
+import BusinessCardsWeb from '../features/ai/components/page/AIAgent/BusinessCardsWeb.jsx';
 
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {

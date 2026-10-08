@@ -1,4 +1,4 @@
-import httpClient from "../../../services/httpClient";
+﻿import httpClient from "../../../services/httpClient";
 import env from "../../../services/env";
 import chatAdapter from "./chatAdapter";
 import { authHeaders } from "../../../services/endpoints/utils";
@@ -68,7 +68,7 @@ export const chatService = {
     // Enviar mensaje con imagen/video/audio (archivo)
     sendMessageWithImage: async (roomId, file, token, content = '', spectrum = null, onProgress = null) => {
         // Importar el uploader con progreso
-        const { uploadMediaFile } = await import('../chat/mediaUploader');
+        const { uploadMediaFile } = await import('../services_old/mediaUploader');
         
         // Determinar el tipo de archivo
         const fileType = file.type?.split('/')[0] || 'image';
@@ -167,3 +167,4 @@ export const chatService = {
 };
 
 export default chatService;
+

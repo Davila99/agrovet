@@ -6,14 +6,40 @@ from pathlib import Path
 frontend_dir = Path("src").resolve()
 
 move_rules = [
-    ("components/page/auth", "features/auth/components/page"),
-    ("components/atoms/auth", "features/auth/components/atoms"),
-    ("features/foro/hooks/useAuth.js", "features/auth/hooks/useAuth.js"),
-    ("services/authClient.js", "features/auth/services/authClient.js"),
-    ("services/endpoints/auth.js", "features/auth/services/authApi.js"),
-    ("services/adapters/authAdapter.js", "features/auth/services/authAdapter.js"),
-    ("services/adapters/authAdapter.test.js", "features/auth/services/authAdapter.test.js"),
-    ("services/passwordReset.js", "features/auth/services/passwordReset.js"),
+    # Profiles
+    ("components/page/profile", "features/profiles/components/page"),
+    ("services/endpoints/profiles.js", "features/profiles/services/profilesApi.js"),
+    ("services/adapters/profileAdapter.js", "features/profiles/services/profileAdapter.js"),
+    ("services/adapters/profileAdapter.test.js", "features/profiles/services/profileAdapter.test.js"),
+    ("__tests__/profiles.test.js", "features/profiles/__tests__/profiles.test.js"),
+
+    # Marketplace (Add)
+    ("components/atoms/add", "features/marketplace/components/atoms"),
+    ("components/molecules/add", "features/marketplace/components/molecules"),
+    ("components/organisms/add", "features/marketplace/components/organisms"),
+    ("components/page/add", "features/marketplace/components/page"),
+    ("components/page/AddPage.jsx", "features/marketplace/AddPage.jsx"),
+    ("styles/add", "features/marketplace/styles"),
+    ("services/endpoints/adds.js", "features/marketplace/services/addsApi.js"),
+    ("services/adapters/addAdapter.js", "features/marketplace/services/addAdapter.js"),
+    ("services/adapters/addAdapter.test.js", "features/marketplace/services/addAdapter.test.js"),
+    ("__tests__/AddFormImagePicker.test.jsx", "features/marketplace/__tests__/AddFormImagePicker.test.jsx"),
+
+    # AI
+    ("components/page/AIAgent", "features/ai/components/page/AIAgent"),
+    ("components/page/Orb", "features/ai/components/page/Orb"),
+    ("components/atoms/Orb", "features/ai/components/atoms/Orb"),
+    ("components/atoms/OrbButton", "features/ai/components/atoms/OrbButton"),
+    ("components/molecules/Orb", "features/ai/components/molecules/Orb"),
+    ("components/organisms/Orb", "features/ai/components/organisms/Orb"),
+    ("styles/Orb", "features/ai/styles/Orb"),
+    ("components/atoms/voice", "features/ai/components/atoms/voice"),
+    ("components/molecules/voice", "features/ai/components/molecules/voice"),
+    ("components/organisms/voice", "features/ai/components/organisms/voice"),
+    ("services/voice", "features/ai/services/voice"),
+    ("services/endpoints/ai.js", "features/ai/services/aiApi.js"),
+    ("__tests__/AIAgentPage.test.jsx", "features/ai/__tests__/AIAgentPage.test.jsx"),
+    ("components/ui/AVAIntro.jsx", "features/ai/components/ui/AVAIntro.jsx"),
 ]
 
 moved_files = {}
@@ -36,7 +62,7 @@ for old_rel, new_rel in move_rules:
 all_js_files = []
 for root, _, files in os.walk(frontend_dir):
     for file in files:
-        if file.endswith(('.js', '.jsx', '.ts', '.tsx')):
+        if file.endswith(('.js', '.jsx', '.ts', '.tsx', '.css')):
             all_js_files.append(Path(root) / file)
 
 for old_path, new_path in moved_files.items():
@@ -52,13 +78,15 @@ for f in all_js_files:
     if f not in moved_files:
         current_to_old[f] = f
 
-pattern = re.compile(r'(from\s*|import\s*)([\'"])((\.\./|\./)[^\'"]+)([\'"])')
+pattern_static = re.compile(r'(from\s*|import\s*)([\'"])((\.\./|\./)[^\'"]+)([\'"])')
+pattern_dynamic = re.compile(r'(import\s*\(\s*)([\'"])((\.\./|\./)[^\'"]+)([\'"])')
 
 def resolve_target(old_source_file, rel_import):
     target = (old_source_file.parent / rel_import).resolve()
     if target.is_file(): return target
     if target.with_suffix('.js').is_file(): return target.with_suffix('.js')
     if target.with_suffix('.jsx').is_file(): return target.with_suffix('.jsx')
+    if target.with_suffix('.css').is_file(): return target.with_suffix('.css')
     if (target / 'index.js').is_file(): return target / 'index.js'
     if (target / 'index.jsx').is_file(): return target / 'index.jsx'
     
@@ -72,6 +100,7 @@ def resolve_target(old_source_file, rel_import):
 
 for current_path, old_path in current_to_old.items():
     if not current_path.exists(): continue
+    if current_path.suffix == '.css': continue # Don't rewrite css content for now, too risky with url()
     
     try:
         with open(current_path, 'r', encoding='utf-8') as f:
@@ -97,17 +126,19 @@ for current_path, old_path in current_to_old.items():
             if not rel.startswith('.'):
                 rel = './' + rel
             
-            if not rel_import.endswith('.js') and not rel_import.endswith('.jsx'):
-                if rel.endswith('.js') or rel.endswith('.jsx'):
+            if not rel_import.endswith('.js') and not rel_import.endswith('.jsx') and not rel_import.endswith('.css'):
+                if rel.endswith('.js') or rel.endswith('.jsx') or rel.endswith('.css'):
                     rel = rel.rsplit('.', 1)[0]
                     
             return f"{prefix}{quote_open}{rel}{quote_close}"
         except ValueError:
             return match.group(0)
 
-    new_content = pattern.sub(replacer, content)
+    new_content = pattern_static.sub(replacer, content)
+    new_content = pattern_dynamic.sub(replacer, new_content)
+    
     if new_content != content:
         with open(current_path, 'w', encoding='utf-8') as f:
             f.write(new_content)
             
-print("Auth refactor complete.")
+print("Final Refactor complete.")

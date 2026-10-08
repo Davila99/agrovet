@@ -24,7 +24,7 @@ import SpecialistsList from "../../../../components/page/Dashboard/SpecialistsLi
 import { resolveAvatar, cleanName } from "./chatUtils";
 import { usePresenceStore } from '../../../../store/usePresenceStore';
 import { useNavigate } from 'react-router-dom';
-import VerificationBadge from '../../../../components/page/profile/molecules/VerificationBadge';
+import VerificationBadge from '../../../profiles/components/page/molecules/VerificationBadge';
 
 export default function ChatList({
   rooms,

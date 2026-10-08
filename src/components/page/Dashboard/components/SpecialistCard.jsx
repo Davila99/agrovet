@@ -1,6 +1,6 @@
 import React from "react";
 import { Box, Avatar, Typography, Rating, Button, Card } from "@mui/material";
-import VerificationBadge from "../../profile/molecules/VerificationBadge";
+import VerificationBadge from "../../../../features/profiles/components/page/molecules/VerificationBadge";
 
 export const SpecialistCard = ({ specialist, onClick, onConsult, mainGreen, textDark }) => {
   const rating = Number(specialist?.specialist_profile?.puntuations) || 0;

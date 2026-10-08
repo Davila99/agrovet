@@ -19,8 +19,8 @@ import RegisterPage from "./features/auth/components/page/Register.jsx";
 import ResetByPhone from "./features/auth/components/page/ResetByPhone";
 import NicaraguaMap from "./components/page/map/Mapa.jsx";
 import Footer from "./components/page/Footer.jsx";
-import Perfil from "./components/page/profile/Perfil.jsx";
-import EditUser from "./components/page/profile/EditUser.jsx";
+import Perfil from "./features/profiles/components/page/Perfil.jsx";
+import EditUser from "./features/profiles/components/page/EditUser.jsx";
 import ProtectedRoute from "./middleware/ProtectedRoute.jsx";
 import Dashboard from "./components/page/Dashboard.jsx";
 import { useParams } from 'react-router-dom';
@@ -30,9 +30,9 @@ function DashboardWithParams() {
   return <Dashboard initialTab="foro" initialCommunityId={id} />;
 }
 import Chat from "./features/chat/ChatPage.jsx";
-import AddPage from './components/page/AddPage';
-import { AddForm, AddDetail } from './components/page/add';
-import OrbPage from './components/page/Orb/index.jsx';
+import AddPage from './features/marketplace/AddPage';
+import { AddForm, AddDetail } from './features/marketplace/components/page/index';
+import OrbPage from './features/ai/components/page/Orb/index.jsx';
 
 
 function AppContent() {

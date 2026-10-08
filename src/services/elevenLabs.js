@@ -7,4 +7,4 @@ export {
   getVoices,
   textToSpeech,
   speak 
-} from './voice/elevenLabsService';
+} from '../features/ai/services/voice/elevenLabsService';

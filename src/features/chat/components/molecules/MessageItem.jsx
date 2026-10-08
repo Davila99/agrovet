@@ -3,7 +3,7 @@ import { Box, Paper, Typography, CircularProgress } from '@mui/material';
 import MessageStatus from '../atoms/MessageStatus';
 import MessageTime from '../atoms/MessageTime';
 import WhatsAppAudioBubble from './WhatsAppAudioBubble';
-import VerificationBadge from '../../../../components/page/profile/molecules/VerificationBadge';
+import VerificationBadge from '../../../profiles/components/page/molecules/VerificationBadge';
 import PropTypes from 'prop-types';
 
 export default function MessageItem({

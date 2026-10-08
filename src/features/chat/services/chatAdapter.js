@@ -1,6 +1,6 @@
 // Adapter to normalize Chat objects (Conversations/Rooms, Messages)
 import { normalizeMedia } from '../../../services/adapters/mediaAdapter';
-import { normalizeProfile } from '../../../services/adapters/profileAdapter'; // reusing profile normalization for participants/sender
+import { normalizeProfile } from '../../profiles/services/profileAdapter'; // reusing profile normalization for participants/sender
 
 export function normalizeMessage(raw) {
     if (!raw) return raw;

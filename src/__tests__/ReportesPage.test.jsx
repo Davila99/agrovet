@@ -16,7 +16,7 @@ vi.mock('../services/endpoints/reports.js', () => ({
 import * as reportsService from '../services/endpoints/reports.js';
 import ReportesPage from '../components/page/Reportes/ReportesPage.jsx';
 import ReportCard from '../components/page/Reportes/ReportCard.jsx';
-import ReportUserModal from '../components/page/profile/ReportUserModal.jsx';
+import ReportUserModal from '../features/profiles/components/page/ReportUserModal.jsx';
 
 const mockReport = {
   id: 1,

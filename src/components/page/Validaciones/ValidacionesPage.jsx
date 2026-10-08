@@ -29,7 +29,7 @@ import {
   getAllValidations,
   validateSpecialist,
   getValidationStats,
-} from '../../../services/endpoints/profiles';
+} from '../../../features/profiles/services/profilesApi';
 import { useAdminNotifications } from '../../../hooks/useAdminNotifications';
 
 function StatsBar({ stats, loading }) {

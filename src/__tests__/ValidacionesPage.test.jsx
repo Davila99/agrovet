@@ -13,7 +13,7 @@ vi.mock('../services/endpoints/profiles.js', () => ({
   getValidationStats: vi.fn(),
 }));
 
-import * as profilesService from '../services/endpoints/profiles.js';
+import * as profilesService from '../features/profiles/services/profilesApi.js';
 import ValidacionesPage from '../components/page/Validaciones/ValidacionesPage.jsx';
 import ValidacionCard from '../components/page/Validaciones/ValidacionCard.jsx';
 

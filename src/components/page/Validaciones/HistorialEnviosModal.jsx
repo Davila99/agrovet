@@ -17,7 +17,7 @@ import HistoryIcon from '@mui/icons-material/History';
 import VerifiedIcon from '@mui/icons-material/Verified';
 import CancelIcon from '@mui/icons-material/Cancel';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
-import { getValidationHistory } from '../../../services/endpoints/profiles';
+import { getValidationHistory } from '../../../features/profiles/services/profilesApi';
 
 export default function HistorialEnviosModal({ open, onClose, userId, name }) {
   const [loading, setLoading] = useState(false);
