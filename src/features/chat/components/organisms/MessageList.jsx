@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Box, Typography } from '@mui/material';
-import MessageItem from '../../molecules/chat/MessageItem';
+import MessageItem from '../molecules/MessageItem';
 import PropTypes from 'prop-types';
 
 export default function MessageList({ messages, currentUserId, loading = false, isPrivateChat = false, usersMap = {} }) {

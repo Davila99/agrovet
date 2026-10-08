@@ -23,10 +23,10 @@ import FilterListIcon from "@mui/icons-material/FilterList";
 import ImageIcon from "@mui/icons-material/Image";
 import MicIcon from "@mui/icons-material/Mic";
 import VideocamIcon from "@mui/icons-material/Videocam";
-import SpecialistsList from "../../page/Dashboard/SpecialistsList";
-import { resolveAvatar, cleanName } from "../../page/chat/chatUtils";
-import { usePresenceStore } from '../../../store/usePresenceStore';
-import VerificationBadge from '../../page/profile/molecules/VerificationBadge';
+import SpecialistsList from "../../../../components/page/Dashboard/SpecialistsList";
+import { resolveAvatar, cleanName } from "../page/chatUtils";
+import { usePresenceStore } from '../../../../store/usePresenceStore';
+import VerificationBadge from '../../../../components/page/profile/molecules/VerificationBadge';
 import { useNavigate } from 'react-router-dom';
 
 export default function RoomList({

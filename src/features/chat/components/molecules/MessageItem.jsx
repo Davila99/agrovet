@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Paper, Typography, CircularProgress } from '@mui/material';
-import MessageStatus from '../../atoms/chat/MessageStatus';
-import MessageTime from '../../atoms/chat/MessageTime';
+import MessageStatus from '../atoms/MessageStatus';
+import MessageTime from '../atoms/MessageTime';
 import WhatsAppAudioBubble from './WhatsAppAudioBubble';
-import VerificationBadge from '../../page/profile/molecules/VerificationBadge';
+import VerificationBadge from '../../../../components/page/profile/molecules/VerificationBadge';
 import PropTypes from 'prop-types';
 
 export default function MessageItem({

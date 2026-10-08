@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Box, Avatar } from '@mui/material';
 import MicNoneIcon from '@mui/icons-material/MicNone';
-import AudioPlayButton from '../../atoms/chat/AudioPlayButton';
-import AudioTime from '../../atoms/chat/AudioTime';
-import Waveform from '../../atoms/chat/Waveform';
+import AudioPlayButton from '../atoms/AudioPlayButton';
+import AudioTime from '../atoms/AudioTime';
+import Waveform from '../atoms/Waveform';
 
 // WhatsApp-like audio bubble
 export default function WhatsAppAudioBubble({

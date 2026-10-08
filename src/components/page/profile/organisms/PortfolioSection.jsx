@@ -18,7 +18,7 @@ import AddAPhotoIcon from "@mui/icons-material/AddAPhoto";
 import PortfolioCard from "../molecules/PortfolioCard";
 import AddProductCard from "../molecules/AddProductCard";
 import { uploadMedia } from "../../../../services/endpoints/media";
-import { normalizeStoredToken } from "../../chat/chatUtils";
+import { normalizeStoredToken } from "../../../../features/chat/components/page/chatUtils";
 import { profilesAPI } from "../../../../services/endpoints";
 import { authHeaders } from "../../../../services/endpoints/utils";
 

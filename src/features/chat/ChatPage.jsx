@@ -1,20 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Box, Paper, Typography } from '@mui/material';
 import { useSearchParams } from 'react-router-dom';
-import chatService from '../../services/endpoints/chat';
-import chatAdapter from '../../services/adapters/chatAdapter';
-import { normalizeStoredToken } from './chat/chatUtils';
+import chatService from './services/chatApi';
+import chatAdapter from './services/chatAdapter';
+import { normalizeStoredToken } from './components/page/chatUtils';
 import env from '../../services/env';
 import usePresenceStore from '../../store/usePresenceStore';
 import { fetchUsers } from '../../data/users';
 import { profilesAPI } from '../../services/endpoints';
 import writingSound from '../../assets/mp3/writing.mp3';
 import notificationSound from '../../assets/mp3/notification.mp3';
-import RoomList from '../organisms/chat/RoomList';
-import ChatHeader from '../organisms/chat/ChatHeader';
-import MessageList from '../organisms/chat/MessageList';
-import ChatInput from '../molecules/chat/ChatInput';
-import ConsultationEndModal from '../molecules/chat/ConsultationEndModal';
+import RoomList from './components/organisms/RoomList';
+import ChatHeader from './components/organisms/ChatHeader';
+import MessageList from './components/organisms/MessageList';
+import ChatInput from './components/molecules/ChatInput';
+import ConsultationEndModal from './components/molecules/ConsultationEndModal';
 
 export default function Chat() {
     const [searchParams] = useSearchParams();

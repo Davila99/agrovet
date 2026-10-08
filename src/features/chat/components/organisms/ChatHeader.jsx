@@ -2,9 +2,9 @@ import React from 'react';
 import { Box, Typography, Avatar, Badge, IconButton } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PropTypes from 'prop-types';
-import VerificationBadge from '../../page/profile/molecules/VerificationBadge';
+import VerificationBadge from '../../../../components/page/profile/molecules/VerificationBadge';
 import { useNavigate } from 'react-router-dom';
-import ConsultationTimerBanner from '../../molecules/chat/ConsultationTimerBanner';
+import ConsultationTimerBanner from '../molecules/ConsultationTimerBanner';
 
 export default function ChatHeader({
     participant,

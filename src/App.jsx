@@ -29,7 +29,7 @@ function DashboardWithParams() {
   const { id } = useParams();
   return <Dashboard initialTab="foro" initialCommunityId={id} />;
 }
-import Chat from "./components/page/Chat.jsx";
+import Chat from "./features/chat/ChatPage.jsx";
 import AddPage from './components/page/AddPage';
 import { AddForm, AddDetail } from './components/page/add';
 import OrbPage from './components/page/Orb/index.jsx';

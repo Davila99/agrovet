@@ -9,9 +9,9 @@ import {
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { resolveAvatar, cleanName } from "./chatUtils";
-import { usePresenceStore } from '../../../store/usePresenceStore';
+import { usePresenceStore } from '../../../../store/usePresenceStore';
 import { useNavigate } from 'react-router-dom';
-import VerificationBadge from '../../profile/molecules/VerificationBadge';
+import VerificationBadge from '../../../../components/profile/molecules/VerificationBadge';
 
 const formatLastSeen = (iso) => {
   try {

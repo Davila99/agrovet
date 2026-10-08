@@ -9,7 +9,7 @@ import {
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import DashboardSidebar from './DashboardSidebar';
-import Chat from "./Chat";
+import Chat from "../../features/chat/ChatPage";
 import AddPage from './AddPage';
 import ForoPage from '../../features/foro/ForoPage';
 import AIAgentPage from "./AIAgent/AIAgentPage";

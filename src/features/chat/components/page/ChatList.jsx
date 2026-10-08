@@ -20,11 +20,11 @@ import {
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import FilterListIcon from "@mui/icons-material/FilterList";
-import SpecialistsList from "../Dashboard/SpecialistsList";
+import SpecialistsList from "../../../../components/page/Dashboard/SpecialistsList";
 import { resolveAvatar, cleanName } from "./chatUtils";
-import { usePresenceStore } from '../../../store/usePresenceStore';
+import { usePresenceStore } from '../../../../store/usePresenceStore';
 import { useNavigate } from 'react-router-dom';
-import VerificationBadge from '../profile/molecules/VerificationBadge';
+import VerificationBadge from '../../../../components/page/profile/molecules/VerificationBadge';
 
 export default function ChatList({
   rooms,

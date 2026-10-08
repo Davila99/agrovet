@@ -24,7 +24,7 @@ import {
 } from '@mui/material';
 import { Close, AddAPhoto, DeleteOutline, Verified, School, CardMembership, Description } from '@mui/icons-material';
 import { uploadMedia } from '../../../../services/endpoints/media';
-import { normalizeStoredToken } from '../../chat/chatUtils';
+import { normalizeStoredToken } from '../../../../features/chat/components/page/chatUtils';
 import { profilesAPI } from '../../../../services/endpoints';
 import VerificationBadge from '../molecules/VerificationBadge';
 

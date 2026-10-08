@@ -19,7 +19,7 @@ import { Close, AddAPhoto } from "@mui/icons-material";
 import ProductCard from "../molecules/ProductCard";
 import AddProductCard from "../molecules/AddProductCard";
 import ImageCarousel from "../../../atoms/add/ImageCarousel";
-import { normalizeStoredToken } from "../../chat/chatUtils";
+import { normalizeStoredToken } from "../../../../features/chat/components/page/chatUtils";
 import { profilesAPI } from "../../../../services/endpoints";
 import { buildUrl } from "../../../../services/env";
 import useCurrency from "../../../../hooks/useCurrency";

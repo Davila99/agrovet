@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Box, Typography } from '@mui/material';
-import useWaveform from '../../../hooks/chat/useWaveform';
-import AudioPlayButton from '../../atoms/chat/AudioPlayButton';
+import useWaveform from '../../hooks/useWaveform';
+import AudioPlayButton from '../atoms/AudioPlayButton';
 import PropTypes from 'prop-types';
 
 export default function AudioMessage({ 

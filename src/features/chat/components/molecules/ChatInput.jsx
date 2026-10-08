@@ -6,10 +6,10 @@ import SendRoundedIcon from '@mui/icons-material/SendRounded';
 import PauseIcon from '@mui/icons-material/Pause';
 import MicNoneIcon from '@mui/icons-material/MicNone';
 import { CircularProgress } from '@mui/material';
-import FileAttach from '../../atoms/chat/FileAttach';
-import EmojiPicker from '../../atoms/chat/EmojiPicker';
+import FileAttach from '../atoms/FileAttach';
+import EmojiPicker from '../atoms/EmojiPicker';
 import AudioRecorder from './AudioRecorder';
-import SendButton from '../../atoms/chat/SendButton';
+import SendButton from '../atoms/SendButton';
 import AttachmentPreview from './AttachmentPreview';
 
 export default function ChatInput({

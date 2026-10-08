@@ -1,7 +1,7 @@
-import httpClient from "../httpClient";
-import env from "../env";
-import chatAdapter from "../adapters/chatAdapter";
-import { authHeaders } from "./utils";
+import httpClient from "../../../services/httpClient";
+import env from "../../../services/env";
+import chatAdapter from "./chatAdapter";
+import { authHeaders } from "../../../services/endpoints/utils";
 
 export const chatService = {
     // Obtener todas las salas de chat del usuario
