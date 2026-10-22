@@ -556,6 +556,21 @@ export default function Chat() {
                             return msg;
                         }));
                     }
+                } else if (data.type === 'consultation.update' || data.payload?.type === 'consultation.update') {
+                    const updateData = data.payload || data;
+                    if (String(updateData.room_id) === String(roomId)) {
+                        setConsultation(prev => ({
+                            ...(prev || {}),
+                            id: updateData.consultation_id || prev?.id,
+                            room_id: updateData.room_id,
+                            status: updateData.status,
+                            started_at: updateData.started_at,
+                            is_extended: updateData.is_extended,
+                            initial_question_count: updateData.initial_question_count,
+                            consumer_id: updateData.consumer_id,
+                            professional_id: updateData.professional_id,
+                        }));
+                    }
                 }
             } catch (error) {
                 console.error('Error procesando mensaje WebSocket:', error);
