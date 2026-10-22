@@ -277,7 +277,8 @@ export default function Chat() {
                         }
                     } else if (data.type === 'presence.offline' || data.type === 'user_offline') {
                         const userId = data.user_id;
-                        console.log('[Presence] 🔴 Usuario desconectado:', userId);
+                        const serverLastSeen = data.last_seen || data.timestamp || new Date().toISOString();
+                        console.log('[Presence] 🔴 Usuario desconectado:', userId, 'lastSeen:', serverLastSeen);
                         setOnlineUsers(prev => {
                             const newSet = new Set(prev);
                             newSet.delete(parseInt(userId));
@@ -287,7 +288,7 @@ export default function Chat() {
                             usePresenceStore.getState().updateUser(userId, { 
                                 isOnline: false, 
                                 online: false,
-                                lastSeen: new Date().toISOString() 
+                                lastSeen: serverLastSeen
                             });
                         }
                     } else if (data.type === 'pong') {
@@ -319,6 +320,24 @@ export default function Chat() {
             const roomsData = await chatService.getRooms(authToken);
             const normalizedRooms = Array.isArray(roomsData) ? roomsData : [];
             setRooms(normalizedRooms);
+
+            // Poblar presencia inicial con los datos de las salas
+            if (usePresenceStore.getState) {
+                normalizedRooms.forEach(room => {
+                    if (Array.isArray(room.participants)) {
+                        room.participants.forEach(p => {
+                            const pid = p.id || p.user_id || p.pk;
+                            if (pid) {
+                                usePresenceStore.getState().updateUser(pid, {
+                                    isOnline: p.is_online === true,
+                                    online: p.is_online === true,
+                                    lastSeen: p.last_activity || p.last_seen || null,
+                                });
+                            }
+                        });
+                    }
+                });
+            }
 
             if (targetUserId && normalizedRooms.length > 0) {
                 // Buscar sala existente con mejor validación de IDs

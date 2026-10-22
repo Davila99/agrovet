@@ -18,6 +18,7 @@ import CampaignOutlinedIcon from '@mui/icons-material/CampaignOutlined';
 import SmartToyOutlinedIcon from '@mui/icons-material/SmartToyOutlined';
 import VerifiedUserOutlinedIcon from '@mui/icons-material/VerifiedUserOutlined';
 import ReportProblemOutlinedIcon from '@mui/icons-material/ReportProblemOutlined';
+import WorkspacePremiumOutlinedIcon from '@mui/icons-material/WorkspacePremiumOutlined';
 import LogoutIcon from '@mui/icons-material/Logout';
 
 // This component is extracted from Dashboard.jsx to allow reuse in App layout
@@ -47,6 +48,7 @@ export default function DashboardSidebar({
     ? [
         { id: 'validaciones', label: 'Validaciones', icon: <VerifiedUserOutlinedIcon />, badge: null },
         { id: 'reportes', label: 'Reportes', icon: <ReportProblemOutlinedIcon />, badge: null },
+        { id: 'suscripciones', label: 'Suscripciones', icon: <WorkspacePremiumOutlinedIcon />, badge: null },
       ]
     : [];
 

@@ -15,6 +15,7 @@ import ForoPage from '../../features/foro/ForoPage';
 import AIAgentPage from "../../features/ai/components/page/AIAgent/AIAgentPage";
 import ValidacionesPage from "./Validaciones/ValidacionesPage";
 import ReportesPage from "./Reportes/ReportesPage";
+import SubscriptionsAdminPage from "./Subscriptions/SubscriptionsAdminPage";
 import { getProfile } from "../../features/auth/services/authApi";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -34,6 +35,7 @@ const Dashboard = ({ initialTab = null, initialCommunityId = null }) => {
     if (tab === "ava" || tab === "ia") setSelected("ia");
     if (tab === "validaciones") setSelected("validaciones");
     if (tab === "reportes") setSelected("reportes");
+    if (tab === "suscripciones") setSelected("suscripciones");
   }, []);
 
   // Si initialTab es provisto desde la ruta, aplicarlo
@@ -198,8 +200,15 @@ const Dashboard = ({ initialTab = null, initialCommunityId = null }) => {
             </Box>
           )}
 
-          {/* Protección: si no-admin intenta acceder a validaciones o reportes, redirige a chat */}
-          {(selected === "validaciones" || selected === "reportes") && !isAdmin && (
+          {/* Tab de Suscripciones — solo renderiza si el usuario es admin */}
+          {selected === "suscripciones" && isAdmin && (
+            <Box sx={{ width: "100%", height: "100%", overflow: "auto", bgcolor: "#0f172a" }}>
+              <SubscriptionsAdminPage />
+            </Box>
+          )}
+
+          {/* Protección: si no-admin intenta acceder a validaciones, reportes o suscripciones, redirige a chat */}
+          {(selected === "validaciones" || selected === "reportes" || selected === "suscripciones") && !isAdmin && (
             <Box sx={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
               {setSelected("chat")}
             </Box>

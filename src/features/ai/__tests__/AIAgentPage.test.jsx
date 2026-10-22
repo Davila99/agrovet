@@ -1,11 +1,11 @@
-/**
+﻿/**
  * Tests para AIAgentPage y ai.js endpoint service.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import React from 'react';
 
-vi.mock('../services/endpoints/ai.js', () => ({
+vi.mock('../services/aiApi.js', () => ({
   sendChatMessage: vi.fn(),
   sendVoiceChat: vi.fn(),
   getIndexedBooks: vi.fn(),
@@ -53,3 +53,4 @@ describe('AIAgentPage', () => {
     });
   });
 });
+

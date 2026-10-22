@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Tests de ValidacionesPage y ValidacionCard.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -6,7 +6,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import React from 'react';
 
 // Mock del módulo de servicios
-vi.mock('../services/endpoints/profiles.js', () => ({
+vi.mock('../features/profiles/services/profilesApi.js', () => ({
   getPendingValidations: vi.fn(),
   getAllValidations: vi.fn(),
   validateSpecialist: vi.fn(),
@@ -122,3 +122,4 @@ describe('ValidacionesPage', () => {
     });
   });
 });
+

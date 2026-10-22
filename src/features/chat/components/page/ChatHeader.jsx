@@ -16,13 +16,31 @@ import VerificationBadge from '../../../../components/profile/molecules/Verifica
 const formatLastSeen = (iso) => {
   try {
     if (!iso) return null;
-    const then = new Date(iso);
+    let then = new Date(iso);
+    // Si no tiene 'Z' ni offset y parece ISO, asegurar parseo UTC
+    if (typeof iso === 'string' && !iso.endsWith('Z') && !iso.includes('+') && !iso.includes('-') && iso.includes('T')) {
+      then = new Date(iso + 'Z');
+    }
     if (Number.isNaN(then.getTime())) return null;
     const diffMs = Date.now() - then.getTime();
-    const mins = Math.max(0, Math.round(diffMs / 60000));
+    if (diffMs < 0) return 'hace unos momentos';
+
+    const mins = Math.floor(diffMs / 60000);
+    const hours = Math.floor(mins / 60);
+    const days = Math.floor(hours / 24);
+
     if (mins < 1) return 'hace unos segundos';
     if (mins === 1) return 'hace 1 minuto';
-    return `hace ${mins} minutos`;
+    if (mins < 60) return `hace ${mins} minutos`;
+    if (hours === 1) return 'hace 1 hora';
+    if (hours < 24) return `hace ${hours} horas`;
+    if (days === 1) {
+      const timeStr = then.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      return `ayer a las ${timeStr}`;
+    }
+    if (days < 7) return `hace ${days} días`;
+
+    return then.toLocaleDateString([], { day: '2-digit', month: '2-digit', year: 'numeric' });
   } catch (e) { return null; }
 };
 
@@ -113,8 +131,10 @@ export default function ChatHeader({
                       return (<><Box component="span" sx={{ width:8, height:8, bgcolor: 'success.main', borderRadius: '50%', display: 'inline-block' }} /> <span>En línea</span></>);
                     }
                     // Si no está online, mostrar última conexión si disponible
-                    if (presence?.lastSeen) {
-                      return (<span style={{ color: 'gray' }}>{`Última vez ${formatLastSeen(presence.lastSeen)}`}</span>);
+                    const rawLastSeen = presence?.lastSeen || other?.last_activity || other?.last_seen || selectedContact?.last_activity;
+                    if (rawLastSeen) {
+                      const formatted = formatLastSeen(rawLastSeen);
+                      if (formatted) return (<span style={{ color: 'gray' }}>{`Última vez ${formatted}`}</span>);
                     }
                   } catch (e) {
                     console.warn('[ChatHeader] Error checking online:', e);
@@ -200,7 +220,8 @@ export default function ChatHeader({
                     return (<><Box component="span" sx={{ width:8, height:8, bgcolor: 'success.main', borderRadius: '50%', display: 'inline-block' }} /> <span>En línea</span></>);
                   }
                   // Mostrar última conexión si disponible
-                  const lastSeen = presence?.lastSeen ? formatLastSeen(presence.lastSeen) : null;
+                  const rawLastSeen = presence?.lastSeen || other?.last_activity || other?.last_seen || selectedContact?.last_activity;
+                  const lastSeen = rawLastSeen ? formatLastSeen(rawLastSeen) : null;
                   if (lastSeen) return (<span style={{ color: 'gray' }}>{`Última vez ${lastSeen}`}</span>);
                 } catch (e) {
                   console.warn('[ChatHeader Desktop] Error checking online:', e);
