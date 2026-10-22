@@ -17,17 +17,20 @@ import {
   Menu,
   MenuItem,
   Chip,
+  CircularProgress,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import ImageIcon from "@mui/icons-material/Image";
 import MicIcon from "@mui/icons-material/Mic";
 import VideocamIcon from "@mui/icons-material/Videocam";
+import MessageIcon from "@mui/icons-material/Message";
 import SpecialistsList from "../../../../components/page/Dashboard/SpecialistsList";
 import { resolveAvatar, cleanName } from "../page/chatUtils";
 import { usePresenceStore } from '../../../../store/usePresenceStore';
 import VerificationBadge from '../../../profiles/components/page/molecules/VerificationBadge';
 import { useNavigate } from 'react-router-dom';
+import chatService from '../../services/chatApi';
 
 export default function RoomList({
   rooms = [],
@@ -37,6 +40,8 @@ export default function RoomList({
   specialistSearch,
   setSpecialistSearch,
   onSelectChat,
+  onSelectMessage,
+  token,
   openOneToOne,
   isMd,
   getCurrentUserId,
@@ -54,6 +59,8 @@ export default function RoomList({
   const [chatSearch, setChatSearch] = useState("");
   const [filterAnchorEl, setFilterAnchorEl] = useState(null);
   const filterOpen = Boolean(filterAnchorEl);
+  const [searchingMessages, setSearchingMessages] = useState(false);
+  const [matchingMessages, setMatchingMessages] = useState([]);
   
   // Debug: verificar que las funciones se reciban
   useEffect(() => {
@@ -65,6 +72,30 @@ export default function RoomList({
       businessTypeFilter,
     });
   }, [viewMode, setProfessionFilter, setBusinessTypeFilter, professionFilter, businessTypeFilter]);
+
+  // Búsqueda remota de mensajes estilo WhatsApp con debounce
+  useEffect(() => {
+    if (viewMode !== "chats" || !chatSearch || chatSearch.trim().length < 2 || !token) {
+      setMatchingMessages([]);
+      setSearchingMessages(false);
+      return;
+    }
+
+    setSearchingMessages(true);
+    const timer = setTimeout(async () => {
+      try {
+        const results = await chatService.searchMessages(chatSearch.trim(), token, 30);
+        setMatchingMessages(results || []);
+      } catch (err) {
+        console.error("Error buscando mensajes:", err);
+        setMatchingMessages([]);
+      } finally {
+        setSearchingMessages(false);
+      }
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [chatSearch, viewMode, token]);
 
   // Filter rooms by search query and business type filter
   const filteredRooms = useMemo(() => {
@@ -170,7 +201,7 @@ export default function RoomList({
             <TextField
               size="small"
               fullWidth
-              placeholder="Buscar conversaciones"
+              placeholder="Buscar chats o mensajes..."
               value={chatSearch}
               onChange={(e) => setChatSearch(e.target.value)}
               sx={{
@@ -193,6 +224,17 @@ export default function RoomList({
                 startAdornment: (
                   <InputAdornment position="start" sx={{ marginRight: 0.5 }}>
                     <SearchIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    {searchingMessages ? (
+                      <CircularProgress size={16} sx={{ mr: 0.5 }} />
+                    ) : chatSearch ? (
+                      <IconButton size="small" onClick={() => setChatSearch("")} sx={{ p: 0.5 }}>
+                        <Typography sx={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'text.secondary' }}>✕</Typography>
+                      </IconButton>
+                    ) : null}
                   </InputAdornment>
                 ),
               }}
@@ -749,6 +791,123 @@ export default function RoomList({
                   );
                 })}
             </List>
+          )}
+
+          {/* Sección WhatsApp: Mensajes Encontrados */}
+          {chatSearch && chatSearch.trim().length >= 2 && (
+            <Box sx={{ mt: 1, borderTop: '2px solid rgba(0,0,0,0.06)' }}>
+              <Box sx={{ px: 2, py: 1, bgcolor: 'rgba(0,0,0,0.02)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  Mensajes encontrados ({matchingMessages.length})
+                </Typography>
+                {searchingMessages && <CircularProgress size={14} />}
+              </Box>
+
+              {matchingMessages.length === 0 && !searchingMessages ? (
+                <Box sx={{ p: 2, textAlign: 'center' }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+                    No se encontraron mensajes con "{chatSearch}"
+                  </Typography>
+                </Box>
+              ) : (
+                <List sx={{ py: 0 }}>
+                  {matchingMessages.map((msg) => {
+                    const msgRoom = rooms.find((r) => String(r.id) === String(msg.room_id || msg.room));
+                    const parts = msgRoom?.participants || [];
+                    const me = getCurrentUserId ? getCurrentUserId() : null;
+                    let other = null;
+                    if (Array.isArray(parts)) {
+                      for (const p of parts) {
+                        try {
+                          const pid = p && (p.id || p.user_id || p.pk) ? (p.id || p.user_id || p.pk) : p;
+                          if (pid && me && String(pid) !== String(me)) {
+                            other = p;
+                            break;
+                          }
+                        } catch (e) {}
+                      }
+                    }
+                    const otherId = other && (other.id || other.user_id || other.pk) ? (other.id || other.user_id || other.pk) : null;
+                    const userData = otherId && usersMap[otherId] ? usersMap[otherId] : (other || {});
+                    const contactName = cleanName(
+                      userData?.full_name ||
+                      userData?.name ||
+                      other?.full_name ||
+                      other?.name ||
+                      msgRoom?.name ||
+                      (msg.sender?.id === parseInt(me) ? 'Tú' : (msg.sender?.full_name || 'Usuario'))
+                    );
+                    const avatarRaw = userData?.profile_picture || userData?.profile_picture_url || other?.profile_picture || other?.profile_picture_url || '';
+                    const avatarSrc = resolveAvatar(avatarRaw);
+
+                    const rawDate = msg.created_at || msg.timestamp;
+                    const dateFormatted = rawDate ? new Date(rawDate).toLocaleDateString([], {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric'
+                    }) : '';
+                    const timeFormatted = rawDate ? new Date(rawDate).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    }) : '';
+
+                    return (
+                      <ListItemButton
+                        key={`search-msg-${msg.id}`}
+                        onClick={() => {
+                          const targetRoomId = String(msg.room_id || msg.room);
+                          if (onSelectMessage) {
+                            onSelectMessage(targetRoomId, msg.id);
+                          } else {
+                            onSelectChat(targetRoomId);
+                          }
+                        }}
+                        sx={{
+                          borderBottom: '1px solid rgba(0,0,0,0.04)',
+                          '&:hover': { bgcolor: 'rgba(21, 101, 192, 0.05)' }
+                        }}
+                      >
+                        <ListItemAvatar>
+                          <Avatar src={avatarSrc} sx={{ width: 36, height: 36 }}>
+                            {!avatarSrc && contactName ? contactName.charAt(0) : <MessageIcon fontSize="small" />}
+                          </Avatar>
+                        </ListItemAvatar>
+                        <ListItemText
+                          primary={
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.8rem' }}>
+                                {contactName}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                                {dateFormatted} {timeFormatted}
+                              </Typography>
+                            </Box>
+                          }
+                          secondary={
+                            <Typography
+                              variant="body2"
+                              color="text.primary"
+                              sx={{
+                                fontSize: '0.75rem',
+                                color: 'text.secondary',
+                                mt: 0.25,
+                                display: '-webkit-box',
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: 'vertical',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                              }}
+                            >
+                              {msg.content || msg.text || 'Archivo adjunto'}
+                            </Typography>
+                          }
+                        />
+                      </ListItemButton>
+                    );
+                  })}
+                </List>
+              )}
+            </Box>
           )}
         </Box>
       )}

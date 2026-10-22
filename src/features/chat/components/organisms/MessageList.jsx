@@ -3,17 +3,30 @@ import { Box, Typography } from '@mui/material';
 import MessageItem from '../molecules/MessageItem';
 import PropTypes from 'prop-types';
 
-export default function MessageList({ messages, currentUserId, loading = false, isPrivateChat = false, usersMap = {} }) {
+export default function MessageList({ messages, currentUserId, loading = false, isPrivateChat = false, usersMap = {}, targetMessageId = null }) {
     const messagesEndRef = useRef(null);
+    const [highlightedId, setHighlightedId] = React.useState(null);
 
-    // Auto-scroll removed as per user request
-    // useEffect(() => {
-    //     scrollToBottom();
-    // }, [messages]);
+    useEffect(() => {
+      if (targetMessageId) {
+        setHighlightedId(targetMessageId);
+        const timer = setTimeout(() => {
+          const el = document.getElementById(`msg-item-${targetMessageId}`);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 200);
 
-    // const scrollToBottom = () => {
-    //     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    // };
+        const fadeTimer = setTimeout(() => {
+          setHighlightedId(null);
+        }, 2500);
+
+        return () => {
+          clearTimeout(timer);
+          clearTimeout(fadeTimer);
+        };
+      }
+    }, [targetMessageId, messages]);
 
     return (
       <Box
@@ -63,16 +76,29 @@ export default function MessageList({ messages, currentUserId, loading = false, 
               ? `msg-${msgId}`
               : `msg-${msg.created_at || Date.now()}`;
 
+            const isHighlighted = String(msg.id) === String(highlightedId);
+
             return (
-              <MessageItem
+              <Box
                 key={uniqueKey}
-                message={msg}
-                isOwn={isOwn}
-                currentUserId={currentUserId}
-                showAvatar={true}
-                isPrivateChat={isPrivateChat}
-                usersMap={usersMap}
-              />
+                id={`msg-item-${msg.id}`}
+                sx={{
+                  transition: 'background-color 0.4s ease',
+                  backgroundColor: isHighlighted ? 'rgba(255, 235, 59, 0.35)' : 'transparent',
+                  borderRadius: 2,
+                  px: 0.5,
+                  py: 0.25,
+                }}
+              >
+                <MessageItem
+                  message={msg}
+                  isOwn={isOwn}
+                  currentUserId={currentUserId}
+                  showAvatar={true}
+                  isPrivateChat={isPrivateChat}
+                  usersMap={usersMap}
+                />
+              </Box>
             );
           })
         )}

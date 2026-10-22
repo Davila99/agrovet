@@ -41,6 +41,7 @@ export default function Chat() {
     const [businessTypeFilter, setBusinessTypeFilter] = useState(null);
     const [consultation, setConsultation] = useState(null);
     const [endModalOpen, setEndModalOpen] = useState(false);
+    const [targetMessageId, setTargetMessageId] = useState(null);
 
     const writingAudioRef = useRef(null);
     const notificationAudioRef = useRef(null);
@@ -503,26 +504,53 @@ export default function Chat() {
                     if (token) {
                         loadRooms(token).catch(console.error);
                     }
-                } else if (data.type === 'message_delivered' || data.type === 'message.read' || data.type === 'messages_read') {
-                    if (data.type === 'messages_read' && Array.isArray(data.message_ids)) {
+
+                    // Si el mensaje es de la otra persona y estamos con la ventana abierta y activa, marcar como leído de inmediato
+                    if (!isFromMe && token && selectedRoom && String(selectedRoom.id) === String(roomId) && !document.hidden) {
+                        chatService.markRead(selectedRoom.id, token).catch(console.error);
+                    }
+                } else if (
+                    data.type === 'message_delivered' ||
+                    data.type === 'message.read' ||
+                    data.type === 'messages_read' ||
+                    data.type === 'messages.read.broadcast'
+                ) {
+                    const messageIds = data.message_ids || data.payload?.message_ids;
+                    if (Array.isArray(messageIds) && messageIds.length > 0) {
                         setMessages(prev => prev.map(msg => {
-                            if (data.message_ids.includes(msg.id)) {
+                            if (messageIds.includes(msg.id)) {
                                 return {
                                     ...msg,
+                                    read: true,
+                                    is_read: true,
+                                    delivered: true,
+                                };
+                            }
+                            return msg;
+                        }));
+                    } else if (data.message_id) {
+                        setMessages(prev => prev.map(msg => {
+                            if (msg.id === data.message_id) {
+                                return {
+                                    ...msg,
+                                    delivered: true,
                                     read: true,
                                     is_read: true,
                                 };
                             }
                             return msg;
                         }));
-                    } else {
+                    } else if (data.user_id) {
+                        // Si viene un broadcast general de lectura para este usuario en esta sala
+                        const readerId = parseInt(data.user_id);
                         setMessages(prev => prev.map(msg => {
-                            if (msg.id === data.message_id) {
+                            const senderId = msg.sender?.id || msg.sender_id;
+                            if (senderId && parseInt(senderId) !== readerId) {
                                 return {
                                     ...msg,
-                                    delivered: data.type === 'message_delivered' ? true : msg.delivered,
-                                    read: (data.type === 'message.read' || data.type === 'messages_read') ? true : msg.read,
-                                    is_read: (data.type === 'message.read' || data.type === 'messages_read') ? true : msg.is_read,
+                                    read: true,
+                                    is_read: true,
+                                    delivered: true,
                                 };
                             }
                             return msg;
@@ -947,8 +975,19 @@ export default function Chat() {
             setSpecialistSearch={setSpecialistSearch}
             onSelectChat={(roomId) => {
               const room = rooms.find((r) => String(r.id) === String(roomId));
-              if (room) setSelectedRoom(room);
+              if (room) {
+                setTargetMessageId(null);
+                setSelectedRoom(room);
+              }
             }}
+            onSelectMessage={(roomId, messageId) => {
+              const room = rooms.find((r) => String(r.id) === String(roomId));
+              if (room) {
+                setSelectedRoom(room);
+                setTargetMessageId(messageId);
+              }
+            }}
+            token={token}
             openOneToOne={async (specialist) => {
               try {
                 if (!specialist || !specialist.id) {
@@ -1079,7 +1118,7 @@ export default function Chat() {
               onEndConsultation={handleEndConsultation}
               onExtendConsultation={handleExtendConsultation}
             />
-            <MessageList messages={messages} currentUserId={currentUserId} usersMap={usersMap} />
+            <MessageList messages={messages} currentUserId={currentUserId} usersMap={usersMap} targetMessageId={targetMessageId} />
             <ChatInput
               text={text}
               setText={setText}

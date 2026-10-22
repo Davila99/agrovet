@@ -1,4 +1,4 @@
-﻿import httpClient from "../../../services/httpClient";
+import httpClient from "../../../services/httpClient";
 import env from "../../../services/env";
 import chatAdapter from "./chatAdapter";
 import { authHeaders } from "../../../services/endpoints/utils";
@@ -45,6 +45,20 @@ export const chatService = {
             return res.map(chatAdapter.normalizeMessage);
         }
         return res;
+    },
+
+    // Buscar mensajes por texto a través de las salas del usuario
+    searchMessages: async (query, token, limit = 30) => {
+        if (!query || !query.trim()) return [];
+        const url = env.buildUrl('CHAT', `/api/chat/messages/search/?q=${encodeURIComponent(query.trim())}&limit=${limit}`);
+        const res = await httpClient(url, {
+            method: "GET",
+            headers: authHeaders(token)
+        });
+        if (Array.isArray(res)) {
+            return res.map(chatAdapter.normalizeMessage);
+        }
+        return [];
     },
 
     // Enviar mensaje de texto
